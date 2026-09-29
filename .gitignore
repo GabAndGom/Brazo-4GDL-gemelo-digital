@@ -1,0 +1,24 @@
+# Compilación LaTeX
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# CAD y temporales de diseño
+*.bak
+*.dwl
+*.dwl2
+
+# Entornos virtuales y Python / Middleware
+__pycache__/
+*.py[cod]
+.env
+venv/
+
+# Sistema y temporales
+.DS_Store
+Thumbs.db
+*~
