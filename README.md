@@ -1,7 +1,3 @@
-cd ~/brazo
-
-cat << 'EOF' > README.md
-<div align="center">
 
 # 🦾 BRAZO ROBÓTICO DIDÁCTICO 4 GDL (XK-JS1-1)
 ### Proyecto Integrador de Ingeniería Electrónica — UMSA
