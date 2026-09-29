@@ -22,3 +22,12 @@ venv/
 .DS_Store
 Thumbs.db
 *~
+*.mp4
+
+# Archivos de video y multimedia pesada
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.wmv
+*.flv

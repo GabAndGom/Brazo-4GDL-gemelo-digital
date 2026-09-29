@@ -1,0 +1,658 @@
+\documentclass[a4paper,12pt]{article}
+
+%*** TAMAÑO DE PAPEL ***
+\usepackage{geometry}
+\geometry{letterpaper, margin=2.5cm}
+\usepackage{setspace} % para modificar tamaño entre lienas
+\usepackage{titlesec} %para modificar secciones
+
+%*** IDIOMA
+\usepackage[spanish , es-nodecimaldot,mexico]{babel}
+\usepackage[utf8]{inputenc}
+% *** fuente***
+\usepackage[light,condensed,math]{kurier}
+\usepackage[T1]{fontenc}
+
+% *** color ***
+\usepackage[table]{xcolor}
+\definecolor{verde}{RGB}{80,180,60}
+\definecolor{rojo}{rgb}{1,0.36,0.24}
+\definecolor{gray}{RGB}{242,242,242}
+\definecolor{cafe}{RGB}{128,64,0}
+\definecolor{grayblack}{RGB}{50,50,50}
+\definecolor{arduinoBlue}{RGB}{0,102,204}
+\definecolor{arduinoGreen}{RGB}{0,153,0}
+\definecolor{arduinoGray}{RGB}{100,100,100}
+\definecolor{arduinoOrange}{RGB}{255,102,0}
+
+%*** FIGURAS***
+\usepackage{graphicx}
+\graphicspath{{../Figuras}}
+\usepackage{float} % para habiltar [H]
+\usepackage{subcaption} % para poner subfiguras
+\usepackage{wrapfig}    % para poner texto alado de una imagen
+\usepackage{overpic}  % para poder escribri sobre una imagen
+\usepackage{tikz} % apra cargar fondo de imagen para la portada
+\usepackage{textcomp} % para gardos celsius
+% % \usepackage{subfigure} % incompatible con subcaption; evita redefinir el contador % incompatible con subcaption; evita redefinir el contador
+
+%***diagramas de bloques***
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
+\tikzstyle{bloque} = [rectangle, minimum width=3.5cm, minimum height=1.2cm, text centered, draw=black, fill=blue!15]
+\tikzstyle{linea} = [-{Latex}, thick]
+
+%*** tablas ***
+\usepackage{booktabs} % para varios tipos de linea
+\usepackage{colortbl} % para poner color a la tablas
+
+%***referencias***
+\usepackage{hyperref}
+\hypersetup{colorlinks=true , linkcolor=blue}
+
+%***ECUACIONES***
+\usepackage{mathtools}
+% *** ENCABEZADO***
+\usepackage{lastpage}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+
+
+%*******CODIGOS***
+\usepackage{listings}  % Paquete para mostrar código
+\usepackage{xcolor}    % Colores en el código
+
+\lstset{
+  basicstyle=\ttfamily\small, % Estilo básico del código
+  frame=single,              % Cuadro alrededor del código
+  breaklines=true,           % Permitir que el código se ajuste a la página
+  postbreak=\mbox{$\hookrightarrow$}, % Símbolo cuando el código se corta
+  captionpos=b,              % Posición de la leyenda
+  numbers=left,              % Numeración a la izquierda
+  numberstyle=\tiny\color{blue}, % Estilo de los números de línea
+  keywordstyle=\color{orange}, % Palabras clave en naranja
+  commentstyle=\color{gray}, % Comentarios en verde
+  stringstyle=\color{green},    % Cadenas de texto en rojo
+}
+\lstdefinestyle{pythonclean}{
+ language=Python,
+  basicstyle=\ttfamily\small,
+  frame=single,
+  breaklines=true,
+  postbreak=\mbox{$\hookrightarrow$},
+  captionpos=b,
+  numbers=none, % Quita los números de línea
+  keywordstyle=\color{blue},      % Cambia palabras clave a azul
+  commentstyle=\color{codegreen}, % Comentarios a verde
+  stringstyle=\color{codepurple},     % Strings a púrpura
+  backgroundcolor=\color{codebg}  % Fondo suave
+}
+\lstdefinestyle{arduinoStyle}{
+  language=C++,
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{arduinoBlue}\bfseries,
+  commentstyle=\color{arduinoGray}\itshape,
+  stringstyle=\color{arduinoOrange},
+  showspaces=false,
+  showstringspaces=false,
+  frame=single,
+  frameround=tttt,
+  rulecolor=\color{black},
+  breaklines=true,
+  tabsize=2,
+  captionpos=b
+}
+% Definir colores personalizados
+\definecolor{codegreen}{rgb}{0.0, 0.5, 0.0}
+\definecolor{codepurple}{rgb}{0.5, 0.0, 0.5}
+\definecolor{codebg}{rgb}{0.98, 0.98, 0.98}
+
+
+
+
+% *** automatizacion de la fecha ***
+\usepackage[useregional]{datetime2} % useregional se pone para la fecha se salga escrita en (año,mes,dia).
+
+
+\renewcommand{\headrulewidth}{0.6pt}
+\let\oldheadrule\headrule
+\renewcommand{\headrule}{\color{cafe}\oldheadrule}
+\renewcommand{\footrulewidth}{0.6pt}
+\let\oldfootrule\footrule
+\renewcommand{\footrule}{\color{cafe}\oldfootrule}
+
+% PIE DE PAGINA
+\cfoot{\textcolor{black}{\small{\titulo}}}
+\lfoot{\textcolor{black}{}}
+\rfoot{\textcolor{black}{\small Pag. \thepage\ - \pageref{LastPage}}}
+\newcommand{\titulo}{\small{SISTEMAS DE CONTROL II}}
+
+% ENCABEZADO
+
+\lhead{\textcolor{black}{ETN-902,ETN-1034}}
+\chead{\textcolor{black}{\tema}}
+\rhead{\textcolor{black}{\institucion}}
+\titleformat{\section}{\color{cafe}\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\color{cafe}\normalfont\large\bfseries}{\thesubsection}{1em}{}
+\newcommand{\institucion}{UMSA}
+\newcommand{\tema}{LABORATORIO 1}
+
+% para la sangria
+\newcommand{\myquote}[1]{\vskip4pt\noindent\hangindent=3em\hangafter=0\parbox{5.5in}{#1}\vskip6pt}
+
+%para cargar links de internet
+\usepackage{fontawesome5}
+%\usepackage[pdftex]{hyperref}
+
+\begin{document}
+\color{grayblack}
+
+\begin{titlepage}
+\thispagestyle{empty}
+
+\begin{tikzpicture}[remember picture,overlay]
+    \node [inner sep = 0pt] at (current page.center)
+    {\includegraphics[width=21cm]{portada gabo carta.pdf}};
+\end{tikzpicture}
+
+\vspace*{2cm}
+
+\begin{center}
+
+{\large \bfseries UNIVERSIDAD MAYOR DE SAN ANDRÉS}\\
+{\normalsize \bfseries CARRERA DE INGENIERÍA ELECTRÓNICA}\\[0.3cm]
+
+{\normalsize ASIGNATURA: ETN-902 | ETN-1034}\\[0.1cm]
+{\normalsize LABORATORIO 1}\\[0.8cm]
+
+{\LARGE \bfseries INFORME \#1}\\[0.4cm]
+
+{\large Identificación de Variables y Sistemas en Procesos}\\[0.2cm]
+{\large Brazo Robótico de 4 Grados de Libertad}\\
+
+\end{center}
+
+\vspace{0.1cm}
+
+\begin{center}
+{\normalsize \bfseries INTEGRANTES:}\\[0.3cm]
+
+ARRIATA PACO JORGE ALEX\\[0.2cm]
+GOMEZ CALLA GABRIEL ANDRES\\[0.2cm]
+LAYME PATZI DOMINGO FABIO\\[0.6cm]
+
+{\normalsize \bfseries DOCENTE:}\\[0.3cm]
+ING. JORGE NAVA\\[0.6cm]
+
+{\normalsize \bfseries AUXILIARES:}\\
+FABIAN EMANUEL PLATA VARGAS\\[0.2cm]
+LIMBER AJNOTA CAHUAYA\\[0.6cm]
+
+{\normalsize \bfseries FECHA:}\\
+25 de febrero del 2026
+
+\end{center}
+
+\end{titlepage}
+\normalcolor
+
+%*********indice*******
+\tableofcontents
+\newpage
+
+%------------------------------------------------
+\section{Introducción}
+El presente informe desarrolla el análisis técnico de un manipulador industrial de cuatro grados de libertad operando en configuración de lazo abierto. El estudio se basa en la inspección física del sistema, identificación de sus componentes, clasificación de variables y modelado mediante diagrama de bloques.
+
+El sistema analizado integra actuadores eléctricos, sensores discretos y una unidad de control programable (PLC), permitiendo la ejecución de movimientos secuenciales en los ejes del manipulador.
+\subsection{Objetivo del laboratorio}
+Realizar la inspección técnica de una planta industrial asignada, identificar sus componentes principales, clasificar las variables del sistema y construir su correspondiente modelo conceptual mediante un diagrama de bloques, determinando el tipo de lazo de control implementado.
+\subsection{Alcance del análisis}
+
+El análisis se limita a la identificación estructural y funcional del sistema. Se estudian las señales involucradas, la naturaleza de la realimentación y la clasificación del sistema desde el punto de vista del control automático.
+%------------------------------------------------
+\section{Ficha Técnica de la Planta}
+\subsection{Identificación general del sistema}
+
+\begin{itemize}
+\item \textbf{Sistema:} Brazo robótico articulado de 4 grados de libertad.
+\item \textbf{Tipo de operación:} Secuencial programada.
+\item \textbf{Configuración de control:} Lazo abierto con supervisión discreta.
+\item \textbf{Controlador principal:} PLC Siemens S7-200 CPU 224.
+\item \textbf{Actuadores principales:} Motores paso a paso NEMA 23 (57J1854-828).
+\item \textbf{Actuador auxiliar:} Solenoide electromagnético (garra).
+\item \textbf{Sensores:} Fines de carrera mecánicos y sensor inductivo LJ12A3-4-Z/BX.
+\item \textbf{Alimentación:} Fuente conmutada 220 VAC / 24 VDC.
+\end{itemize}
+
+\newpage
+\subsection{Características técnicas principales}
+
+El sistema mecánico está conformado por una estructura articulada capaz de ejecutar movimientos independientes en cuatro ejes.
+
+Los ejes X, Y y Z son accionados mediante motores paso a paso híbridos NEMA 23 modelo 57J1854-828, con un ángulo de paso de 1.8° (200 pasos por revolución) y torque de retención aproximado de 12.6 kg·cm. Estos motores son controlados mediante drivers de potencia que convierten señales lógicas en corrientes por fase reguladas.
+
+El accionamiento de la garra se realiza mediante un solenoide electromagnético de tipo binario (ON/OFF), el cual transforma energía eléctrica en movimiento lineal para apertura o cierre del mecanismo de sujeción.
+
+La referencia de posición inicial se establece mediante sensores de fin de carrera en los ejes X y Y, y un sensor inductivo modelo LJ12A3-4-Z/BX en el eje Z, con salida NPN normalmente abierta y rango de detección de 4mm.
+
+El sistema es alimentado por una fuente conmutada que convierte 220 VAC a 24 VDC para el PLC, sensores y etapa de control.
+
+\subsection{Arquitectura del sistema}
+
+La arquitectura funcional del sistema se divide en cuatro etapas principales:
+
+\begin{itemize}
+\item \textbf{Etapa de entrada:} Botonera de operación, sensores de fin de carrera y sensor inductivo.
+\item \textbf{Etapa de control:} PLC S7-200 CPU 224, encargado de ejecutar la lógica secuencial.
+\item \textbf{Etapa de potencia:} Drivers de motor y relevadores de conmutación.
+\item \textbf{Etapa de actuación:} Motores paso a paso y solenoide de la garra.
+\end{itemize}
+
+El PLC procesa las señales digitales de entrada y genera trenes de pulsos (PTO) para el control de velocidad y posición de los motores, además de salidas digitales (DQ) para activación de relevadores y solenoide.
+
+\subsection{Modo de operación}
+El sistema opera bajo un esquema de control secuencial programado, ejecutado por el PLC Siemens S7-200 CPU 224. La lógica implementada define una secuencia fija de movimientos coordinados entre los ejes X, Y y Z, junto con la activación del solenoide de la garra.
+
+El proceso inicia mediante una señal de arranque proveniente de la botonera. Antes de ejecutar la rutina principal, el sistema realiza una etapa de referenciación (homing), donde cada eje se desplaza hasta activar su respectivo sensor de posición inicial: fines de carrera en los ejes X y Y, y sensor inductivo en el eje Z.
+
+Una vez establecida la posición de referencia, el PLC ejecuta la secuencia programada de desplazamientos mediante generación de trenes de pulsos (PTO) hacia los drivers de los motores paso a paso. La velocidad y dirección de cada eje están definidas por parámetros internos del programa.
+
+El solenoide actúa como dispositivo binario, activándose únicamente en los puntos de la secuencia donde se requiere sujeción o liberación del objeto.
+
+El sistema no implementa realimentación continua de posición (no posee encoder), por lo que el control de movimiento es de tipo lazo abierto con supervisión discreta de condiciones límite mediante sensores.
+
+%------------------------------------------------
+\section{Inspección y Levantamiento de Datos}
+
+\subsection{Identificación de componentes físicos}
+
+Durante la inspección técnica del sistema se realizó la identificación visual y funcional de los elementos eléctricos, electrónicos y mecánicos que conforman la planta. Se verificó la disposición física de los componentes, su interconexión y su rol dentro de la arquitectura de control.
+
+A continuación se presentan los principales elementos identificados:
+
+\textbf{1. Estructura mecánica del brazo}
+
+Se identificó un brazo robótico de cuatro grados de libertad (4 GDL), compuesto por tres ejes principales de posicionamiento lineal (X, Y, Z) y un sistema de sujeción mediante electroimán. La estructura está construida en material metálico con guías lineales y mecanismos de transmisión acoplados a motores paso a paso.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.60\textwidth]{Brazo_4GDL.png}
+    \caption{Vista general del brazo de 4 grados de libertad}
+\end{figure}
+
+
+\textbf{2. PLC Siemens S7-200 CPU 224}
+
+Se verificó la presencia del PLC como unidad central de control. Se inspeccionaron sus bornes de entradas y salidas digitales, así como las conexiones hacia sensores, relevadores y drivers.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.45\textwidth]{PLC.png}
+    \caption{PLC Siemens S7-200 CPU 224 instalado en el sistema}
+\end{figure}
+
+\textbf{3. Fuente de alimentación}
+
+Se identificó una fuente de alimentación DC encargada de suministrar energía al PLC, sensores y circuitos de control. Se verificó su conexión posterior al sistema de protección.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{FUENTE.png}
+    \caption{Fuente de alimentación del sistema}
+\end{figure}
+
+\textbf{4. Disyuntor / Interruptor termomagnético}
+
+Se constató la presencia de un dispositivo de protección eléctrica ubicado a la entrada del sistema, encargado de proteger frente a sobrecargas o cortocircuitos.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.45\textwidth]{DISYUNTOR.png}
+    \caption{Dispositivo de protección eléctrica}
+\end{figure}
+
+\textbf{5. Drivers de motores paso a paso}
+
+Se inspeccionaron los módulos drivers encargados de excitar los motores paso a paso. Se verificaron las conexiones de señal provenientes del PLC (dirección y pulsos) y las salidas hacia las bobinas del motor.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{DRIVERSMOTORPASO.png}
+    \caption{Driver de motor paso a paso X Y Z}
+\end{figure}
+
+\textbf{6. Motores paso a paso}
+
+Se identificaron los motores correspondientes a los ejes X, Y y Z, acoplados mecánicamente a los sistemas de desplazamiento.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.40\textwidth]{MOTORXY.png}
+    \caption{Motor paso a paso del eje X Y}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.43\textwidth]{MOTORZ.png}
+    \caption{Motor paso a paso del eje Z}
+\end{figure}
+
+\textbf{7. Relevadores de control}
+
+Se verificó la presencia de relevadores utilizados para habilitación o conmutación de circuitos asociados a los ejes X y Y.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.40\textwidth]{RELE.png}
+    \caption{Relevador de control X Y}
+\end{figure}
+
+\textbf{8. Sensores de fin de carrera (Ejes X y Y)}
+
+Se identificaron sensores mecánicos de fin de carrera utilizados para detectar posición inicial y límites físicos de desplazamiento.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.55\textwidth]{FINCARRE.png}
+    \caption{Sensor de fin de carrera}
+\end{figure}
+
+\textbf{9. Sensor inductivo (Eje Z)}
+
+Se inspeccionó un sensor inductivo encargado de detectar la posición de referencia del eje Z sin contacto físico.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{SENSORINDU.png}
+    \caption{Sensor inductivo del eje Z}
+\end{figure}
+
+\textbf{10. Solenoide (Electroimán de la garra)}
+
+Se identificó el electroimán utilizado para la sujeción del objeto. Se verificó su conexión como salida digital controlada por el PLC.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.40\textwidth]{GARRA.png}
+    \caption{Solenoide de la garra}
+\end{figure}
+
+\textbf{11. Botonera de operación}
+
+Se constató la presencia de pulsadores de arranque y parada que permiten la interacción del operador con el sistema.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.55\textwidth]{BOTONERA.png}
+    \caption{Botonera de operación}
+\end{figure}
+
+La inspección permitió determinar que el sistema presenta una arquitectura de control distribuida entre la etapa de potencia y la etapa lógica, con sensado discreto y accionamiento electromecánico. No se identificaron dispositivos de medición analógica ni sistemas de realimentación continua de posición.
+
+%------------------------------------------------
+\section{Identificación y Clasificación de Variables}
+
+
+\subsection{Variable de referencia}
+
+La variable de referencia corresponde a la posición deseada de la garra del brazo robótico en los ejes X, Y y Z. 
+
+Esta referencia es definida por el operador mediante la accionamiento de la botonera de control, la cual envía comandos de desplazamiento hacia el PLC. Dichos comandos representan el valor objetivo que el sistema debe alcanzar.
+
+Desde el punto de vista del control automático, la referencia constituye la entrada principal del sistema, ya que establece el punto de operación deseado. El controlador (PLC) actúa sobre las variables manipuladas con el fin de minimizar la diferencia entre la posición actual del brazo y la posición solicitada por el operador. 
+
+\subsection*{Señales digitales de entrada}
+
+Las señales digitales de entrada corresponden a las variables provenientes de sensores y dispositivos de mando conectados a las entradas físicas del PLC. Estas señales permiten supervisar el estado del sistema y garantizar condiciones seguras de operación.
+
+Se identifican como señales digitales de entrada:
+
+\begin{itemize}
+    \item Señal de arranque (Start) desde la botonera.
+    \item Señal de parada (Stop).
+    \item Señales de fin de carrera del eje X.
+    \item Señales de fin de carrera del eje Y.
+    \item Señal del sensor inductivo de referencia del eje Z.
+\end{itemize}
+
+Estas señales cumplen funciones de supervisión, seguridad y habilitación del proceso, asegurando que el movimiento del brazo se realice dentro de los límites físicos establecidos.
+
+
+
+
+\subsection{Variable controlada}
+
+La variable controlada del sistema corresponde a la posición espacial de la garra del brazo robótico en los ejes cartesianos X, Y y Z. 
+
+Esta variable representa el objetivo principal del sistema de control, ya que el propósito del PLC es posicionar la garra en una coordenada específica dentro del espacio de trabajo.
+
+La posición de la garra depende directamente del desplazamiento angular y lineal generado por los motores paso a paso en cada eje. Por tanto, cualquier variación en el movimiento de los motores se refleja en la posición final del efector final.
+
+Desde el punto de vista del control, la posición de la garra es la variable que se desea regular o llevar a un valor de referencia previamente establecido.
+
+
+
+\subsection{Variables manipuladas}
+
+Las variables manipuladas son aquellas modificadas directamente por el controlador con el objetivo de producir el comportamiento deseado en la planta.
+
+En el sistema estudiado, las variables manipuladas son:
+
+\begin{itemize}
+    \item Número de pulsos enviados a cada motor paso a paso.
+    \item Frecuencia de los pulsos (velocidad de desplazamiento).
+    \item Sentido de giro de los motores.
+    \item Estado de activación del solenoide.
+\end{itemize}
+
+Estas variables determinan la posición alcanzada por cada eje y la ejecución de la acción de sujeción o liberación del objeto.
+
+
+\subsection{Perturbaciones}
+
+Las perturbaciones corresponden a factores externos o no controlados que pueden afectar el desempeño del sistema.
+
+Se identifican como posibles perturbaciones:
+
+\begin{itemize}
+    \item Variaciones en la carga mecánica transportada.
+    \item Rozamiento en las guías lineales.
+    \item Desalineación mecánica.
+    \item Variaciones en la tensión de alimentación.
+    \item Pérdida de pasos en los motores paso a paso.
+\end{itemize}
+
+Debido a que el sistema opera en lazo abierto y no dispone de realimentación continua de posición, estas perturbaciones no son compensadas automáticamente, pudiendo generar errores acumulativos de posicionamiento.
+
+\subsection{Parámetros constantes}
+
+Los parámetros constantes corresponden a valores definidos en el diseño mecánico y en la programación del PLC, los cuales permanecen fijos durante la operación normal del sistema.
+
+Se identifican como parámetros constantes:
+
+\begin{itemize}
+    \item Resolución del motor paso a paso (pasos por revolución).
+    \item Relación de transmisión mecánica del sistema.
+    \item Secuencia programada de movimientos.
+    \item Tiempos de activación del solenoide.
+    \item Límites físicos máximos de desplazamiento en cada eje.
+\end{itemize}
+
+Estos parámetros determinan el comportamiento nominal del sistema y constituyen las condiciones estructurales bajo las cuales opera la planta.
+
+
+\subsection{Tabla resumen de variables}
+
+Con base en la inspección realizada y el análisis funcional del sistema, se presenta a continuación un cuadro resumen que clasifica las variables identificadas según su naturaleza dentro del esquema de control.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{4cm} p{3cm} p{6cm}}
+\toprule
+\textbf{Variable} & \textbf{Clasificación} & \textbf{Descripción} \\
+\midrule
+
+Señal Start & Entrada & Pulso digital que inicia la secuencia de operación \\
+
+Señal Stop & Entrada & Señal digital que detiene el proceso \\
+
+Fin de carrera X & Entrada & Sensor digital de referencia y límite físico del eje X \\
+
+Fin de carrera Y & Entrada & Sensor digital de referencia y límite físico del eje Y \\
+
+Sensor inductivo Z & Entrada & Sensor digital de referencia inicial del eje Z \\
+
+Pulsos eje X & Salida / Manipulada & Tren de pulsos que determina desplazamiento del eje X \\
+
+Pulsos eje Y & Salida / Manipulada & Tren de pulsos que determina desplazamiento del eje Y \\
+
+Pulsos eje Z & Salida / Manipulada & Tren de pulsos que determina desplazamiento del eje Z \\
+
+Dirección de giro & Manipulada & Señal digital que define el sentido de movimiento \\
+
+Activación solenoide & Salida / Manipulada & Control binario de la garra electromagnética \\
+
+Carga mecánica & Perturbación & Variación en el peso o esfuerzo aplicado \\
+
+Rozamiento & Perturbación & Resistencia mecánica en guías y transmisión \\
+
+Resolución del motor & Parámetro constante & Número de pasos por revolución \\
+
+Secuencia programada & Parámetro constante & Lógica fija definida en el PLC \\
+
+Límites físicos & Parámetro constante & Restricción mecánica de desplazamiento \\
+
+\bottomrule
+\end{tabular}
+\caption{Clasificación general de variables del sistema}
+\end{table}
+
+La tabla anterior permite visualizar de manera estructurada la naturaleza de cada variable dentro del modelo del sistema, diferenciando claramente entre señales de entrada, acciones de control, perturbaciones externas y parámetros estructurales.
+
+
+
+
+
+%------------------------------------------------
+\section{Análisis del Sistema de Control}
+
+\subsection{Tipo de lazo}
+
+El sistema analizado opera predominantemente en lazo abierto. El posicionamiento de los ejes X, Y y Z se realiza mediante el envío de un número determinado de pulsos hacia los motores paso a paso, sin medición continua de la posición real alcanzada. La posición final depende exclusivamente del conteo de pulsos generados por el PLC y de la respuesta ideal del motor.
+
+Si bien existen sensores de fin de carrera en los ejes X y Y y un sensor inductivo en el eje Z, estos no constituyen un lazo cerrado de control continuo, sino que cumplen una función de referencia inicial (homing) y de protección ante límites físicos. Por lo tanto, no existe corrección automática de error durante el desplazamiento.
+
+\subsection{Naturaleza de la realimentación}
+
+La realimentación presente en el sistema es de tipo discreta y supervisora. Los sensores instalados únicamente informan al PLC cuando se alcanza una posición límite o de referencia, entregando señales binarias (activado/desactivado).
+
+No existe realimentación analógica ni medición continua de posición, velocidad o corriente. En consecuencia, el sistema no implementa comparación permanente entre una referencia $r(t)$ y una salida medida $y(t)$ para generar una señal de error $e(t)$ en tiempo real. La supervisión se limita a eventos específicos del ciclo de operación.
+
+\subsection{Clasificación del sistema}
+
+Desde el punto de vista de control automático, el sistema puede clasificarse como:
+
+\begin{itemize}
+    \item Sistema de control secuencial.
+    \item Sistema digital.
+    \item Sistema electromecánico.
+    \item Sistema en lazo abierto con supervisión discreta.
+\end{itemize}
+
+El comportamiento está determinado por una lógica programada en el PLC, ejecutada en pasos definidos y sin regulación continua de variables físicas. La dinámica del movimiento depende de parámetros fijos de programación y de las características mecánicas del sistema.
+
+\subsection{Limitaciones del esquema implementado}
+
+El esquema de control en lazo abierto presenta las siguientes limitaciones:
+
+\begin{itemize}
+    \item No compensa perturbaciones externas.
+    \item Puede existir pérdida de pasos en los motores sin detección automática.
+    \item La precisión depende del estado mecánico del sistema.
+    \item No existe corrección dinámica de error.
+\end{itemize}
+
+Ante variaciones en carga, fricción o desalineación, el sistema no ajusta su comportamiento automáticamente, lo que puede generar errores acumulativos de posicionamiento. Para mejorar la robustez del sistema, sería necesario incorporar sensores de posición continua (encoders) e implementar un esquema de control en lazo cerrado.
+
+%------------------------------------------------
+\section{Diagrama de Bloques del Sistema}
+
+\subsection{Construcción del modelo conceptual}
+
+A partir de la inspección física y del análisis funcional del sistema, se construyó un modelo conceptual que representa la interacción entre el controlador, los actuadores, la planta y los sensores.
+
+El diagrama de bloques sintetiza la estructura de control implementada en el brazo robótico de cuatro grados de libertad, identificando las señales principales del sistema: referencia $r(t)$, señal de control $u(t)$ y salida $y(t)$.
+
+El modelo representa un esquema de control secuencial en lazo abierto con supervisión discreta, donde el PLC genera acciones predeterminadas sin corrección continua basada en la salida del sistema.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{diagrama de bloques.jpg}
+    \caption{Diagrama de bloques del sistema}
+\end{figure}
+
+\subsection{Descripción funcional de bloques}
+
+\subsubsection{Señal de referencia $r(t)$}
+
+La señal de referencia $r(t)$ corresponde a la orden de ejecución del proceso, generada por el operador mediante la botonera o definida dentro de la secuencia programada del PLC. Esta referencia no representa una magnitud analógica continua, sino una instrucción digital que activa la rutina de movimiento preestablecida.
+
+\subsubsection{Controlador (PLC)}
+
+El PLC Siemens S7-200 CPU 224 constituye el bloque de control del sistema. En este bloque se ejecuta la lógica secuencial que define el número de pulsos, la dirección de giro y la activación de actuadores. La salida del controlador es la señal de control $u(t)$, compuesta por trenes de pulsos y señales digitales de habilitación.
+
+El controlador no implementa algoritmos de regulación continua, sino una estrategia basada en ejecución secuencial programada.
+
+\subsubsection{Actuadores}
+
+Los actuadores incluyen los motores paso a paso de los ejes X, Y y Z, así como el solenoide de la garra. Estos dispositivos convierten la señal eléctrica proveniente del PLC en movimiento mecánico o acción de sujeción.
+
+La señal $u(t)$ es transformada en desplazamiento físico mediante los drivers de potencia, los cuales adaptan el nivel de energía requerido por los motores.
+
+\subsubsection{Planta}
+
+La planta está constituida por la estructura mecánica del brazo robótico, incluyendo guías lineales, mecanismos de transmisión y el sistema de sujeción. En este bloque se produce la dinámica física del sistema, donde el movimiento generado por los motores se traduce en posicionamiento espacial del efector final.
+
+\subsubsection{Sensores y señal de salida $y(t)$}
+
+Los sensores de fin de carrera y el sensor inductivo proporcionan información discreta sobre la posición límite o de referencia. La señal de salida $y(t)$ representa el estado físico alcanzado por el sistema, aunque no se mide de forma continua.
+
+La realimentación generada por estos sensores es de tipo binaria y supervisora, utilizada únicamente para referencia inicial y protección. No existe medición continua que permita la corrección automática del error durante el movimiento, lo que confirma el carácter de lazo abierto del sistema.
+
+
+
+
+
+%------------------------------------------------
+\section{Conclusiones}
+
+El diagnóstico realizado al brazo de 4 grados de libertad permitió identificar la estructura funcional del sistema desde el enfoque del control clasico, diferenciando adecuadamente la variable de referencia, la variable controlada, las variables manipuladas y las señales de supervisión. Se estableció que la variable controlada corresponde a la posición espacial de la garra en los ejes X, Y y Z, mientras que los trenes de pulsos generados por el PLC constituyen las variables manipuladas encargadas de accionar los motores paso a paso. Asimismo, se detectaron fallas técnicas relacionadas con sensores, conexiones en los drivers y sobrecalentamiento en uno de los motores.
+
+Desde el punto de vista dinámico, la planta se comporta como un sistema electromecánico de respuesta lenta, debido a la presencia de inercia mecánica, fricción y mecanismos de transmisión mediante tornillos sin fin y engranajes. También se evidenció una implementación inadecuada del botón de paro de emergencia, ya que este interrumpe completamente la alimentación del PLC, lo cual limita el análisis del sistema ante situaciones de falla. En términos generales, la práctica permitió comprender la interacción entre el controlador y la planta, así como identificar aspectos de mejora en la implementación del sistema.
+
+%------------------------------------------------
+\section{Recomendaciones}
+
+\begin{itemize}
+    \item Revisar y asegurar todas las conexiones eléctricas de los drivers de los motores paso a paso, evitando fallas por pines desconectados o mal ajustados.
+    \item Evaluar el sobrecalentamiento del motor del eje Z y X, verificando la configuración de corriente en el driver y posibles cargas mecánicas excesivas.
+    \item Rediseñar la implementación del botón de paro de emergencia, de modo que detenga los actuadores sin desenergizar completamente el PLC.
+    \item Implementar un sistema de realimentación de posición más preciso, como encoders, para mejorar el control y la exactitud del posicionamiento.
+    \item Realizar mantenimiento preventivo periódico en los mecanismos de transmisión para reducir fricción y desgaste.
+\end{itemize}
+
+
+%------------------------------------------------
+\section{Bibliografía}
+ (1998). Teoría de control. Diseño electrónico. Edicions UPC\\
+
+(s.f.). XK-JS1-1 Robotic Arm Training Device: Instruction Book [Manual de instrucciones]\\
+
+ Reinoso, O., Sebastián y Zúñiga, J. M., Aracil Santoja, R., $&$ Torres Medina, F. (s.f.). Control de Sistemas Discretos (Serie Schaum). McGraw-Hill.\\
+
+Guia de laboratorio 1.
+Identificación de variables y sistemas en
+procesos
+
+\end{document}
