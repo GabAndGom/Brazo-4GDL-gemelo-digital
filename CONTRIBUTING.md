@@ -1,6 +1,6 @@
 # Cómo aportar al repositorio
 
-Guía para el equipo: dónde poner cada archivo y cómo hacer que aparezca bien en la [página del proyecto](https://gabandgom.github.io/Brazo-de-4-grados-de-libertad/).
+Guía para el equipo: dónde poner cada archivo y cómo hacer que aparezca bien en la [página del proyecto](https://brazo-4gdl.pages.dev/).
 
 ## 1. Dónde va cada cosa
 
@@ -61,7 +61,7 @@ git push
 
 Siempre hacer `git pull` antes de empezar, para no pisar el trabajo de otros.
 
-La página se actualiza sola en uno o dos minutos (pestaña **Actions** del repositorio para ver el avance).
+La página se actualiza sola en uno o dos minutos (el estado del despliegue de Cloudflare aparece junto al commit en GitHub).
 
 ## 4. Títulos y descripciones (`config/archivos.json`)
 
@@ -81,7 +81,7 @@ Sin configurar nada, la página usa el nombre del archivo como título. Para pon
 - `"oculto": true` lo saca de las listas (sigue en el explorador de carpetas).
 - `"orden"`: un número menor aparece primero.
 
-Cuidado con las comas: si el JSON queda mal escrito, la página no se actualiza y el error aparece en la pestaña **Actions**. Se puede revisar en https://jsonlint.com.
+Cuidado con las comas: si el JSON queda mal escrito, la página no se actualiza y el error aparece en el registro del despliegue en Cloudflare (y junto al commit en GitHub). Se puede revisar en https://jsonlint.com.
 
 ## 5. Videos (`config/videos.json`)
 

@@ -6,7 +6,7 @@
 
 Sistemas de Control II (ETN-902) · Aplicación de Técnicas de Control (ETN-1034) · Bases de Datos (ETN-1000)
 
-[![Página](https://img.shields.io/badge/Página-Ver%20documentación-f08a24?style=for-the-badge)](https://gabandgom.github.io/Brazo-de-4-grados-de-libertad/)
+[![Página](https://img.shields.io/badge/Página-Ver%20documentación-f08a24?style=for-the-badge)](https://brazo-4gdl.pages.dev/)
 [![PLC](https://img.shields.io/badge/PLC-S7--200%20CPU%20224-00646E?style=for-the-badge&logo=siemens)](#ficha-técnica-del-hardware)
 [![Gestión](https://img.shields.io/badge/Gestión-II%2F2026-2f7fc1?style=for-the-badge)](#avance-por-semestre)
 [![Normas](https://img.shields.io/badge/Normas-ISA%20S5.1%20·%20IEC%2060617-8b1e1e?style=for-the-badge)](global/normativas)
@@ -32,7 +32,7 @@ El **XK-JS1-1** es un brazo manipulador didáctico de 4 grados de libertad: desp
 
 El brazo **no tiene encoders**. El PLC estima la posición contando pulsos (`q_est = q0 + Np·Δq`), y solo recibe referencias discretas de los finales de carrera (X, Y) y del sensor inductivo (Z). Por eso el sistema trabaja en **lazo abierto con supervisión discreta**: la acción de control mueve el eje, pero la posición real no vuelve al controlador (`u(t) → y(t)`, pero `y(t) ↛ u(t)`).
 
-En la gestión II/2026 el brazo es una de las cuatro plantas del **laboratorio integrado** de ETN-902, ETN-1034 y ETN-1000. El trabajo sigue el ciclo de vida del desarrollo de sistemas con mejora continua **Kaizen**. Este repositorio reúne los informes, planos, programas, datasheets y la base de datos del proyecto, que también se pueden consultar en la **[página del proyecto](https://gabandgom.github.io/Brazo-de-4-grados-de-libertad/)**.
+En la gestión II/2026 el brazo es una de las cuatro plantas del **laboratorio integrado** de ETN-902, ETN-1034 y ETN-1000. El trabajo sigue el ciclo de vida del desarrollo de sistemas con mejora continua **Kaizen**. Este repositorio reúne los informes, planos, programas, datasheets y la base de datos del proyecto, que también se pueden consultar en la **[página del proyecto](https://brazo-4gdl.pages.dev/)**.
 
 ## Ficha técnica del hardware
 
@@ -190,7 +190,7 @@ En el mantenimiento preventivo se resoldaron conexiones de los finales de carrer
 ├── scripts/build-catalog.js  Genera el catálogo de la página
 ├── web/                      Estilos, código e imágenes de la página
 ├── index.html                Página principal
-└── .github/workflows/        Publicación automática en GitHub Pages
+└── .github/workflows/        Publicación alternativa en GitHub Pages
 ```
 
 ## Cómo subir archivos
@@ -205,9 +205,11 @@ La guía completa está en **[CONTRIBUTING.md](CONTRIBUTING.md)**. En resumen:
 
 ## Página web
 
-**https://gabandgom.github.io/Brazo-de-4-grados-de-libertad/**
+**https://brazo-4gdl.pages.dev/**
 
-En cada push a `main`, GitHub Actions ejecuta `scripts/build-catalog.js`, que recorre `global/` y `semestres/` y genera el catálogo. Después publica el sitio en GitHub Pages. La página muestra la ficha técnica con fotos, los documentos por subsistema, semestre y categoría, los programas, una galería y un explorador de carpetas. PDF, imágenes, Markdown y código se abren ahí mismo.
+Está alojada en **Cloudflare Pages** (gratis). En cada push a `main`, Cloudflare clona el repositorio, ejecuta `node scripts/build-catalog.js` (que recorre `global/` y `semestres/` y genera el catálogo) y publica el sitio en uno o dos minutos. El estado de cada despliegue aparece junto al commit en GitHub. La página muestra la ficha técnica con fotos, los documentos por subsistema, semestre y categoría, los programas, una galería y un explorador de carpetas. PDF, imágenes, Markdown y código se abren ahí mismo.
+
+> Cloudflare no publica archivos de más de 25 MB: si se sube uno, la página lo descarga directamente desde GitHub.
 
 Para verla en tu computadora:
 
