@@ -1,0 +1,29 @@
+{
+  "actual": "2026_II",
+  "semestres": {
+    "2026_I": {
+      "resumen": "Reconocimiento del brazo: identificación de variables, simbología P&ID y primeros planos eléctrico y P&ID en AutoCAD.",
+      "docente": "Ing. Jorge Nava",
+      "equipo": [
+        {
+          "grupo": "Control (ETN-902 / ETN-1034)",
+          "integrantes": ["Jorge Alex Arriata Paco", "Gabriel Andres Gomez Calla", "Domingo Fabio Layme Patzi"]
+        }
+      ]
+    },
+    "2026_II": {
+      "resumen": "Semestre en curso. Auditoría y levantamiento de requerimientos, planos históricos, guías de laboratorio integrado y diseño de la base de datos e interfaz local.",
+      "docente": "Ing. Jorge Antonio Nava Amador",
+      "equipo": [
+        {
+          "grupo": "Control (ETN-902 / ETN-1034)",
+          "integrantes": ["Gabriel Andres Gomez Calla", "Jose Lenin Mamani Choque", "Miguel Alejandro Lima Huarachi", "Román Abner Machicado Arequipa"]
+        },
+        {
+          "grupo": "Cómputo (ETN-1000)",
+          "integrantes": ["Miguel Alejandro Lima Huarachi", "Marco Eduardo Chura Rondo"]
+        }
+      ]
+    }
+  }
+}

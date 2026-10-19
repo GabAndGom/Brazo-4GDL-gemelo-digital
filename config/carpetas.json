@@ -1,0 +1,20 @@
+{
+  "datasheets": "Datasheets",
+  "manuales": "Manuales",
+  "normativas": "Normativas",
+  "programas-plc": "Programas PLC",
+  "map_serv": "Librería MAP_SERV",
+  "componentes": "Componentes",
+  "plantillas": "Plantillas",
+  "guias": "Guías de laboratorio",
+  "informes": "Informes",
+  "planos": "Planos",
+  "electrico": "Plano eléctrico",
+  "pid": "P&ID",
+  "base-de-datos": "Base de datos",
+  "mockups": "Mockups",
+  "interfaz": "Interfaz local",
+  "hmi": "HMI y supervisión",
+  "pruebas": "Pruebas",
+  "evidencias": "Evidencias"
+}

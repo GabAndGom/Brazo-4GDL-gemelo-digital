@@ -3,162 +3,236 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Brazo de 4 Grados de Libertad · Laboratorio de Control UMSA</title>
-  <link rel="stylesheet" href="web/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <title>Brazo 4 GDL · Laboratorio de Control UMSA</title>
+  <meta name="description" content="Documentación del brazo robótico didáctico XK-JS1-1 de 4 grados de libertad: planos, programas de PLC, informes y datasheets.">
+  <link rel="icon" href="web/img/favicon.svg" type="image/svg+xml">
+  <script>
+    try { var t = localStorage.getItem('tema'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="web/css/estilos.css">
 </head>
 <body>
 
-  <header class="navbar">
-    <div class="container nav-content">
-      <a href="#inicio" class="brand">
-        <div class="brand-text">
-          <strong>Brazo Robótico 4-DOF</strong>
+  <header class="barra">
+    <div class="contenedor barra-interior">
+      <a href="#inicio" class="marca">
+        <svg class="marca-icono" viewBox="0 0 32 32" aria-hidden="true"><use href="#icono-brazo"/></svg>
+        <span>
+          <strong>Brazo 4 GDL</strong>
           <small>Laboratorio de Control · UMSA</small>
-        </div>
+        </span>
       </a>
-      <nav class="nav-links">
+      <nav class="menu" id="menu">
         <a href="#inicio">Inicio</a>
         <a href="#documentos">Documentos</a>
-        <a href="#codigos">Programas</a>
+        <a href="#programas">Programas</a>
         <a href="#galeria">Galería</a>
-        <a href="#repositorio">Repositorio</a>
+        <a href="#explorador">Repositorio</a>
       </nav>
-      <div class="nav-repo">
-        <a href="https://github.com/GabAndGom/Brazo-de-4-grados-de-libertad" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
-          GitHub ↗
+      <div class="barra-acciones">
+        <button class="boton-icono" id="cambiar-tema" title="Cambiar tema" aria-label="Cambiar tema">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+        <a class="boton-icono" id="enlace-github" href="https://github.com/GabAndGom/Brazo-de-4-grados-de-libertad" target="_blank" rel="noopener" title="Repositorio en GitHub" aria-label="Repositorio en GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.6.2 2.8.1 3.2.8.8 1.3 1.9 1.3 3.1 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg>
         </a>
+        <button class="boton-icono menu-movil" id="abrir-menu" aria-label="Abrir menú" aria-controls="menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
       </div>
     </div>
   </header>
 
-  <main class="container">
+  <main class="contenedor" id="app">
 
     <!-- INICIO -->
-    <section id="inicio" class="section">
-      <div class="hero">
-        <div class="hero-info">
-          <span class="badge">Ingeniería Electrónica · UMSA</span>
-          <h1>Brazo Robótico de 4 Grados de Libertad</h1>
+    <section id="inicio" class="seccion">
+      <div class="portada">
+        <div class="portada-texto">
+          <span class="etiqueta">Ingeniería Electrónica · UMSA</span>
+          <h1>Brazo robótico didáctico de 4 grados de libertad</h1>
           <p>
-            Documentación técnica del brazo manipulador de 4 GDL: planos mecánicos y eléctricos, cinemática directa/inversa,
-            programas de control (PLC / Microcontroladores), datasheets de actuadores y drivers, e informes de avance.
+            Documentación del brazo <strong>XK-JS1-1</strong> del Laboratorio de Control: planos, programas de PLC,
+            informes, guías y datasheets de cada semestre.
           </p>
-          <div class="hero-actions">
-            <a href="#documentos" class="btn btn-primary">Ver documentos</a>
-            <a href="#repositorio" class="btn btn-outline">Explorar carpetas</a>
+          <p class="portada-detalle">
+            El brazo mueve sus ejes X, Y y Z con motores paso a paso controlados por un PLC Siemens S7-200 (CPU 224) mediante
+            trenes de pulsos, y una garra accionada por solenoide de 24 V. Opera en lazo abierto con finales de carrera y un sensor inductivo como referencias.
+          </p>
+          <div class="portada-acciones">
+            <a href="#documentos" class="boton boton-primario">Ver documentos</a>
+            <a href="#explorador" class="boton">Explorar carpetas</a>
           </div>
         </div>
+        <figure class="portada-figura" aria-hidden="true">
+          <svg viewBox="0 0 360 300" class="ilustracion">
+            <defs>
+              <pattern id="rejilla" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M20 0H0V20" fill="none" stroke="currentColor" stroke-opacity=".08"/>
+              </pattern>
+            </defs>
+            <rect width="360" height="300" fill="url(#rejilla)"/>
+            <!-- base -->
+            <rect x="40" y="250" width="280" height="14" rx="3" class="pieza"/>
+            <rect x="60" y="264" width="240" height="8" rx="2" class="pieza-sombra"/>
+            <!-- columna eje Y -->
+            <rect x="72" y="60" width="18" height="190" rx="3" class="pieza"/>
+            <rect x="270" y="60" width="18" height="190" rx="3" class="pieza"/>
+            <!-- viga eje X -->
+            <rect x="60" y="54" width="240" height="20" rx="4" class="pieza-acento"/>
+            <!-- carro -->
+            <rect x="168" y="44" width="46" height="40" rx="5" class="pieza"/>
+            <!-- eje Z -->
+            <rect x="184" y="84" width="14" height="96" rx="3" class="pieza"/>
+            <!-- garra -->
+            <rect x="174" y="180" width="34" height="12" rx="3" class="pieza-acento"/>
+            <path d="M178 192 l-6 30 h8 l6 -22 M204 192 l6 30 h-8 l-6 -22" class="pieza-trazo"/>
+            <!-- pieza -->
+            <rect x="180" y="226" width="22" height="24" rx="3" class="pieza-objeto"/>
+            <!-- cotas -->
+            <g class="cota">
+              <path d="M60 30 H300"/><path d="M60 24 v12 M300 24 v12"/>
+              <text x="180" y="22">X</text>
+              <path d="M330 74 V250"/><path d="M324 74 h12 M324 250 h12"/>
+              <text x="342" y="166">Y</text>
+              <path d="M226 84 V180"/><path d="M220 84 h12 M220 180 h12"/>
+              <text x="238" y="136">Z</text>
+            </g>
+          </svg>
+          <figcaption>Ejes del brazo XK-JS1-1</figcaption>
+        </figure>
       </div>
 
-      <!-- Tarjetas de resumen rápido -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <strong id="count-docs">0</strong>
-          <span>Documentos y Datasheets</span>
-        </div>
-        <div class="stat-card">
-          <strong id="count-code">0</strong>
-          <span>Programas y Scripts</span>
-        </div>
-        <div class="stat-card">
-          <strong id="count-img">0</strong>
-          <span>Esquemas y Multimedia</span>
-        </div>
+      <div class="cifras" id="cifras"></div>
+    </section>
+
+    <!-- SUBSISTEMAS -->
+    <section class="seccion">
+      <div class="encabezado">
+        <h2>Subsistemas</h2>
+        <p>Elija uno para ver sus documentos</p>
       </div>
+      <div class="rejilla-subsistemas" id="subsistemas"></div>
+    </section>
+
+    <!-- SEMESTRES -->
+    <section class="seccion">
+      <div class="encabezado">
+        <h2>Semestres</h2>
+        <p>Lo que se hizo en cada gestión</p>
+      </div>
+      <div class="lista-semestres" id="semestres"></div>
     </section>
 
     <!-- DOCUMENTOS -->
-    <section id="documentos" class="section">
-      <div class="section-header">
+    <section id="documentos" class="seccion">
+      <div class="encabezado">
         <h2>Documentos</h2>
-        <p>Informes, guías, planos eléctricos/mecánicos, cinemática, datasheets y presentaciones.</p>
+        <p>Informes, guías, planos, datasheets, manuales y normativas</p>
       </div>
-      <div class="toolbar">
-        <input type="text" id="search-docs" placeholder="Buscar documento (ej. datasheet, informe, plano)...">
-        <select id="filter-docs-folder">
-          <option value="">Todas las carpetas</option>
-        </select>
+      <div class="filtros">
+        <input type="search" id="buscar-docs" placeholder="Buscar (ej. driver, P&ID, informe)" aria-label="Buscar documentos">
+        <select id="filtro-semestre" aria-label="Semestre"></select>
+        <select id="filtro-categoria" aria-label="Categoría"></select>
+        <select id="filtro-subsistema" aria-label="Subsistema"></select>
       </div>
-      <div id="docs-grid" class="card-grid">Cargando documentos desde GitHub...</div>
+      <div class="filtros-activos" id="filtros-activos"></div>
+      <div id="lista-documentos"></div>
     </section>
 
     <!-- PROGRAMAS -->
-    <section id="codigos" class="section">
-      <div class="section-header">
+    <section id="programas" class="seccion">
+      <div class="encabezado">
         <h2>Programas</h2>
-        <p>Código de control: PLC (AWL / MicroWIN), C/C++, Arduino/ESP32, MATLAB/Simulink, Python y CAD.</p>
+        <p>Código del PLC, librerías, scripts y bases de datos</p>
       </div>
-      <div class="toolbar">
-        <input type="text" id="search-code" placeholder="Buscar programa o archivo...">
-        <select id="filter-code-ext">
-          <option value="">Todos los formatos</option>
-        </select>
+      <div class="filtros">
+        <input type="search" id="buscar-prog" placeholder="Buscar programa" aria-label="Buscar programas">
+        <select id="filtro-lenguaje" aria-label="Lenguaje"></select>
       </div>
-      <div id="code-grid" class="card-grid">Cargando programas desde GitHub...</div>
+      <div id="lista-programas"></div>
     </section>
 
     <!-- GALERÍA -->
-    <section id="galeria" class="section">
-      <div class="section-header">
+    <section id="galeria" class="seccion">
+      <div class="encabezado">
         <h2>Galería</h2>
-        <p>Fotografías del brazo de 4 GDL, diagramas de conexión y capturas de simulación.</p>
+        <p>Componentes del brazo, capturas y videos</p>
       </div>
-      <div id="gallery-grid" class="gallery-grid">Cargando galería...</div>
+      <div class="pestanas" id="pestanas-galeria" role="tablist"></div>
+      <div class="rejilla-galeria" id="lista-galeria"></div>
     </section>
 
-    <!-- REPOSITORIO -->
-    <section id="repositorio" class="section">
-      <div class="section-header">
+    <!-- EXPLORADOR -->
+    <section id="explorador" class="seccion">
+      <div class="encabezado">
         <h2>Repositorio</h2>
-        <p>Navegación directa por las carpetas del proyecto en GitHub.</p>
+        <p>Carpetas del proyecto tal como están en GitHub</p>
       </div>
-      <div id="breadcrumb" class="breadcrumb">/</div>
-      <ul id="repo-tree" class="file-list"></ul>
-      <div class="readme-box">
-        <div class="readme-header">README.md</div>
-        <div id="readme-viewer" class="markdown-body">Cargando README.md...</div>
+      <div class="explorador">
+        <div class="ruta" id="ruta-explorador"></div>
+        <ul class="arbol" id="arbol"></ul>
+        <div class="leeme" id="leeme" hidden></div>
       </div>
+    </section>
+
+    <!-- EQUIPO -->
+    <section id="equipo" class="seccion">
+      <div class="encabezado">
+        <h2>Equipo</h2>
+        <p>Integrantes de cada semestre</p>
+      </div>
+      <div class="rejilla-equipo" id="lista-equipo"></div>
     </section>
 
   </main>
 
-  <!-- MODAL VISOR -->
-  <div id="preview-modal" class="modal" role="dialog" hidden>
-    <div class="modal-content">
-      <div class="modal-header">
-        <div>
-          <h3 id="modal-title">Archivo</h3>
-          <small id="modal-path"></small>
+  <!-- VISOR -->
+  <div class="visor" id="visor" hidden>
+    <div class="visor-fondo" data-cerrar></div>
+    <div class="visor-caja" role="dialog" aria-modal="true" aria-labelledby="visor-titulo">
+      <div class="visor-cabecera">
+        <div class="visor-nombre">
+          <h3 id="visor-titulo"></h3>
+          <small id="visor-ruta"></small>
         </div>
-        <div class="modal-actions">
-          <a id="modal-download" href="#" download class="btn btn-outline btn-sm">Descargar</a>
-          <a id="modal-external" href="#" target="_blank" rel="noopener" class="btn btn-outline btn-sm">Abrir original ↗</a>
-          <button id="modal-close" class="btn-close" title="Cerrar">&times;</button>
+        <div class="visor-acciones">
+          <a id="visor-descargar" class="boton boton-chico" download>Descargar</a>
+          <a id="visor-abrir" class="boton boton-chico" target="_blank" rel="noopener">Abrir ↗</a>
+          <button class="boton-icono" data-cerrar aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
         </div>
       </div>
-      <div id="modal-body" class="modal-body"></div>
+      <div class="visor-cuerpo" id="visor-cuerpo"></div>
     </div>
   </div>
 
-  <footer>
-    <div class="container footer-grid">
+  <footer class="pie">
+    <div class="contenedor pie-interior">
       <div>
-        <h4>Brazo de 4 Grados de Libertad</h4>
-        <p>Laboratorio de Control · Carrera de Ingeniería Electrónica · Facultad de Ingeniería · Universidad Mayor de San Andrés (UMSA).</p>
+        <strong>Brazo robótico de 4 grados de libertad</strong>
+        <p>Laboratorio de Control · Carrera de Ingeniería Electrónica · Facultad de Ingeniería · Universidad Mayor de San Andrés.</p>
+        <p>ETN-902 Sistemas de Control II · ETN-1034 Aplicación de Técnicas de Control · ETN-1000 Bases de Datos</p>
       </div>
-      <div>
-        <h4>Enlaces Rápidos</h4>
-        <ul>
-          <li><a href="#documentos">Datasheets e Informes</a></li>
-          <li><a href="#codigos">Programas de Control</a></li>
-          <li><a href="https://github.com/GabAndGom/Brazo-de-4-grados-de-libertad" target="_blank" rel="noopener">Repositorio en GitHub</a></li>
-        </ul>
-      </div>
+      <div class="pie-meta" id="pie-meta"></div>
     </div>
-    <div class="footer-bottom">UMSA · Ingeniería Electrónica</div>
   </footer>
 
-  <script src="web/app.js"></script>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="icono-brazo" viewBox="0 0 32 32">
+      <rect x="3" y="27" width="26" height="3" rx="1" fill="currentColor"/>
+      <path d="M9 27V12l9-6 6 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="9" cy="12" r="2.5" fill="currentColor"/>
+      <circle cx="18" cy="6" r="2.5" fill="currentColor"/>
+      <path d="M24 12v5m-3 0h6m-5 0-1 4m5-4 1 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+  </svg>
+
+  <script src="web/data/catalogo.js"></script>
+  <script src="web/js/app.js"></script>
 </body>
 </html>

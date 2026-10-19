@@ -1,0 +1,149 @@
+{
+  "global/datasheets/plc_s7-200_cpu224_6es7214-1ad23.pdf": {
+    "titulo": "Hoja de datos CPU 224 (6ES7214-1AD23-0XB0)",
+    "descripcion": "SIMATIC S7-200 CPU 224 DC/DC/DC: 14 entradas y 10 salidas digitales, salidas de tren de pulsos Q0.0 y Q0.1.",
+    "subsistemas": [5]
+  },
+  "global/datasheets/driver_leadshine_dm542.pdf": {
+    "titulo": "Driver Leadshine DM542",
+    "descripcion": "Driver digital para motores paso a paso: configuración de corriente, micropasos y conexión PUL/DIR.",
+    "subsistemas": [1, 4]
+  },
+  "global/datasheets/driver_jmc_2dm556.pdf": {
+    "titulo": "Driver JMC 2DM556",
+    "descripcion": "Driver digital de motores paso a paso: tabla de micropasos, corriente y diagrama de conexión.",
+    "subsistemas": [2, 4]
+  },
+  "global/datasheets/sensor_inductivo_lj12a3-4-zbx.pdf": {
+    "titulo": "Sensor inductivo LJ12A3-4-Z/BX",
+    "descripcion": "Sensor de proximidad NPN de 3 hilos, 12 mm, distancia de detección 4 mm. Límite del eje Z.",
+    "subsistemas": [2]
+  },
+  "global/datasheets/final_de_carrera_v-156-1c25.pdf": {
+    "titulo": "Final de carrera V-156-1C25",
+    "descripcion": "Microinterruptor usado como límite de los ejes X e Y.",
+    "subsistemas": [1]
+  },
+  "global/datasheets/rele_njx.pdf": {
+    "titulo": "Relé NJX",
+    "descripcion": "Relé de propósito general: datos de contactos y bobina.",
+    "subsistemas": [3, 4]
+  },
+  "global/manuales/manual_xk-js1-1_en.pdf": {
+    "titulo": "Manual del brazo XK-JS1-1 (inglés)",
+    "descripcion": "Manual de fábrica del equipo didáctico: estructura mecánica, conexionado y operación.",
+    "subsistemas": [1, 2, 3, 4, 5],
+    "orden": 0
+  },
+  "global/manuales/siemens_ladder_kop_referencia.pdf": {
+    "titulo": "Siemens - Referencia de Ladder (KOP)",
+    "descripcion": "Manual de referencia de instrucciones en lenguaje de contactos.",
+    "subsistemas": [5]
+  },
+  "global/manuales/siemens_map_serv_posicionamiento.pdf": {
+    "titulo": "Siemens - Librería MAP_SERV",
+    "descripcion": "Posicionamiento por tren de pulsos con el S7-200 (Micro Automation Positioning).",
+    "subsistemas": [5]
+  },
+  "global/normativas/iec_60617_simbologia.pdf": {
+    "titulo": "Norma IEC 60617 - Simbología eléctrica",
+    "descripcion": "Símbolos gráficos para esquemas eléctricos."
+  },
+  "global/normativas/isa_s5-1_tutorial_pid.pdf": {
+    "titulo": "Norma ISA S5.1 - Tutorial de diagramas P&ID",
+    "descripcion": "Identificación de instrumentos y simbología para diagramas P&ID."
+  },
+  "global/programas-plc/xk-js1_espanol.mwp": {
+    "titulo": "Programa del brazo XK-JS1 (Micro/WIN)",
+    "descripcion": "Proyecto STEP 7-Micro/WIN del brazo. Se abre con STEP 7-Micro/WIN.",
+    "subsistemas": [5]
+  },
+  "global/programas-plc/map_serv/": {
+    "subsistemas": [5]
+  },
+  "global/programas-plc/map_serv/map_serv_q0.0.mwl": {
+    "titulo": "Librería MAP_SERV para Q0.0",
+    "descripcion": "Librería de posicionamiento por pulsos en la salida Q0.0."
+  },
+  "global/programas-plc/map_serv/map_serv_q0.1.mwl": {
+    "titulo": "Librería MAP_SERV para Q0.1",
+    "descripcion": "Librería de posicionamiento por pulsos en la salida Q0.1."
+  },
+  "global/plantillas/plantilla_informe.tex": {
+    "titulo": "Plantilla LaTeX para informes",
+    "descripcion": "Preámbulo y estilos comunes para los informes de laboratorio.",
+    "categoria": "plantilla"
+  },
+  "global/componentes/botonera.png": { "titulo": "Botonera", "subsistemas": [4] },
+  "global/componentes/disyuntor.png": { "titulo": "Disyuntor", "subsistemas": [4] },
+  "global/componentes/drivers_motor_paso.png": { "titulo": "Drivers de motores paso a paso", "subsistemas": [4] },
+  "global/componentes/final_de_carrera.png": { "titulo": "Final de carrera", "subsistemas": [1] },
+  "global/componentes/fuente.png": { "titulo": "Fuente de alimentación", "subsistemas": [4] },
+  "global/componentes/garra.png": { "titulo": "Garra", "subsistemas": [3] },
+  "global/componentes/motor_xy.png": { "titulo": "Motores de los ejes X-Y", "subsistemas": [1] },
+  "global/componentes/motor_z.png": { "titulo": "Motor del eje Z", "subsistemas": [2] },
+  "global/componentes/plc.png": { "titulo": "PLC S7-200", "subsistemas": [5] },
+  "global/componentes/rele.png": { "titulo": "Relé", "subsistemas": [3, 4] },
+  "global/componentes/sensor_inductivo.png": { "titulo": "Sensor inductivo", "subsistemas": [2] },
+
+  "semestres/2026_I/informes/informe_1_identificacion_de_variables.pdf": {
+    "titulo": "Informe 1 - Identificación de variables y sistemas",
+    "descripcion": "Laboratorio 1 (ETN-902 / ETN-1034): variables del proceso y sistemas del brazo de 4 GDL.",
+    "subsistemas": [1, 2, 3, 4, 5]
+  },
+  "semestres/2026_I/informes/informe_2_simbologia_pid_y_esquemas.pdf": {
+    "titulo": "Informe 2 - Simbología P&ID y esquemas eléctricos",
+    "descripcion": "Laboratorio 2 (ETN-902 / ETN-1034): P&ID del brazo con norma ISA S5.1 y esquema eléctrico con IEC 60617.",
+    "subsistemas": [1, 2, 3, 4, 5]
+  },
+  "semestres/2026_I/planos/electrico/brazo_electrico.dwg": {
+    "titulo": "Plano eléctrico del brazo (I-2026)",
+    "descripcion": "AutoCAD. Esquema eléctrico realizado en el Laboratorio 2.",
+    "subsistemas": [1, 2, 3, 4, 5]
+  },
+  "semestres/2026_I/planos/pid/brazo_pid.dwg": {
+    "titulo": "P&ID del brazo (I-2026)",
+    "descripcion": "AutoCAD. Diagrama P&ID realizado en el Laboratorio 2.",
+    "subsistemas": [1, 2, 3, 4, 5]
+  },
+
+  "semestres/2026_II/guias/guia_laboratorio_1.pdf": {
+    "titulo": "Guía de laboratorio 1",
+    "descripcion": "Presentación del laboratorio integrado ETN-902, ETN-1034 y ETN-1000: objetivos, cronograma y entregables.",
+    "orden": 1
+  },
+  "semestres/2026_II/guias/guia_laboratorio_2.pdf": {
+    "titulo": "Guía de laboratorio 2",
+    "descripcion": "Semanas 3 y 4 (18 de agosto - 1 de septiembre).",
+    "orden": 2
+  },
+  "semestres/2026_II/guias/guia_laboratorio_3.pdf": {
+    "titulo": "Guía de laboratorio 3",
+    "descripcion": "Semanas 5 y 6 (1 - 15 de septiembre).",
+    "orden": 3
+  },
+  "semestres/2026_II/informes/informe_1_auditoria_y_requerimientos.pdf": {
+    "titulo": "Informe 1 - Auditoría y levantamiento de requerimientos",
+    "descripcion": "Laboratorio integrado 1 (ETN-902 / ETN-1034 / ETN-1000), entregado el 25 de agosto de 2026.",
+    "subsistemas": [1, 2, 3, 4, 5, 6]
+  },
+  "semestres/2026_II/planos/electrico/brazo_electrico_historico.dwg": {
+    "titulo": "Plano eléctrico histórico",
+    "descripcion": "AutoCAD. Plano eléctrico del brazo tal como se encontró (Laboratorio 1).",
+    "subsistemas": [1, 2, 3, 4, 5]
+  },
+  "semestres/2026_II/planos/pid/brazo_pid_historico.dwg": {
+    "titulo": "P&ID histórico",
+    "descripcion": "AutoCAD. P&ID del brazo tal como se encontró (Laboratorio 1).",
+    "subsistemas": [1, 2, 3, 4, 5]
+  },
+  "semestres/2026_II/base-de-datos/": {
+    "subsistemas": [6]
+  },
+  "semestres/2026_II/base-de-datos/mockups/lab2_mockups_y_organigrama.pdf": {
+    "titulo": "Mockups y organigrama del sistema",
+    "descripcion": "Base de Datos (ETN-1000), Laboratorio 2: interfaz local sin HMI física."
+  },
+  "semestres/2026_II/base-de-datos/interfaz/interfaz_local_1.png": { "titulo": "Interfaz local - captura 1" },
+  "semestres/2026_II/base-de-datos/interfaz/interfaz_local_2.png": { "titulo": "Interfaz local - captura 2" }
+}

@@ -1,3 +1,14 @@
+# Lo genera scripts/build-catalog.js (GitHub Actions lo crea en cada despliegue)
+web/data/
+
+# Videos: se suben a YouTube y se enlazan en config/videos.json
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.wmv
+*.flv
+
 # Compilación LaTeX
 *.aux
 *.log
@@ -7,27 +18,25 @@
 *.fls
 *.fdb_latexmk
 
-# CAD y temporales de diseño
+# Temporales y de bloqueo de AutoCAD / Office
 *.bak
 *.dwl
 *.dwl2
+*.tmp
+~$*
 
-# Entornos virtuales y Python / Middleware
+# Python
 __pycache__/
 *.py[cod]
 .env
 venv/
+.venv/
 
-# Sistema y temporales
+# Node
+node_modules/
+
+# Sistema operativo
 .DS_Store
 Thumbs.db
+desktop.ini
 *~
-*.mp4
-
-# Archivos de video y multimedia pesada
-*.mp4
-*.mkv
-*.avi
-*.mov
-*.wmv
-*.flv

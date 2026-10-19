@@ -1,0 +1,10 @@
+{
+  "name": "brazo-4-grados-de-libertad",
+  "version": "1.0.0",
+  "description": "Documentación del brazo robótico didáctico XK-JS1-1 de 4 grados de libertad - Laboratorio de Control, UMSA",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build-catalog.js",
+    "start": "node scripts/build-catalog.js && python3 -m http.server 8044"
+  }
+}
