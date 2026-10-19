@@ -24,10 +24,10 @@ const CARPETAS = ['global', 'semestres'];
 // Subsistemas del brazo. Un archivo se asigna a un subsistema si su ruta
 // (sin tildes y en minúsculas) contiene alguna de las claves.
 const SUBSISTEMAS = [
-  { id: 1, nombre: 'Ejes X-Y', detalle: 'Motores NEMA y finales de carrera', claves: ['motor_xy', 'eje_x', 'eje_y', 'ejes_xy', 'final_de_carrera', 'v-156'] },
-  { id: 2, nombre: 'Eje Z', detalle: 'Motor vertical y sensor inductivo', claves: ['motor_z', 'eje_z', 'sensor_inductivo', 'lj12a3'] },
+  { id: 1, nombre: 'Ejes X-Y', detalle: 'Motores NEMA 23 y finales de carrera', claves: ['motor_xy', 'eje_x', 'eje_y', 'ejes_xy', 'final_de_carrera', 'v-156'] },
+  { id: 2, nombre: 'Eje Z', detalle: 'Motor NEMA 17 y sensor inductivo', claves: ['motor_z', 'eje_z', 'sensor_inductivo', 'lj12a3'] },
   { id: 3, nombre: 'Garra', detalle: 'Efector final con solenoide 24 V', claves: ['garra', 'efector', 'solenoide'] },
-  { id: 4, nombre: 'Potencia y mando', detalle: 'Drivers, fuente, relés y botonera', claves: ['driver', 'dm542', '2dm556', 'fuente', 'disyuntor', 'rele_', 'rele.', 'botonera'] },
+  { id: 4, nombre: 'Potencia y mando', detalle: 'Drivers 2M542/2M530, fuente, relés y botonera', claves: ['driver', 'dm542', '2dm556', 'fuente', 'disyuntor', 'rele_', 'rele.', 'botonera'] },
   { id: 5, nombre: 'PLC S7-200', detalle: 'CPU 224 y librería MAP_SERV', claves: ['plc', 's7-200', 'cpu224', 'map_serv', 'kop', '.mwp', '.awl'] },
   { id: 6, nombre: 'Datos y HMI', detalle: 'Base de datos, interfaz y SCADA', claves: ['base-de-datos', 'hmi', 'interfaz', 'mockup', 'scada', 'erp', '.sql'] }
 ];

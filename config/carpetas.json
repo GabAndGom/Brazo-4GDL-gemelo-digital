@@ -4,7 +4,7 @@
   "normativas": "Normativas",
   "programas-plc": "Programas PLC",
   "map_serv": "Librería MAP_SERV",
-  "componentes": "Componentes",
+  "componentes": "Componentes (I-2026)",
   "plantillas": "Plantillas",
   "guias": "Guías de laboratorio",
   "informes": "Informes",
@@ -16,5 +16,8 @@
   "interfaz": "Interfaz local",
   "hmi": "HMI y supervisión",
   "pruebas": "Pruebas",
-  "evidencias": "Evidencias"
+  "evidencias": "Evidencias",
+  "fotos-planta": "Fotos de la planta",
+  "diagramas": "Diagramas",
+  "modelo": "Modelo E-R"
 }

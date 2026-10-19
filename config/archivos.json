@@ -2,48 +2,73 @@
   "global/datasheets/plc_s7-200_cpu224_6es7214-1ad23.pdf": {
     "titulo": "Hoja de datos CPU 224 (6ES7214-1AD23-0XB0)",
     "descripcion": "SIMATIC S7-200 CPU 224 DC/DC/DC: 14 entradas y 10 salidas digitales, salidas de tren de pulsos Q0.0 y Q0.1.",
-    "subsistemas": [5]
+    "subsistemas": [
+      5
+    ]
   },
   "global/datasheets/driver_leadshine_dm542.pdf": {
     "titulo": "Driver Leadshine DM542",
-    "descripcion": "Driver digital para motores paso a paso: configuración de corriente, micropasos y conexión PUL/DIR.",
-    "subsistemas": [1, 4]
+    "descripcion": "Manual del driver DM542, de la misma familia que el 2M542 de los ejes X e Y: corriente, micropasos y conexión PUL/DIR/ENA.",
+    "subsistemas": [
+      1,
+      4
+    ]
   },
   "global/datasheets/driver_jmc_2dm556.pdf": {
     "titulo": "Driver JMC 2DM556",
-    "descripcion": "Driver digital de motores paso a paso: tabla de micropasos, corriente y diagrama de conexión.",
-    "subsistemas": [2, 4]
+    "descripcion": "Manual de referencia de drivers digitales de motores paso a paso (tabla de micropasos y conexión). El eje Z usa un 2M530.",
+    "subsistemas": [
+      2,
+      4
+    ]
   },
   "global/datasheets/sensor_inductivo_lj12a3-4-zbx.pdf": {
     "titulo": "Sensor inductivo LJ12A3-4-Z/BX",
     "descripcion": "Sensor de proximidad NPN de 3 hilos, 12 mm, distancia de detección 4 mm. Límite del eje Z.",
-    "subsistemas": [2]
+    "subsistemas": [
+      2
+    ]
   },
   "global/datasheets/final_de_carrera_v-156-1c25.pdf": {
     "titulo": "Final de carrera V-156-1C25",
-    "descripcion": "Microinterruptor usado como límite de los ejes X e Y.",
-    "subsistemas": [1]
+    "descripcion": "Microinterruptor de referencia para los límites de los ejes X e Y (en la planta están instalados M102-011).",
+    "subsistemas": [
+      1
+    ]
   },
   "global/datasheets/rele_njx.pdf": {
     "titulo": "Relé NJX",
-    "descripcion": "Relé de propósito general: datos de contactos y bobina.",
-    "subsistemas": [3, 4]
+    "descripcion": "Relé de propósito general de referencia (en la planta están instalados Omron MY2NJ).",
+    "subsistemas": [
+      3,
+      4
+    ]
   },
   "global/manuales/manual_xk-js1-1_en.pdf": {
     "titulo": "Manual del brazo XK-JS1-1 (inglés)",
     "descripcion": "Manual de fábrica del equipo didáctico: estructura mecánica, conexionado y operación.",
-    "subsistemas": [1, 2, 3, 4, 5],
+    "subsistemas": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
     "orden": 0
   },
   "global/manuales/siemens_ladder_kop_referencia.pdf": {
     "titulo": "Siemens - Referencia de Ladder (KOP)",
     "descripcion": "Manual de referencia de instrucciones en lenguaje de contactos.",
-    "subsistemas": [5]
+    "subsistemas": [
+      5
+    ]
   },
   "global/manuales/siemens_map_serv_posicionamiento.pdf": {
     "titulo": "Siemens - Librería MAP_SERV",
     "descripcion": "Posicionamiento por tren de pulsos con el S7-200 (Micro Automation Positioning).",
-    "subsistemas": [5]
+    "subsistemas": [
+      5
+    ]
   },
   "global/normativas/iec_60617_simbologia.pdf": {
     "titulo": "Norma IEC 60617 - Simbología eléctrica",
@@ -56,10 +81,14 @@
   "global/programas-plc/xk-js1_espanol.mwp": {
     "titulo": "Programa del brazo XK-JS1 (Micro/WIN)",
     "descripcion": "Proyecto STEP 7-Micro/WIN del brazo. Se abre con STEP 7-Micro/WIN.",
-    "subsistemas": [5]
+    "subsistemas": [
+      5
+    ]
   },
   "global/programas-plc/map_serv/": {
-    "subsistemas": [5]
+    "subsistemas": [
+      5
+    ]
   },
   "global/programas-plc/map_serv/map_serv_q0.0.mwl": {
     "titulo": "Librería MAP_SERV para Q0.0",
@@ -74,39 +103,117 @@
     "descripcion": "Preámbulo y estilos comunes para los informes de laboratorio.",
     "categoria": "plantilla"
   },
-  "global/componentes/botonera.png": { "titulo": "Botonera", "subsistemas": [4] },
-  "global/componentes/disyuntor.png": { "titulo": "Disyuntor", "subsistemas": [4] },
-  "global/componentes/drivers_motor_paso.png": { "titulo": "Drivers de motores paso a paso", "subsistemas": [4] },
-  "global/componentes/final_de_carrera.png": { "titulo": "Final de carrera", "subsistemas": [1] },
-  "global/componentes/fuente.png": { "titulo": "Fuente de alimentación", "subsistemas": [4] },
-  "global/componentes/garra.png": { "titulo": "Garra", "subsistemas": [3] },
-  "global/componentes/motor_xy.png": { "titulo": "Motores de los ejes X-Y", "subsistemas": [1] },
-  "global/componentes/motor_z.png": { "titulo": "Motor del eje Z", "subsistemas": [2] },
-  "global/componentes/plc.png": { "titulo": "PLC S7-200", "subsistemas": [5] },
-  "global/componentes/rele.png": { "titulo": "Relé", "subsistemas": [3, 4] },
-  "global/componentes/sensor_inductivo.png": { "titulo": "Sensor inductivo", "subsistemas": [2] },
-
+  "global/componentes/botonera.png": {
+    "titulo": "Botonera",
+    "subsistemas": [
+      4
+    ]
+  },
+  "global/componentes/disyuntor.png": {
+    "titulo": "Disyuntor",
+    "subsistemas": [
+      4
+    ]
+  },
+  "global/componentes/drivers_motor_paso.png": {
+    "titulo": "Drivers de motores paso a paso",
+    "subsistemas": [
+      4
+    ]
+  },
+  "global/componentes/final_de_carrera.png": {
+    "titulo": "Final de carrera",
+    "subsistemas": [
+      1
+    ]
+  },
+  "global/componentes/fuente.png": {
+    "titulo": "Fuente de alimentación",
+    "subsistemas": [
+      4
+    ]
+  },
+  "global/componentes/garra.png": {
+    "titulo": "Garra",
+    "subsistemas": [
+      3
+    ]
+  },
+  "global/componentes/motor_xy.png": {
+    "titulo": "Motores de los ejes X-Y",
+    "subsistemas": [
+      1
+    ]
+  },
+  "global/componentes/motor_z.png": {
+    "titulo": "Motor del eje Z",
+    "subsistemas": [
+      2
+    ]
+  },
+  "global/componentes/plc.png": {
+    "titulo": "PLC S7-200",
+    "subsistemas": [
+      5
+    ]
+  },
+  "global/componentes/rele.png": {
+    "titulo": "Relé",
+    "subsistemas": [
+      3,
+      4
+    ]
+  },
+  "global/componentes/sensor_inductivo.png": {
+    "titulo": "Sensor inductivo",
+    "subsistemas": [
+      2
+    ]
+  },
   "semestres/2026_I/informes/informe_1_identificacion_de_variables.pdf": {
     "titulo": "Informe 1 - Identificación de variables y sistemas",
     "descripcion": "Laboratorio 1 (ETN-902 / ETN-1034): variables del proceso y sistemas del brazo de 4 GDL.",
-    "subsistemas": [1, 2, 3, 4, 5]
+    "subsistemas": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
   },
   "semestres/2026_I/informes/informe_2_simbologia_pid_y_esquemas.pdf": {
     "titulo": "Informe 2 - Simbología P&ID y esquemas eléctricos",
     "descripcion": "Laboratorio 2 (ETN-902 / ETN-1034): P&ID del brazo con norma ISA S5.1 y esquema eléctrico con IEC 60617.",
-    "subsistemas": [1, 2, 3, 4, 5]
+    "subsistemas": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
   },
   "semestres/2026_I/planos/electrico/brazo_electrico.dwg": {
     "titulo": "Plano eléctrico del brazo (I-2026)",
     "descripcion": "AutoCAD. Esquema eléctrico realizado en el Laboratorio 2.",
-    "subsistemas": [1, 2, 3, 4, 5]
+    "subsistemas": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
   },
   "semestres/2026_I/planos/pid/brazo_pid.dwg": {
     "titulo": "P&ID del brazo (I-2026)",
     "descripcion": "AutoCAD. Diagrama P&ID realizado en el Laboratorio 2.",
-    "subsistemas": [1, 2, 3, 4, 5]
+    "subsistemas": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
   },
-
   "semestres/2026_II/guias/guia_laboratorio_1.pdf": {
     "titulo": "Guía de laboratorio 1",
     "descripcion": "Presentación del laboratorio integrado ETN-902, ETN-1034 y ETN-1000: objetivos, cronograma y entregables.",
@@ -125,25 +232,178 @@
   "semestres/2026_II/informes/informe_1_auditoria_y_requerimientos.pdf": {
     "titulo": "Informe 1 - Auditoría y levantamiento de requerimientos",
     "descripcion": "Laboratorio integrado 1 (ETN-902 / ETN-1034 / ETN-1000), entregado el 25 de agosto de 2026.",
-    "subsistemas": [1, 2, 3, 4, 5, 6]
+    "subsistemas": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ]
   },
   "semestres/2026_II/planos/electrico/brazo_electrico_historico.dwg": {
     "titulo": "Plano eléctrico histórico",
     "descripcion": "AutoCAD. Plano eléctrico del brazo tal como se encontró (Laboratorio 1).",
-    "subsistemas": [1, 2, 3, 4, 5]
+    "subsistemas": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
   },
   "semestres/2026_II/planos/pid/brazo_pid_historico.dwg": {
     "titulo": "P&ID histórico",
     "descripcion": "AutoCAD. P&ID del brazo tal como se encontró (Laboratorio 1).",
-    "subsistemas": [1, 2, 3, 4, 5]
+    "subsistemas": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
   },
   "semestres/2026_II/base-de-datos/": {
-    "subsistemas": [6]
+    "subsistemas": [
+      6
+    ]
   },
   "semestres/2026_II/base-de-datos/mockups/lab2_mockups_y_organigrama.pdf": {
     "titulo": "Mockups y organigrama del sistema",
     "descripcion": "Base de Datos (ETN-1000), Laboratorio 2: interfaz local sin HMI física."
   },
-  "semestres/2026_II/base-de-datos/interfaz/interfaz_local_1.png": { "titulo": "Interfaz local - captura 1" },
-  "semestres/2026_II/base-de-datos/interfaz/interfaz_local_2.png": { "titulo": "Interfaz local - captura 2" }
+  "semestres/2026_II/base-de-datos/interfaz/interfaz_local_1.png": {
+    "titulo": "Interfaz local - captura 1"
+  },
+  "semestres/2026_II/base-de-datos/interfaz/interfaz_local_2.png": {
+    "titulo": "Interfaz local - captura 2"
+  },
+  "global/fotos-planta/brazo_vista_general.jpg": {
+    "titulo": "Estructura mecánica del brazo",
+    "descripcion": "Brazo metálico con guías lineales que transforman el giro de los motores en desplazamiento en X, Y y Z.",
+    "subsistemas": [
+      1,
+      2,
+      3
+    ],
+    "orden": 0
+  },
+  "global/fotos-planta/plc_s7-200_cpu224.jpg": {
+    "titulo": "PLC Siemens S7-200 CPU 224",
+    "descripcion": "14 entradas y 10 salidas digitales a 24 V DC, puerto RS-485 (PPI) y salidas de tren de pulsos.",
+    "subsistemas": [
+      5
+    ],
+    "orden": 1
+  },
+  "global/fotos-planta/fuente_24v_5v.jpg": {
+    "titulo": "Fuente conmutada 24 V / 5 V",
+    "descripcion": "Convierte 220 V AC a 24 V y 5 V DC para el PLC, los sensores y la etapa de control.",
+    "subsistemas": [
+      4
+    ],
+    "orden": 2
+  },
+  "global/fotos-planta/disyuntor_dz47le-63.jpg": {
+    "titulo": "Disyuntor diferencial DZ47LE-63",
+    "descripcion": "16 A, 230-400 V, protección de fuga de 30 mA, curva C.",
+    "subsistemas": [
+      4
+    ],
+    "orden": 3
+  },
+  "global/fotos-planta/drivers_2m542_2m530.jpg": {
+    "titulo": "Drivers 2M542 y 2M530",
+    "descripcion": "2M542 para los ejes X e Y (20-50 V, 1.0-4.2 A); 2M530 para el eje Z (18-50 V, 0.5-3.0 A). Entradas PUL, DIR y ENA.",
+    "subsistemas": [
+      1,
+      2,
+      4
+    ],
+    "orden": 4
+  },
+  "global/fotos-planta/motores_nema23_ejes_xy.jpg": {
+    "titulo": "Motores NEMA 23 (ejes X-Y)",
+    "descripcion": "Modelo 57J1854-828: 24-48 V DC, 2.8 A, 1.8° por paso.",
+    "subsistemas": [
+      1
+    ],
+    "orden": 5
+  },
+  "global/fotos-planta/motor_nema17_eje_z.jpg": {
+    "titulo": "Motor NEMA 17 (eje Z)",
+    "descripcion": "Modelo 42J1848-604: 1.2 A, 200 pasos por revolución.",
+    "subsistemas": [
+      2
+    ],
+    "orden": 6
+  },
+  "global/fotos-planta/reles_omron_my2nj.jpg": {
+    "titulo": "Relés Omron MY2NJ",
+    "descripcion": "DPDT con bobina de 24 V DC y contactos de hasta 5 A. K1 y K2 conmutan los pulsos de X/Y; K3 acciona la garra.",
+    "subsistemas": [
+      3,
+      4
+    ],
+    "orden": 7
+  },
+  "global/fotos-planta/final_de_carrera_rieles_xy.jpg": {
+    "titulo": "Finales de carrera (ejes X-Y)",
+    "descripcion": "Microinterruptores M102-011 (NO/NC, 5 A a 250 V AC) en las entradas I0.0-I0.3, para homing y límites.",
+    "subsistemas": [
+      1
+    ],
+    "orden": 8
+  },
+  "global/fotos-planta/eje_z_sensor_inductivo.jpg": {
+    "titulo": "Eje Z y sensor inductivo",
+    "descripcion": "Sensor LJ12A3-4-Z/BX, NPN normalmente abierto, 6-36 V DC, detección a 4 mm. Referencia (homing) del eje Z.",
+    "subsistemas": [
+      2
+    ],
+    "orden": 9
+  },
+  "global/fotos-planta/garra_solenoide.jpg": {
+    "titulo": "Garra con solenoide",
+    "descripcion": "Electroimán de 24 V DC accionado por el relé K3 desde la salida Q0.7.",
+    "subsistemas": [
+      3
+    ],
+    "orden": 10
+  },
+  "global/fotos-planta/botonera.jpg": {
+    "titulo": "Botonera de operación",
+    "descripcion": "Start, Stop, Reset, selectores S1-S7 y Manual/Automático (QA), en las entradas I0.4-I1.5.",
+    "subsistemas": [
+      4,
+      5
+    ],
+    "orden": 11
+  },
+  "semestres/2026_II/diagramas/diagrama_bloques_fenomenologico.png": {
+    "titulo": "Diagrama de bloques fenomenológico",
+    "descripcion": "Lazo abierto con supervisión discreta (Informe 1, II-2026).",
+    "subsistemas": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "semestres/2026_II/planos/electrico/brazo_electrico_historico_vista.jpg": {
+    "titulo": "Plano eléctrico histórico (vista)",
+    "descripcion": "Imagen del plano heredado usado en la auditoría Kaizen.",
+    "subsistemas": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "semestres/2026_II/base-de-datos/modelo/modelo_er_preliminar.png": {
+    "titulo": "Modelo entidad-relación preliminar",
+    "descripcion": "Borrador del modelo E-R (Informe 1, II-2026)."
+  }
 }

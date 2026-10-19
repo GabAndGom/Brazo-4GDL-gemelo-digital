@@ -15,6 +15,7 @@ Guía para el equipo: dónde poner cada archivo y cómo hacer que aparezca bien 
 | Base de datos (modelo, `.sql`, mockups) | `semestres/2026_II/base-de-datos/` |
 | Datos de ensayos | `semestres/2026_II/pruebas/` |
 | Fotos del laboratorio | `semestres/2026_II/evidencias/` |
+| Foto de un componente de la planta | `global/fotos-planta/` (`.jpg`, máximo ~1600 px) |
 | Datasheet de un componente | `global/datasheets/` |
 | Manual | `global/manuales/` |
 | Norma | `global/normativas/` |

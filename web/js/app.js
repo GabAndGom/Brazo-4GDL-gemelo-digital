@@ -109,6 +109,21 @@
     $('#cifras').innerHTML = datos.map(([n, t]) => `<div class="cifra"><strong>${n}</strong><span>${t}</span></div>`).join('');
   }
 
+  // ---------------------------------------------------------------- planta
+  function renderHardware() {
+    const fotos = ordenar(visibles.filter(a => a.ruta.startsWith('global/fotos-planta/') && a.categoria === 'imagen'));
+    $('#planta').hidden = !fotos.length;
+    $('#hardware').innerHTML = fotos.map((a, i) => `
+      <button class="hardware" data-ver="${esc(a.ruta)}">
+        <div class="hardware-img"><img src="${esc(urlArchivo(a))}" alt="${esc(a.titulo)}" loading="lazy"></div>
+        <div class="hardware-texto">
+          <span>${String(i + 1).padStart(2, '0')}</span>
+          <h3>${esc(a.titulo)}</h3>
+          ${a.descripcion ? `<p>${esc(a.descripcion)}</p>` : ''}
+        </div>
+      </button>`).join('');
+  }
+
   // ---------------------------------------------------------------- subsistemas
   function renderSubsistemas() {
     $('#subsistemas').innerHTML = C.subsistemas.map(s => {
@@ -491,6 +506,7 @@
     `Actualizado: ${new Date(C.generado).toLocaleDateString('es-BO', { day: 'numeric', month: 'long', year: 'numeric' })}`;
 
   renderCifras();
+  renderHardware();
   renderSubsistemas();
   renderSemestres();
   prepararFiltrosDocs();

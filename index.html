@@ -27,6 +27,7 @@
       </a>
       <nav class="menu" id="menu">
         <a href="#inicio">Inicio</a>
+        <a href="#planta">Planta</a>
         <a href="#documentos">Documentos</a>
         <a href="#programas">Programas</a>
         <a href="#galeria">Galería</a>
@@ -60,53 +61,31 @@
           </p>
           <p class="portada-detalle">
             El brazo mueve sus ejes X, Y y Z con motores paso a paso controlados por un PLC Siemens S7-200 (CPU 224) mediante
-            trenes de pulsos, y una garra accionada por solenoide de 24 V. Opera en lazo abierto con finales de carrera y un sensor inductivo como referencias.
+            trenes de pulsos a través de drivers 2M542 y 2M530, y una garra accionada por solenoide de 24 V. Opera en lazo abierto con finales de carrera y un sensor inductivo como referencias.
           </p>
           <div class="portada-acciones">
             <a href="#documentos" class="boton boton-primario">Ver documentos</a>
             <a href="#explorador" class="boton">Explorar carpetas</a>
           </div>
         </div>
-        <figure class="portada-figura" aria-hidden="true">
-          <svg viewBox="0 0 360 300" class="ilustracion">
-            <defs>
-              <pattern id="rejilla" width="20" height="20" patternUnits="userSpaceOnUse">
-                <path d="M20 0H0V20" fill="none" stroke="currentColor" stroke-opacity=".08"/>
-              </pattern>
-            </defs>
-            <rect width="360" height="300" fill="url(#rejilla)"/>
-            <!-- base -->
-            <rect x="40" y="250" width="280" height="14" rx="3" class="pieza"/>
-            <rect x="60" y="264" width="240" height="8" rx="2" class="pieza-sombra"/>
-            <!-- columna eje Y -->
-            <rect x="72" y="60" width="18" height="190" rx="3" class="pieza"/>
-            <rect x="270" y="60" width="18" height="190" rx="3" class="pieza"/>
-            <!-- viga eje X -->
-            <rect x="60" y="54" width="240" height="20" rx="4" class="pieza-acento"/>
-            <!-- carro -->
-            <rect x="168" y="44" width="46" height="40" rx="5" class="pieza"/>
-            <!-- eje Z -->
-            <rect x="184" y="84" width="14" height="96" rx="3" class="pieza"/>
-            <!-- garra -->
-            <rect x="174" y="180" width="34" height="12" rx="3" class="pieza-acento"/>
-            <path d="M178 192 l-6 30 h8 l6 -22 M204 192 l6 30 h-8 l-6 -22" class="pieza-trazo"/>
-            <!-- pieza -->
-            <rect x="180" y="226" width="22" height="24" rx="3" class="pieza-objeto"/>
-            <!-- cotas -->
-            <g class="cota">
-              <path d="M60 30 H300"/><path d="M60 24 v12 M300 24 v12"/>
-              <text x="180" y="22">X</text>
-              <path d="M330 74 V250"/><path d="M324 74 h12 M324 250 h12"/>
-              <text x="342" y="166">Y</text>
-              <path d="M226 84 V180"/><path d="M220 84 h12 M220 180 h12"/>
-              <text x="238" y="136">Z</text>
-            </g>
-          </svg>
-          <figcaption>Ejes del brazo XK-JS1-1</figcaption>
+        <figure class="portada-figura">
+          <button class="portada-foto" data-ver="global/fotos-planta/brazo_vista_general.jpg" aria-label="Ver foto del brazo en grande">
+            <img src="web/img/brazo.jpg" alt="Brazo robótico XK-JS1-1 en el Laboratorio de Control" width="1200" height="754">
+          </button>
+          <figcaption>Brazo XK-JS1-1 en el Laboratorio de Control · II-2026</figcaption>
         </figure>
       </div>
 
       <div class="cifras" id="cifras"></div>
+    </section>
+
+    <!-- PLANTA -->
+    <section id="planta" class="seccion">
+      <div class="encabezado">
+        <h2>La planta</h2>
+        <p>Ficha técnica del hardware, con fotos tomadas en la auditoría de II-2026</p>
+      </div>
+      <div class="rejilla-hardware" id="hardware"></div>
     </section>
 
     <!-- SUBSISTEMAS -->
