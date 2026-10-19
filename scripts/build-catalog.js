@@ -3,7 +3,8 @@
  *
  *   node scripts/build-catalog.js
  *
- * GitHub Actions lo ejecuta en cada push a main (.github/workflows/pages.yml).
+ * Cloudflare Pages (y GitHub Actions, .github/workflows/pages.yml) lo ejecutan
+ * en cada push a main.
  * No necesita dependencias. Títulos, descripciones y subsistemas se corrigen en
  * config/archivos.json; los semestres y el equipo en config/semestres.json;
  * los videos de YouTube en config/videos.json.
@@ -16,8 +17,10 @@ const ROOT = path.resolve(__dirname, '..');
 const OUT_DIR = path.join(ROOT, 'web', 'data');
 const REPO = 'GabAndGom/Brazo-de-4-grados-de-libertad';
 const RAMA = 'main';
-// GitHub Pages publica archivos de hasta 100 MB; los más grandes se bajan de GitHub
-const LIMITE_PAGES = 95 * 1024 * 1024;
+// Cloudflare Pages publica archivos de hasta 25 MB y GitHub Pages de hasta 100 MB.
+// Los más grandes se descargan directamente desde GitHub.
+const EN_CLOUDFLARE = !!process.env.CF_PAGES;
+const LIMITE_PAGES = (EN_CLOUDFLARE ? 25 : 95) * 1024 * 1024;
 
 const CARPETAS = ['global', 'semestres'];
 
@@ -263,7 +266,14 @@ function construir() {
     `// Archivo generado por scripts/build-catalog.js. No editar a mano.\nwindow.CATALOGO = ${JSON.stringify(catalogo)};\n`);
 
   console.log(`Catálogo: ${archivos.length} archivos, ${semestres.length} semestres, ${videos.length} videos.`);
-  if (grandes.length) console.log(`Archivos de más de 95 MB (se descargan desde GitHub):\n  ${grandes.join('\n  ')}`);
+  if (grandes.length) {
+    console.log(`Archivos demasiado grandes para el hosting (se descargan desde GitHub):\n  ${grandes.join('\n  ')}`);
+    // Si se publicaran, Cloudflare rechazaría el despliegue completo
+    if (EN_CLOUDFLARE) {
+      for (const rel of grandes) fs.unlinkSync(path.join(ROOT, rel));
+      console.log('Quitados de la copia que se publica en Cloudflare.');
+    }
+  }
 
   const sinConfig = Object.keys(archConfig).filter(k => !k.endsWith('/') && !archivos.some(a => a.ruta === k));
   if (sinConfig.length) console.log(`Aviso: config/archivos.json menciona archivos que no existen:\n  ${sinConfig.join('\n  ')}`);
