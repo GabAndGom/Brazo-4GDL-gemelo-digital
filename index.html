@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brazo de 4 Grados de Libertad · Laboratorio de Control UMSA</title>
+  <link rel="stylesheet" href="web/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="container nav-content">
+      <a href="#inicio" class="brand">
+        <div class="brand-text">
+          <strong>Brazo Robótico 4-DOF</strong>
+          <small>Laboratorio de Control · UMSA</small>
+        </div>
+      </a>
+      <nav class="nav-links">
+        <a href="#inicio">Inicio</a>
+        <a href="#documentos">Documentos</a>
+        <a href="#codigos">Programas</a>
+        <a href="#galeria">Galería</a>
+        <a href="#repositorio">Repositorio</a>
+      </nav>
+      <div class="nav-repo">
+        <a href="https://github.com/GabAndGom/Brazo-de-4-grados-de-libertad" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
+          GitHub ↗
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- INICIO -->
+    <section id="inicio" class="section">
+      <div class="hero">
+        <div class="hero-info">
+          <span class="badge">Ingeniería Electrónica · UMSA</span>
+          <h1>Brazo Robótico de 4 Grados de Libertad</h1>
+          <p>
+            Documentación técnica del brazo manipulador de 4 GDL: planos mecánicos y eléctricos, cinemática directa/inversa,
+            programas de control (PLC / Microcontroladores), datasheets de actuadores y drivers, e informes de avance.
+          </p>
+          <div class="hero-actions">
+            <a href="#documentos" class="btn btn-primary">Ver documentos</a>
+            <a href="#repositorio" class="btn btn-outline">Explorar carpetas</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tarjetas de resumen rápido -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <strong id="count-docs">0</strong>
+          <span>Documentos y Datasheets</span>
+        </div>
+        <div class="stat-card">
+          <strong id="count-code">0</strong>
+          <span>Programas y Scripts</span>
+        </div>
+        <div class="stat-card">
+          <strong id="count-img">0</strong>
+          <span>Esquemas y Multimedia</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- DOCUMENTOS -->
+    <section id="documentos" class="section">
+      <div class="section-header">
+        <h2>Documentos</h2>
+        <p>Informes, guías, planos eléctricos/mecánicos, cinemática, datasheets y presentaciones.</p>
+      </div>
+      <div class="toolbar">
+        <input type="text" id="search-docs" placeholder="Buscar documento (ej. datasheet, informe, plano)...">
+        <select id="filter-docs-folder">
+          <option value="">Todas las carpetas</option>
+        </select>
+      </div>
+      <div id="docs-grid" class="card-grid">Cargando documentos desde GitHub...</div>
+    </section>
+
+    <!-- PROGRAMAS -->
+    <section id="codigos" class="section">
+      <div class="section-header">
+        <h2>Programas</h2>
+        <p>Código de control: PLC (AWL / MicroWIN), C/C++, Arduino/ESP32, MATLAB/Simulink, Python y CAD.</p>
+      </div>
+      <div class="toolbar">
+        <input type="text" id="search-code" placeholder="Buscar programa o archivo...">
+        <select id="filter-code-ext">
+          <option value="">Todos los formatos</option>
+        </select>
+      </div>
+      <div id="code-grid" class="card-grid">Cargando programas desde GitHub...</div>
+    </section>
+
+    <!-- GALERÍA -->
+    <section id="galeria" class="section">
+      <div class="section-header">
+        <h2>Galería</h2>
+        <p>Fotografías del brazo de 4 GDL, diagramas de conexión y capturas de simulación.</p>
+      </div>
+      <div id="gallery-grid" class="gallery-grid">Cargando galería...</div>
+    </section>
+
+    <!-- REPOSITORIO -->
+    <section id="repositorio" class="section">
+      <div class="section-header">
+        <h2>Repositorio</h2>
+        <p>Navegación directa por las carpetas del proyecto en GitHub.</p>
+      </div>
+      <div id="breadcrumb" class="breadcrumb">/</div>
+      <ul id="repo-tree" class="file-list"></ul>
+      <div class="readme-box">
+        <div class="readme-header">README.md</div>
+        <div id="readme-viewer" class="markdown-body">Cargando README.md...</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL VISOR -->
+  <div id="preview-modal" class="modal" role="dialog" hidden>
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h3 id="modal-title">Archivo</h3>
+          <small id="modal-path"></small>
+        </div>
+        <div class="modal-actions">
+          <a id="modal-download" href="#" download class="btn btn-outline btn-sm">Descargar</a>
+          <a id="modal-external" href="#" target="_blank" rel="noopener" class="btn btn-outline btn-sm">Abrir original ↗</a>
+          <button id="modal-close" class="btn-close" title="Cerrar">&times;</button>
+        </div>
+      </div>
+      <div id="modal-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container footer-grid">
+      <div>
+        <h4>Brazo de 4 Grados de Libertad</h4>
+        <p>Laboratorio de Control · Carrera de Ingeniería Electrónica · Facultad de Ingeniería · Universidad Mayor de San Andrés (UMSA).</p>
+      </div>
+      <div>
+        <h4>Enlaces Rápidos</h4>
+        <ul>
+          <li><a href="#documentos">Datasheets e Informes</a></li>
+          <li><a href="#codigos">Programas de Control</a></li>
+          <li><a href="https://github.com/GabAndGom/Brazo-de-4-grados-de-libertad" target="_blank" rel="noopener">Repositorio en GitHub</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">UMSA · Ingeniería Electrónica</div>
+  </footer>
+
+  <script src="web/app.js"></script>
+</body>
+</html>
