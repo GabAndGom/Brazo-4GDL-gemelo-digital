@@ -326,7 +326,7 @@ async function iniciarVisor() {
   const N = {
     giro: nodo('base_giratoria'), carroX: nodo('carro_x'), carroY: nodo('carro_y'), biela: nodo('biela_12'),
     brazo: nodo('brazo_9'), pinza: nodo('pinza'), varilla: nodo('varilla_13'),
-    mordSup: nodo('mordaza_sup'), mordInf: nodo('mordaza_inf'), tcp: nodo('tcp')
+    mordIzq: nodo('mordaza_izq'), mordDer: nodo('mordaza_der'), tcp: nodo('tcp')
   };
   const base = Object.fromEntries(Object.entries(N).map(([k, o]) => [k, o.position.clone()]));
 
@@ -366,9 +366,11 @@ async function iniciarVisor() {
     N.brazo.rotation.z = fk.phi * RAD;
     N.pinza.rotation.z = -fk.phi * RAD;        // paralelogramo: la pinza queda horizontal
     N.varilla.rotation.z = fk.phi * RAD;
-    const cierre = sim.garra ? 6 * M : 0;
-    N.mordSup.position.y = base.mordSup.y - cierre;
-    N.mordInf.position.y = base.mordInf.y + cierre;
+    // Garra: los dedos giran en el plano horizontal sobre sus pasadores verticales.
+    // Cerrada (Q0.7 ON) quedan paralelos; abierta se separan 25° cada uno (SUPUESTO).
+    const apertura = sim.garra ? 0 : 25 * RAD;
+    N.mordDer.rotation.y = -apertura;   // dedo en +z: girar en -y lo lleva hacia afuera
+    N.mordIzq.rotation.y = apertura;
     modelo.updateMatrixWorld(true);
     // Traza
     if ($('#m3d-ver-traza').getAttribute('aria-pressed') === 'true') {

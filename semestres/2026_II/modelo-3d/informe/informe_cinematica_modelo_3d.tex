@@ -557,7 +557,7 @@ El GLB de trabajo (\codigo{brazo\_robotico\_v2.glb}) es una malla generada por I
 es aproximada (la base mide 187 mm frente a los 165 mm reales) y los orígenes no están en los ejes, así que
 se \textbf{rehízo de forma paramétrica}. El script \codigo{global/modelo-3d/generar\_modelo.js} (Node, sin
 dependencias) construye cada pieza con primitivas a partir de las cotas de \codigo{web/js/cinematica.js} y
-escribe el glTF binario. El resultado es \codigo{brazo\_xk-js1-1.glb}: 193 KB, 12 nodos y unos 2\,500
+escribe el glTF binario. El resultado es \codigo{brazo\_xk-js1-1.glb}: 210 KB, 12 nodos y unos 2\,800
 triángulos. Cada pieza móvil tiene el origen en su pivote o en su guía, y la jerarquía sigue el mecanismo:
 \begin{lstlisting}
 brazo_xk_js1_1
@@ -568,7 +568,7 @@ brazo_xk_js1_1
          |   +- biela_12   (R pasiva, pivote C)
          +- brazo_9        (R pasiva phi, pivote A)
          |   +- pinza      (R -phi: queda horizontal)
-         |       +- mordaza_sup, mordaza_inf, tcp
+         |       +- mordaza_izq, mordaza_der (R eje vertical), tcp
          +- varilla_13     (R pasiva phi, pivote A')
 \end{lstlisting}
 Las bielas pasivas no se animan a mano: la página calcula sus ángulos con la cinemática directa.
@@ -581,6 +581,23 @@ Las bielas pasivas no se animan a mano: la página calcula sus ángulos con la c
 \caption{Vista lateral ($\theta=0$).}\end{subfigure}
 \caption{Modelo 3D en el visor de la página ($s_X = 80$ mm, $s_Y = 120$ mm).}
 \label{fig:modelo}
+\end{figure}
+
+\paragraph{Garra.} La garra tiene dos dedos planos que pivotan sobre ejes verticales en las esquinas
+delanteras del cuerpo 4, de modo que \textbf{abren y cierran en el plano horizontal} (foto f18). En el modelo,
+los nodos \codigo{mordaza\_izq} y \codigo{mordaza\_der} giran $\pm25°$ (\supuesto) con la garra abierta y
+quedan paralelos con la garra cerrada (Q0.7 ON). El centro de los bloques de agarre coincide con el TCP.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.32\textwidth}\includegraphics[width=\textwidth]{referencia_garra_f18.jpg}
+\caption{Garra real (foto f18).}\end{subfigure}
+\begin{subfigure}{0.32\textwidth}\includegraphics[width=\textwidth]{garra_abierta.png}
+\caption{Modelo: abierta (Q0.7 OFF).}\end{subfigure}
+\begin{subfigure}{0.32\textwidth}\includegraphics[width=\textwidth]{garra_cerrada.png}
+\caption{Modelo: cerrada (Q0.7 ON).}\end{subfigure}
+\caption{Garra de dedos horizontales.}
+\label{fig:garra}
 \end{figure}
 
 \subsection{Sección ``Modelo 3D'' de la página}
@@ -738,7 +755,7 @@ Versionado en GitHub (ramas y merge) & Rama \codigo{feat/cinematica-modelo-3d}, 
 \item La cinemática vive en un único módulo JavaScript sin dependencias (\codigo{web/js/cinematica.js}).
       Lo usan la página, el generador del modelo 3D y las pruebas, y exporta \codigo{parametros.json}
       para Python y MATLAB. Corregir una cota en ese archivo actualiza todo.
-\item El modelo 3D se genera con un script reproducible, sin Blender: pesa 193 KB (el GLB de IA, 4.5 MB) y
+\item El modelo 3D se genera con un script reproducible, sin Blender: pesa 210 KB (el GLB de IA, 4.5 MB) y
       los orígenes de sus nodos están en los ejes reales.
 \item El visor se carga en diferido y no frena el resto de la página. Funciona en escritorio y en
       celulares desde 375 px, en tema claro u oscuro, y sus controles se pueden usar con teclado.

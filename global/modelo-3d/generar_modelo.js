@@ -16,7 +16,7 @@
  *         │  └─ biela_12   R  pasiva (pivote C)
  *         ├─ brazo_9       R  pasiva φ (pivote A)  brazo 9 + escuadra 8
  *         │  └─ pinza      R  -φ (pivote E: queda horizontal)
- *         │     ├─ mordaza_sup / mordaza_inf   garra ON/OFF
+ *         │     ├─ mordaza_izq / mordaza_der   garra ON/OFF (giran en el plano horizontal)
  *         │     └─ tcp     punto de trabajo
  *         └─ varilla_13    R  pasiva φ (pivote A')
  *
@@ -208,16 +208,30 @@ pasador(brazo.geo, P.L9, 0, -32, 32);
 const pinza = nodo('pinza', brazo, { t: [P.L9, 0, 0], extras: { articulacion: 'revoluta', eje: 'z', pasiva: true, nota: 'rotación = -phi (paralelogramo)' } });
 // Cuerpo 4: E en su parte trasera, a media altura (sube hCuerpo - pinzaBajoE y baja pinzaBajoE)
 const yCuerpo = (P.hCuerpoPinza - 2 * P.pinzaBajoE) / 2;
-caja(pinza.geo, 'aluminio', 35, yCuerpo, 0, 80, P.hCuerpoPinza, 55);
-cilindro(pinza.geo, 'motor', [10, yCuerpo, 28], [60, yCuerpo, 28], 13, 20);   // solenoide
+caja(pinza.geo, 'aluminio', 35, yCuerpo, 0, 80, P.hCuerpoPinza, 55);          // el solenoide va dentro
+for (const [x, z] of [[15, -12], [35, 10], [55, -12], [35, -12]]) {                   // tornillos de la tapa
+  cilindro(pinza.geo, 'motor', [x, yCuerpo + P.hCuerpoPinza / 2, z], [x, yCuerpo + P.hCuerpoPinza / 2 + 0.6, z], 2.5, 10);
+}
 const yTopCuerpo = P.hCuerpoPinza - P.pinzaBajoE;
 caja(pinza.geo, 'aluminio', 0, yTopCuerpo + 5, 34, 16, 10, 20);
 cilindro(pinza.geo, 'acero', [0, yTopCuerpo, 40], [0, P.L14, 40], 5, 16);
-const largoMordaza = 2 * (P.dg - 75);
-for (const [nombre, s] of [['mordaza_sup', 1], ['mordaza_inf', -1]]) {
-  const m = nodo(nombre, pinza, { t: [75, -P.hg + s * 14, 0], extras: { articulacion: 'garra', abierta_mm: s * 8 } });
-  caja(m.geo, 'aluminio', largoMordaza / 2, 0, 0, largoMordaza, 8, 30);
-  caja(m.geo, 'goma', largoMordaza - 12, -s * 5, 0, 24, 3, 30);
+// Mordazas 15: dos dedos planos que abren y cierran en el plano HORIZONTAL (fotos f13 y f18).
+// Cada dedo pivota sobre un eje vertical en una esquina delantera del cuerpo 4 y termina en un
+// bloque de agarre. Cerrada: dedos paralelos con los bloques juntos en el centro (TCP).
+const xPivDedo = 75, zPivDedo = 16;
+const largoDedo = (P.dg - xPivDedo) / 0.75;     // el centro del bloque de agarre queda en el TCP
+// +z del glTF es la derecha del robot (Y del robot = -z)
+for (const [nombre, s] of [['mordaza_der', 1], ['mordaza_izq', -1]]) {
+  const m = nodo(nombre, pinza, {
+    t: [xPivDedo, -P.hg, s * zPivDedo],
+    extras: { articulacion: 'revoluta', eje: 'y', garra: true, apertura_grados: 25 }
+  });
+  cilindro(m.geo, 'acero', [0, -12, 0], [0, 12, 0], 5, 16);                       // pasador vertical
+  caja(m.geo, 'aluminio', largoDedo * 0.35, 0, 0, largoDedo * 0.7, 10, 16);         // dedo: placa plana horizontal
+  // Bloque de agarre: desde el borde exterior del dedo hasta casi el centro de la pinza
+  const zIn = -s * (zPivDedo - 1), zOut = s * 8;
+  caja(m.geo, 'aluminio', largoDedo * 0.75, 0, (zIn + zOut) / 2, largoDedo * 0.5, 26, Math.abs(zOut - zIn));
+  caja(m.geo, 'goma', largoDedo * 0.75, 0, -s * (zPivDedo - 2.5), largoDedo * 0.4, 22, 3);  // cinta de agarre
 }
 nodo('tcp', pinza, { t: [P.dg, -P.hg, 0] });
 

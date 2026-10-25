@@ -27,7 +27,7 @@ Cada pieza móvil tiene el origen en su eje de giro o en su guía lineal. La pá
 | `brazo_9` | revoluta, eje Z (pasiva) | φ, de la cinemática |
 | `pinza` | revoluta, eje Z (pasiva) | −φ (el paralelogramo la deja horizontal) |
 | `varilla_13` | revoluta, eje Z (pasiva) | φ |
-| `mordaza_sup`, `mordaza_inf` | garra | ±6 mm al cerrar (Q0.7) |
+| `mordaza_izq`, `mordaza_der` | revoluta, eje Y (garra) | dedos en el plano horizontal: paralelos con la garra cerrada (Q0.7 ON) y ±25° abierta (SUPUESTO) |
 | `tcp` | — | punto de trabajo (centro de las mordazas) |
 
 La geometría es simplificada (cajas, cilindros y prismas) y las piezas sin cota usan valores **SUPUESTO**
