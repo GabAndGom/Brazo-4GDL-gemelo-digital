@@ -484,5 +484,30 @@
   "semestres/2026_II/modelo-3d/cinematica/tabla_cinematica.csv": {
     "titulo": "Tabla de validación de la cinemática",
     "descripcion": "25 combinaciones de carros X e Y con sus pulsos y la posición prevista de la garra, para medir en la planta."
+  },
+  "semestres/2026_II/modelo-3d/levantamiento/planilla_mediciones.pdf": {
+    "titulo": "Planilla de medición del brazo (imprimible)",
+    "descripcion": "Todas las medidas necesarias para quitar los supuestos del modelo: transmisión, recorridos, alturas, bielas, pinza, mapa de E/S y 25 posiciones de validación. Con esquemas acotados.",
+    "orden": 1
+  },
+  "semestres/2026_II/modelo-3d/levantamiento/planilla_mediciones.tex": {
+    "titulo": "Planilla de medición (fuente LaTeX)"
+  },
+  "semestres/2026_II/modelo-3d/levantamiento/esquema_medidas_lateral.svg": {
+    "titulo": "Esquema acotado del brazo - vista lateral",
+    "descripcion": "Cada etiqueta es el código de la fila de la planilla de medición."
+  },
+  "semestres/2026_II/modelo-3d/levantamiento/esquema_medidas_superior.svg": {
+    "titulo": "Esquema acotado del brazo - vista superior"
+  },
+  "semestres/2026_II/modelo-3d/levantamiento/esquema_medidas_lateral.png": {
+    "oculto": true
+  },
+  "semestres/2026_II/modelo-3d/levantamiento/esquema_medidas_superior.png": {
+    "oculto": true
+  },
+  "semestres/2026_II/modelo-3d/levantamiento/generar_esquema_medidas.py": {
+    "titulo": "Generador de los esquemas acotados",
+    "descripcion": "Dibuja las vistas lateral y superior con las cotas de web/js/cinematica.js."
   }
 }
