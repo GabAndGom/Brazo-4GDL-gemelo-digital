@@ -142,9 +142,9 @@ caja(giro.geo, 'aluminio', 0, hCol + 5, 0, 90, 10, 120);
 // Bloque 2 (fijo) con la tuerca del husillo inferior
 caja(giro.geo, 'aluminio', 0, D.hEjeX, 0, P.largoBloque, P.hBloque2, P.anchoBloque);
 cilindro(giro.geo, 'motor', [P.largoBloque / 2, D.hEjeX, 0], [P.largoBloque / 2 + 8, D.hEjeX, 0], 24, 24);
-// Motor NEMA 17 entre las patas de la columna y sensor inductivo
-caja(giro.geo, 'motor', -5, hCol + 24, 0, 42, 48, 42);
-cilindro(giro.geo, 'acero', [-5, hCol, 0], [-5, hCol - 6, 0], 11, 20);
+// Motor NEMA 17 delante de la columna (fotos f11, f13) con su acople hacia el engranaje, y sensor inductivo
+caja(giro.geo, 'motor', 62, hCol + 30, 0, 42, 48, 42);
+cilindro(giro.geo, 'acero', [62, hCol, 0], [62, hCol + 6, 0], 13, 20);
 cilindro(giro.geo, 'sensor', [-45, hCol, 58], [-45, hCol + 45, 58], 6, 16);
 
 // Bastidor = carro X. Origen: eje del husillo inferior, en la cara interior de la placa 5
@@ -162,18 +162,22 @@ const xm = xp10 - P.espesorPlaca;
 for (const [y, nombre] of [[-8, 'X'], [P.sepNiveles + 8, 'Y']]) {
   caja(cx.geo, 'aluminio', xm - 25, y, 0, 50, 57, 57);
   caja(cx.geo, 'motor', xm - 50 - 38, y, 0, 76, 56, 56);
-  caja(cx.geo, 'acento', xm - 50 - 77, y, 0, 2, 20, 30);    // placa de conexiones
+  caja(cx.geo, 'acero', xm - 50 - 77, y, 0, 2, 38, 38);     // tapa trasera del motor
 }
 // Barras de finales de carrera en las placas 5 y 10 (dos interruptores cada una)
 for (const x of [P.espesorPlaca / 2, xp10 - P.espesorPlaca / 2]) {
   caja(cx.geo, 'aluminio', x, yPlaca, -62, 16, 110, 8);
   for (const y of [0, P.sepNiveles]) caja(cx.geo, 'motor', x + (x > 0 ? -12 : 12), y, -62, 12, 18, 10);
 }
-// Horquilla 17 (pivote A) y soporte del poste 14 (pivote A')
-caja(cx.geo, 'aluminio', (P.espesorPlaca + P.uA) / 2 + 4, P.dhA, 0, P.uA - P.espesorPlaca + 12, 30, 50);
-caja(cx.geo, 'aluminio', (P.espesorPlaca + P.uA) / 2 + 4, P.dhA + P.L14, 40, P.uA - P.espesorPlaca + 12, 12, 16);
-cilindro(cx.geo, 'acero', [P.uA, P.dhA + 6, 40], [P.uA, P.dhA + P.L14, 40], 5, 16);
+// Horquilla 17 en la cara delantera de la placa 5 (pivote A, a la altura del husillo superior)
+const xH = P.espesorPlaca, largoH = P.uA - P.espesorPlaca + 12;
+caja(cx.geo, 'aluminio', xH + largoH / 2, P.dhA, -24, largoH, 34, 6);
+caja(cx.geo, 'aluminio', xH + largoH / 2, P.dhA, 24, largoH, 34, 6);
 pasador(cx.geo, P.uA, P.dhA, -32, 32);
+// Soporte sobre la placa 5 y poste 14 del pivote A' (paralelogramo)
+const yTopPlaca = P.sepNiveles / 2 + 60;
+caja(cx.geo, 'aluminio', (P.uA + 6) / 2, yTopPlaca + 5, 40, P.uA + 6, 10, 20);
+cilindro(cx.geo, 'acero', [P.uA, yTopPlaca + 10, 40], [P.uA, P.dhA + P.L14, 40], 5, 16);
 
 // Carro Y: bloque 1 con la escuadra 6. Origen: cara delantera del bloque 1 sobre el eje inferior
 const xBloque1_0 = -(D.carreraLibre - P.holgura);
@@ -196,16 +200,19 @@ barra(biela.geo, 'aluminio', P.L12, 24, -5.5, 5.5);
 const brazo = nodo('brazo_9', cx, { t: [P.uA, P.dhA, 0], extras: { articulacion: 'revoluta', eje: 'z', pasiva: true, variable: 'phi' } });
 barra(brazo.geo, 'aluminio', P.L9, 46, -5, 5);
 const bU = P.a * Math.cos(P.beta * Math.PI / 180), bH = P.a * Math.sin(P.beta * Math.PI / 180);
-for (const z0 of [-17, 6]) prisma(brazo.geo, 'aluminio', [[25, 0], [115, 0], [bU + 10, bH], [bU - 10, bH]], z0, z0 + 11);
+for (const z0 of [-17, 6]) prisma(brazo.geo, 'aluminio', [[20, 0], [125, 0], [bU + 12, bH], [bU - 12, bH]], z0, z0 + 11);
 pasador(brazo.geo, bU, bH, -20, 20);
 pasador(brazo.geo, P.L9, 0, -32, 32);
 
 // Pinza: origen en E, contrarrota -φ para quedar horizontal
 const pinza = nodo('pinza', brazo, { t: [P.L9, 0, 0], extras: { articulacion: 'revoluta', eje: 'z', pasiva: true, nota: 'rotación = -phi (paralelogramo)' } });
-caja(pinza.geo, 'aluminio', 35, -P.hCuerpoPinza / 2, 0, 80, P.hCuerpoPinza, 55);
-cilindro(pinza.geo, 'motor', [10, -P.hCuerpoPinza / 2, 28], [60, -P.hCuerpoPinza / 2, 28], 13, 20);   // solenoide
-caja(pinza.geo, 'aluminio', 0, P.L14 / 2, 34, 14, 12, 16);
-cilindro(pinza.geo, 'acero', [0, 0, 40], [0, P.L14, 40], 5, 16);
+// Cuerpo 4: E en su parte trasera, a media altura (sube hCuerpo - pinzaBajoE y baja pinzaBajoE)
+const yCuerpo = (P.hCuerpoPinza - 2 * P.pinzaBajoE) / 2;
+caja(pinza.geo, 'aluminio', 35, yCuerpo, 0, 80, P.hCuerpoPinza, 55);
+cilindro(pinza.geo, 'motor', [10, yCuerpo, 28], [60, yCuerpo, 28], 13, 20);   // solenoide
+const yTopCuerpo = P.hCuerpoPinza - P.pinzaBajoE;
+caja(pinza.geo, 'aluminio', 0, yTopCuerpo + 5, 34, 16, 10, 20);
+cilindro(pinza.geo, 'acero', [0, yTopCuerpo, 40], [0, P.L14, 40], 5, 16);
 const largoMordaza = 2 * (P.dg - 75);
 for (const [nombre, s] of [['mordaza_sup', 1], ['mordaza_inf', -1]]) {
   const m = nodo(nombre, pinza, { t: [75, -P.hg + s * 14, 0], extras: { articulacion: 'garra', abierta_mm: s * 8 } });

@@ -4,9 +4,10 @@ Resumen del gemelo digital geométrico (II-2026). El desarrollo completo está e
 [`informe/informe_cinematica_modelo_3d.tex`](informe/informe_cinematica_modelo_3d.tex) y el levantamiento de
 medidas en [`levantamiento/levantamiento_medidas.md`](levantamiento/levantamiento_medidas.md).
 
-> **Modelo aproximado.** Las cotas marcadas **SUPUESTO** (posición de los pivotes A y C, balancín $a$ y $\beta$,
-> brazo $L_9$, pinza, recorridos, paso del husillo, micropasos y reducción de la base) deben medirse en la
-> planta. Están todas en un solo lugar: `web/js/cinematica.js`.
+> **Modelo aproximado.** Las cotas marcadas **SUPUESTO** o estimadas de foto (posición de los pivotes A y C,
+> balancín $a$ y $\beta$, brazo $L_9$, pinza, recorridos, paso del husillo, micropasos y reducción de la base)
+> deben medirse en la planta. Las estimadas se ajustaron con la foto de perfil del manual: el modelo reproduce
+> esa pose con menos de 5 mm de diferencia en los pivotes B y C. Están todas en un solo lugar: `web/js/cinematica.js`.
 
 ![Esquema cinemático](levantamiento/esquema_cinematico.svg)
 
@@ -15,9 +16,9 @@ medidas en [`levantamiento/levantamiento_medidas.md`](levantamiento/levantamient
 | Símbolo | Significado | Rango |
 |---|---|---|
 | $\theta$ | giro de la base (motor Z, NEMA 17) | −175° a 175° (SUPUESTO) |
-| $s_X$ | carrera del carro X: el bastidor completo se desliza por el bloque 2 | 0 a 170 mm (SUPUESTO) |
+| $s_X$ | carrera del carro X: el bastidor completo se desliza por el bloque 2 | 0 a 120 mm (SUPUESTO, ficha del fabricante) |
 | $s_Y$ | carrera del carro Y: el bloque 1 se desliza sobre el bastidor | 0 a 170 mm (SUPUESTO) |
-| $\varphi$ | ángulo del brazo 9 respecto a la horizontal (pasivo) | 51.9° a −27.6° |
+| $\varphi$ | ángulo del brazo 9 respecto a la horizontal (pasivo) | 47.0° a −32.6° |
 | $(X, Y, Z)$ | posición de la garra (TCP); origen en el eje de giro sobre la mesa | — |
 
 Grados de libertad en el plano del brazo (Grübler-Kutzbach, $n = 7$ eslabones, $j = 8$ pares de 1 GDL):
@@ -30,7 +31,7 @@ Con el giro de la base y la garra ON/OFF quedan los **4 GDL** del equipo.
 
 **Lazo de la biela 12.** Con $A$ como origen en el bastidor, el pivote $C$ de la escuadra 6 está en
 
-$$ \mathbf{C} - \mathbf{A} = \begin{bmatrix} s_Y + c_{u0} \\ c_h \end{bmatrix}, \qquad c_{u0} = -265\ \text{mm},\quad c_h = 156\ \text{mm} $$
+$$ \mathbf{C} - \mathbf{A} = \begin{bmatrix} s_Y + c_{u0} \\ c_h \end{bmatrix}, \qquad c_{u0} = -252\ \text{mm},\quad c_h = 125\ \text{mm} $$
 
 y el vértice $B$ del balancín en $\mathbf{B} - \mathbf{A} = a\,[\cos\psi,\ \sin\psi]^T$. Cerrar el lazo
 $|\mathbf{B} - \mathbf{C}| = L_{12}$ da (ley de cosenos):
@@ -52,12 +53,12 @@ sobre un arco que cambia a la vez $r$ y $z$.
 
 | Parámetro | Valor | Origen |
 |---|---|---|
-| $a$, $\beta$ | 130 mm, 50° | estimado de la foto |
-| $L_{12}$ | 240 mm | boceto de la pieza 12 |
+| $a$, $\beta$ | 145 mm, 50° | estimado de la foto del manual |
+| $L_{12}$ | 235 mm | boceto de la pieza 12 (24 cm de largo total) |
 | $L_9$ | 300 mm | igual a la varilla 13 (paralelogramo) |
-| $u_{50} + u_A$ | 52 + 43 mm | SUPUESTO |
-| $h_A$ | 205 mm | SUPUESTO |
-| $d_g$, $h_g$ | 130 mm, 27.5 mm | SUPUESTO |
+| $u_{50} + u_A$ | 52 + 20 mm | estimado de la foto |
+| $h_A$ | 236 mm (altura del husillo superior) | estimado de la foto |
+| $d_g$, $h_g$ | 135 mm, 20 mm | estimado de la foto |
 
 ## 3. Cinemática inversa
 
@@ -86,7 +87,7 @@ $$ J = \frac{\partial(X,Y,Z)}{\partial(\theta, s_X, s_Y)} = \begin{bmatrix} -r\s
 
 Hay singularidad si $r = 0$, si $\cos\varphi = 0$ (brazo vertical), si $\varphi' = 0$ (biela 12 vertical) o si
 $\varphi' \to \infty$ (punto muerto: biela 12 alineada con $A$-$B$). **Con los parámetros actuales ninguna ocurre
-dentro del recorrido.** El ángulo de transmisión de la biela varía entre 49° y 109°.
+dentro del recorrido.** El ángulo de transmisión de la biela varía entre 38° y 92°.
 
 ## 5. Relación motor → articulación
 
@@ -111,8 +112,8 @@ trayectoria cartesiana recta no es posible, solo movimientos por turnos. La pág
 
 ![Vista superior](informe/figuras/espacio_trabajo_superior.png)
 
-Alcance $r$ de 410 a 695 mm y altura $z$ de 39 a 414 mm (unos 375 mm de recorrido vertical; el manual indica
-440 mm para el eje Y). En planta el alcance es una corona de ±175°.
+Alcance $r$ de 411 a 627 mm y altura $z$ de 54 a 436 mm. Son unos 382 mm de recorrido vertical: la ficha
+comercial del fabricante indica 0-400 mm en vertical y 0-120 mm adelante-atrás, y el manual 440 mm para el eje Y. En planta el alcance es una corona de ±175°.
 
 ## 7. Modelo 3D y validación
 

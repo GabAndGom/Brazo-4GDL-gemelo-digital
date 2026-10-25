@@ -121,19 +121,21 @@ que importan para la cinemática.
 
 | Símbolo | Qué medir | Valor usado (25/10/2026) |
 |---|---|---|
-| A | Posición del pivote del brazo respecto a la placa 5: Δu hacia adelante y Δh respecto al eje del husillo inferior | SUPUESTO: Δu = 43, Δh = 14 (h_A = 205 sobre la mesa) |
-| C | Posición del pivote superior de la escuadra 6 respecto a la cara delantera del bloque 1: Δu y altura | SUPUESTO: centro del bloque (Δu = −50), 10 mm bajo la punta de la escuadra 6 (h_C = 361) |
-| L12 | Distancia entre centros C-B de la biela 12 | **240** (boceto f05: "24"; en la foto se estima ≈ 237) |
-| a, β | Distancia A-B y ángulo entre A-B y el brazo A-E | estimada (f13): a = 130, β = 50° |
+| A | Posición del pivote del brazo respecto a la placa 5: Δu hacia adelante y Δh respecto al eje del husillo inferior | estimada (manual y f13): Δu = 20, Δh = 45, a la altura del husillo superior (h_A = 236) |
+| C | Posición del pivote superior de la escuadra 6 respecto a la cara delantera del bloque 1: Δu y altura | estimada: Δu = −60 (hacia atrás del bloque); SUPUESTO 10 mm bajo la punta de la escuadra 6 (h_C = 361) |
+| L12 | Distancia entre centros C-B de la biela 12 | estimada: 235 (boceto f05: 24 cm de largo total) |
+| a, β | Distancia A-B y ángulo entre A-B y el brazo A-E | estimada (manual): a = 145, β = 50° |
 | L9 | Distancia entre centros A-E del brazo 9 | estimada: 300 (igual a la varilla 13 por el paralelogramo) |
-| L13, L14 | Distancias entre centros de la varilla 13 (A'-E') y de los postes 14 | 300 / 46 |
-| d_g, h_g | Desde el pivote E hasta el centro de las mordazas (TCP), en horizontal y en vertical | SUPUESTO: 130 / 27.5 |
+| L13, L14 | Distancias entre centros de la varilla 13 (A'-E') y de los postes 14 | 300 / 70 (estimada: poste de 46 + soporte) |
+| d_g, h_g | Desde el pivote E hasta el centro de las mordazas (TCP), en horizontal y en vertical | estimada: 135 / 20 (E en la parte trasera del cuerpo 4, a media altura) |
 | z_base | Altura del eje del husillo inferior sobre la mesa | 15 + 21 (SUPUESTO) + 15 + 120 + 20 = 191 |
 | r_base | Distancia horizontal del eje θ a la cara delantera del bloque 2 | 50 (bloque centrado en el eje: SUPUESTO) |
-| s_X, s_Y | Carrera útil entre finales de carrera (mm) y posición del cero | SUPUESTO: 0-170 cada uno (300 − 2·13 − 100 − 2·2). El cero de cada eje es su final trasero (X) o superior (Y). El manual dice "X 200 mm, Y 440 mm"; el modelo da ~375 mm de recorrido vertical de la garra |
+| s_X, s_Y | Carrera útil entre finales de carrera (mm) y posición del cero | SUPUESTO: X 0-120 (ficha del fabricante: "adelante-atrás 0-120 mm"), Y 0-170 (máximo entre placas: 300 − 2·13 − 100 − 2·2). El cero de cada eje es su final trasero (X) o superior (Y). El modelo da ~382 mm de recorrido vertical de la garra (ficha: 0-400 mm; manual: 440 mm) |
 | p | Paso del husillo (mm/rev). El boceto f02 dice "1,37 — 5ap" (sin interpretar) | SUPUESTO: 5 mm/rev (SFU1605). Medir con 10 vueltas |
 | μ | Micropasos de los drivers (DIP SW4-SW7 del 2M542) | SUPUESTO: 1600 pulsos/rev (SW4-SW7 = 0 0 1 1); no hubo acceso a los drivers |
 | i_θ | Reducción del engranaje de la base y rango de giro útil | SUPUESTO: 5:1 y ±175° (manual: 360°) |
 
-La búsqueda en internet (25/10/2026) no encontró datos publicados del XK-JS1-1 (paso del husillo ni
-reducción de la base); solo descripciones genéricas de equipos didácticos con husillos de bolas y engranajes.
+La búsqueda en internet (25/10/2026) encontró una ficha comercial del fabricante (Shandong Xingke Intelligent
+Technology): giro 0-360°, vertical 0-400 mm, adelante-atrás 0-120 mm, garra 0-100 mm, todos con motores paso a
+paso. No hay datos publicados del paso del husillo ni de la reducción de la base, ni fotos accesibles del equipo.
+Las cotas estimadas se ajustaron con la foto de perfil del manual (figura 1.3.3 A) y con la foto f13.

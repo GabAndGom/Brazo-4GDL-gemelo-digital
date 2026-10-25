@@ -48,25 +48,29 @@
     espesorPlaca: 13,     // leida: placas 5 y 10
     holgura: 2,           // SUPUESTO: distancia bloque-placa al pisar el final de carrera
     // Recorridos útiles (entre finales de carrera)
-    recorridoX: 170,      // SUPUESTO: 300 - 2·13 - 100 - 2·2 ≈ 170
-    recorridoY: 170,      // SUPUESTO
+    recorridoX: 120,      // SUPUESTO: ficha del fabricante "adelante-atrás 0-120 mm" (el manual dice 200,
+                          // pero entre placas caben como máximo 300 - 2·13 - 100 - 2·2 = 170)
+    recorridoY: 170,      // SUPUESTO: máximo geométrico entre placas (fabricante: vertical 0-400 mm de la garra)
     thetaMin: -175,       // SUPUESTO: el manual dice 360°; se limita por los cables
     thetaMax: 175,        // SUPUESTO
-    // Mecanismo de bielas (cotas entre centros de pasadores)
-    uA: 43,               // SUPUESTO: pivote A delante de la cara interior de la placa 5
-    dhA: 14,              // SUPUESTO: pivote A sobre el eje del husillo inferior
+    // Mecanismo de bielas (cotas entre centros de pasadores). Las estimadas se ajustaron
+    // con la foto de perfil del manual (fig. 1.3.3 A) y la foto f13: el modelo reproduce
+    // esa pose con menos de 5 mm de diferencia en B y C.
+    uA: 20,               // estimada: pivote A casi sobre la cara delantera de la placa 5 (placa 13 + 7)
+    dhA: 45,              // estimada: pivote A a la altura del husillo superior (mitad del bloque 1)
     hC: 110,              // leida: altura de la escuadra 6
     dhC: -10,             // SUPUESTO: pivote C 10 mm bajo la punta de la escuadra 6
-    uCBloque: -50,        // SUPUESTO: C en el centro del bloque 1 (desde su cara delantera)
-    L12: 240,             // leida (boceto pieza 12: 24 cm), tomada como distancia entre pivotes C-B
-    a: 130,               // estimada (foto f13): distancia A-B del balancín 8+9
-    beta: 50,             // estimada (foto f13): ángulo entre A-B y el brazo A-E [°]
+    uCBloque: -60,        // estimada: la escuadra 6 está hacia atrás del bloque 1 (desde su cara delantera)
+    L12: 235,             // estimada: boceto pieza 12 = 24 cm de largo total; entre pivotes ≈ 235
+    a: 145,               // estimada (manual): distancia A-B del balancín 8+9
+    beta: 50,             // estimada (manual): ángulo entre A-B y el brazo A-E [°]
     L9: 300,              // estimada: igual a la varilla 13 (leida 300) por ser paralelogramo
-    L14: 46,              // leida: postes 14 (distancia A-A' y E-E')
+    L14: 70,              // estimada: A-A' y E-E' (postes 14 de 46 mm + soportes)
     // Pinza (desde el pivote E hasta el centro de las mordazas = TCP)
-    dg: 130,              // SUPUESTO: cuerpo 4 (80) + mitad de las mordazas
-    hg: 27.5,             // SUPUESTO: mitad de la altura del cuerpo 4
+    dg: 135,              // estimada (manual): E queda en la parte trasera del cuerpo 4, a media altura
+    hg: 20,               // estimada: las mordazas van un poco por debajo de E
     hCuerpoPinza: 55,     // leida
+    pinzaBajoE: 35,       // estimada: el cuerpo 4 baja 35 mm desde E (y sube 20)
     // Transmisión
     pasoHusillo: 5,       // SUPUESTO [mm/rev]: husillo de bolas tipo SFU1605
     pasosMotor: 200,      // fabricante: 1.8°/paso
@@ -76,8 +80,10 @@
     fMaxPTO: 20000        // fabricante: PTO de la CPU 224 hasta 20 kHz
   };
 
+  // Supuestos y estimaciones de foto: deben medirse en la planta
   const SUPUESTOS = ['hEntreDiscos', 'holgura', 'recorridoX', 'recorridoY', 'thetaMin', 'thetaMax', 'uA', 'dhA',
-    'dhC', 'uCBloque', 'a', 'beta', 'L9', 'dg', 'hg', 'pasoHusillo', 'micropasosXY', 'micropasosZ', 'reduccionBase'];
+    'dhC', 'uCBloque', 'L12', 'a', 'beta', 'L9', 'L14', 'dg', 'hg', 'pinzaBajoE',
+    'pasoHusillo', 'micropasosXY', 'micropasosZ', 'reduccionBase'];
 
   // ------------------------------------------------------------------ geometría derivada
   function derivar(p) {
@@ -136,7 +142,7 @@
         angBiela: Math.atan2(B.h - C.h, B.u - C.u) / RAD,
         r, z, X: r * Math.cos(th), Y: r * Math.sin(th), Z: z,
         puntos: { A, B, C, E, A2: { u: A.u, h: A.h + p.L14 }, E2: { u: E.u, h: E.h + p.L14 } },
-        hPinzaMin: E.h - p.hCuerpoPinza
+        hPinzaMin: E.h - p.pinzaBajoE
       };
     }
 

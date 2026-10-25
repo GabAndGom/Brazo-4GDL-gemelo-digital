@@ -399,6 +399,14 @@ async function iniciarVisor() {
   visor.borrarTraza = () => { sim.traza = []; geoTraza.setDrawRange(0, 0); sucio = true; };
   // Imagen PNG de la vista actual (para informes)
   visor.captura = () => { renderer.render(escena, camara); return renderer.domElement.toDataURL('image/png'); };
+  // Cámara libre (depuración): posición y objetivo en metros
+  visor.camara = (pos, obj) => {
+    anim = null;
+    camara.position.set(...pos);
+    controles.target.set(...obj);
+    controles.update();
+    sucio = true;
+  };
 
   // Vistas rápidas con transición suave
   const VISTAS = {

@@ -105,10 +105,10 @@ En el plano del brazo la movilidad es 2 (Grübler: 7 eslabones, 8 pares). Con el
 |---|---|
 | Directa | $r = u_{50} + s_X + u_A + L_9\cos\varphi(s_Y) + d_g$, $z = h_A + L_9\sin\varphi(s_Y) - h_g$, $(X, Y) = r(\cos\theta, \sin\theta)$ |
 | Inversa | Analítica. Una solución válida por cada $\theta$, con aviso si la posición es inalcanzable |
-| Espacio de trabajo | $r$ de 410 a 695 mm, $z$ de 39 a 414 mm, $\theta$ ±175°. Sin singularidades |
+| Espacio de trabajo | $r$ de 411 a 627 mm, $z$ de 54 a 436 mm, $\theta$ ±175°. Sin singularidades |
 | Resolución | 0.003125 mm/pulso (X, Y) y 0.045 °/pulso (base) |
 
-Todo lo anterior depende de varios **SUPUESTOS** (pivotes, paso del husillo de 5 mm/rev, 1600 pulsos/rev y reducción 5:1 de la base) que hay que medir en la planta.
+Todo lo anterior depende de varios **SUPUESTOS** que hay que medir en la planta: pivotes estimados de las fotos, paso del husillo de 5 mm/rev, 1600 pulsos/rev, reducción 5:1 de la base y 120 mm de carrera del carro X (ficha del fabricante).
 
 - Desarrollo completo: [informe de cinemática y modelo 3D](semestres/2026_II/modelo-3d/informe/informe_cinematica_modelo_3d.pdf).
 - Ecuaciones resumidas: [cinematica_y_modelo_3d.md](semestres/2026_II/modelo-3d/cinematica_y_modelo_3d.md).

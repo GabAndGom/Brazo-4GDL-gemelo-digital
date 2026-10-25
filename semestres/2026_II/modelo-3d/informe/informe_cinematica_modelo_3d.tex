@@ -244,7 +244,10 @@ numerada. La otra son fotos del brazo con etiquetas que llevan esos mismos núme
 identificó cada pieza y su función. El detalle está en
 \codigo{semestres/2026\_II/modelo-3d/levantamiento/levantamiento\_medidas.md}. Cada dato se clasificó como
 \emph{leído} (cota del boceto), \emph{estimado} (medido sobre la foto con una cota leída como escala),
-\emph{fabricante} (manual) o \supuesto.
+\emph{fabricante} (manual o ficha comercial) o \supuesto. Las cotas estimadas del mecanismo se
+ajustaron con la foto de perfil del manual (figura 1.3.3 A): con ellas el modelo reproduce la pose de esa
+foto con menos de 5 mm de diferencia en los pivotes $B$ y $C$. No se encontraron fotos ni planos públicos
+del equipo; la única referencia externa es la ficha comercial del fabricante \cite{ficha}.
 
 \subsection{Funcionamiento deducido}
 \begin{enumerate}
@@ -301,16 +304,17 @@ eje Y como ``arriba--abajo'' \cite{manual}, y con el GLB de trabajo, cuyos nodos
 \toprule
 \textbf{Símbolo} & \textbf{Descripción} & \textbf{Valor} & \textbf{Origen}\\
 \midrule
-$L_{12}$ & distancia entre pivotes $C$--$B$ de la biela & 240 mm & boceto pieza 12\\
-$a$ & distancia $A$--$B$ del balancín & 130 mm & estimado (foto f13)\\
-$\beta$ & ángulo entre $A$--$B$ y el brazo & 50° & estimado (foto f13)\\
+$L_{12}$ & distancia entre pivotes $C$--$B$ de la biela & 235 mm & estimado (boceto: 24 cm total)\\
+$a$ & distancia $A$--$B$ del balancín & 145 mm & estimado (foto del manual)\\
+$\beta$ & ángulo entre $A$--$B$ y el brazo & 50° & estimado (foto del manual)\\
 $L_9$ & distancia $A$--$E$ del brazo & 300 mm & igual a la varilla 13\\
-$L_{14}$ & postes del paralelogramo & 46 mm & boceto\\
+$L_{14}$ & postes del paralelogramo (entre pivotes) & 70 mm & estimado (poste de 46 + soporte)\\
 $u_{50}$ & placa 5 con $s_X=0$ (desde el eje $\theta$) & 52 mm & bloque 2 + holgura\\
-$u_A$, $h_A$ & pivote $A$ (desde la placa 5; sobre la mesa) & 43 mm; 205 mm & \supuesto\\
-$c_{u0}$, $c_h$ & pivote $C$ respecto de $A$ con $s_Y=0$ & $-265$ mm; 156 mm & derivado\\
-$d_g$, $h_g$ & TCP respecto del pivote $E$ & 130 mm; 27.5 mm & \supuesto\\
-$s_X$, $s_Y$ & recorridos útiles & 0--170 mm & \supuesto{} (300 $-$ 2·13 $-$ 100 $-$ 2·2)\\
+$u_A$, $h_A$ & pivote $A$ (desde la placa 5; sobre la mesa) & 20 mm; 236 mm & estimado (foto)\\
+$c_{u0}$, $c_h$ & pivote $C$ respecto de $A$ con $s_Y=0$ & $-252$ mm; 125 mm & derivado\\
+$d_g$, $h_g$ & TCP respecto del pivote $E$ & 135 mm; 20 mm & estimado (foto)\\
+$s_X$ & recorrido útil del carro X & 0--120 mm & \supuesto{} (ficha del fabricante)\\
+$s_Y$ & recorrido útil del carro Y & 0--170 mm & \supuesto{} (300 $-$ 2·13 $-$ 100 $-$ 2·2)\\
 $\theta$ & rango de la base & $\pm$175° & \supuesto{} (manual: 360°)\\
 \bottomrule
 \end{tabular}
@@ -368,8 +372,8 @@ y el ángulo de $A$--$B$ resulta
 \label{eq:psi}
 \end{equation}
 El signo menos elige la \emph{rama de montaje} real, con $B$ por debajo de la recta $A$--$C$, como en las
-fotos. El lazo cierra solo si $|a-L_{12}| \le d \le a+L_{12}$, es decir, $110 \le d \le 370$ mm. Dentro del
-recorrido $d$ varía entre 183 y 307 mm, así que el lazo siempre cierra.
+fotos. El lazo cierra solo si $|a-L_{12}| \le d \le a+L_{12}$, es decir, $90 \le d \le 380$ mm. Dentro del
+recorrido $d$ varía entre 150 y 281 mm, así que el lazo siempre cierra.
 
 \paragraph{Paso 3: ángulo del brazo.} La escuadra 8 está fija al brazo con un ángulo $\beta$:
 \begin{equation}
@@ -396,8 +400,8 @@ $\varphi(s_Y)$ y mueve la garra sobre un arco de radio $L_9$, cambiando a la vez
 \label{fig:phi}
 \end{figure}
 
-Con los parámetros de la tabla~\ref{tab:parametros}, $\varphi$ va de $51.9°$ ($s_Y=0$, brazo arriba) a
-$-27.6°$ ($s_Y = 170$ mm, brazo abajo), con $d\varphi/ds_Y \approx -0.46$ °/mm casi constante.
+Con los parámetros de la tabla~\ref{tab:parametros}, $\varphi$ va de $47.0°$ ($s_Y=0$, brazo arriba) a
+$-32.6°$ ($s_Y = 170$ mm, brazo abajo), con $d\varphi/ds_Y \approx -0.45$ °/mm casi constante.
 
 %==================================================================== 7
 \section{Cinemática inversa}
@@ -436,7 +440,7 @@ $\varphi_{1,2}$ y el signo $\pm$). Una combinación es válida si cumple todo lo
 \begin{enumerate}
 \item reproduce la rama de montaje de la ecuación (\ref{eq:psi}), comprobado evaluando la directa; las
       demás corresponderían a desarmar el mecanismo;
-\item $0 \le s_X \le 170$ mm, $0 \le s_Y \le 170$ mm y $\theta$ dentro de su rango;
+\item $0 \le s_X \le 120$ mm, $0 \le s_Y \le 170$ mm y $\theta$ dentro de su rango;
 \item no hay colisión con la mesa: la parte baja de la pinza y del TCP debe quedar sobre $z = 0$.
 \end{enumerate}
 La rama $\varphi_2$ (brazo hacia atrás) nunca cumple la primera condición en este mecanismo, así que en la
@@ -465,17 +469,17 @@ J = \frac{\partial(X,Y,Z)}{\partial(\theta, s_X, s_Y)} =
 
 Hay singularidad en estos casos:
 \begin{itemize}
-\item $r = 0$: el TCP está sobre el eje de giro. Es imposible, porque $r \ge 410$ mm.
-\item $\cos\varphi = 0$: el brazo está vertical. No ocurre, porque $\varphi \in [-27.6°, 51.9°]$.
+\item $r = 0$: el TCP está sobre el eje de giro. Es imposible, porque $r \ge 411$ mm.
+\item $\cos\varphi = 0$: el brazo está vertical. No ocurre, porque $\varphi \in [-32.6°, 47.0°]$.
 \item $\varphi' = 0$: la biela 12 está vertical y el carro Y no mueve el brazo.
 \item $\varphi' \to \infty$: punto muerto, con la biela alineada con $A$--$B$.
 \end{itemize}
-Recorriendo todo el rango se obtiene $|\det J| \ge 613$ mm²/rad y un ángulo de transmisión entre 49° y
-109°. \textbf{No hay singularidades dentro del recorrido} y la transmisión es adecuada. Como ejemplo, en
-$\mathbf{q} = (30°, 120, 150)$:
+Recorriendo todo el rango se obtiene $|\det J| \ge 579$ mm²/rad y un ángulo de transmisión entre 38° y
+92°. \textbf{No hay singularidades dentro del recorrido} y la transmisión es adecuada. Como ejemplo, en
+$\mathbf{q} = (30°, 100, 150)$:
 \begin{equation}
-J = \begin{bmatrix} -315.8 & 0.866 & -0.684\\ 547.0 & 0.500 & -0.395\\ 0 & 0 & -2.556\end{bmatrix},
-\qquad \det J = -1614 .
+J = \begin{bmatrix} -293.7 & 0.866 & -0.918\\ 508.7 & 0.500 & -0.530\\ 0 & 0 & -2.783\end{bmatrix},
+\qquad \det J = -1635 .
 \end{equation}
 
 %==================================================================== 9
@@ -538,11 +542,12 @@ I0.0--I0.3. Hay que confirmarlo en la planta.
 \label{fig:espacio}
 \end{figure}
 
-El corte $r$--$z$ es la imagen del rectángulo de carreras $[0,170]^2$. Los bordes $s_Y = $ constante son
+El corte $r$--$z$ es la imagen del rectángulo de carreras $[0,120]\times[0,170]$. Los bordes $s_Y = $ constante son
 segmentos horizontales, porque $s_X$ solo traslada en $r$. Los bordes $s_X = $ constante son arcos de radio
-$L_9 = 300$ mm. El TCP alcanza $r \in [410, 695]$ mm y $z \in [39, 414]$ mm, unos 375 mm de recorrido
-vertical, frente a los 440 mm que indica el manual para el eje Y. La diferencia se atribuye a los
-supuestos de la tabla~\ref{tab:parametros}. En planta, el volumen es una corona de $\pm175°$.
+$L_9 = 300$ mm. El TCP alcanza $r \in [411, 627]$ mm y $z \in [54, 436]$ mm, unos 382 mm de recorrido
+vertical. La ficha comercial del fabricante indica 0--400 mm en vertical y 0--120 mm adelante--atrás
+\cite{ficha}, y el manual 440 mm para el eje Y. La diferencia se atribuye a los supuestos de la
+tabla~\ref{tab:parametros}. En planta, el volumen es una corona de $\pm175°$.
 
 %==================================================================== 11
 \section{Modelo 3D y gemelo digital en la página}
@@ -610,16 +615,28 @@ La página (\url{https://brazo-4gdl.pages.dev}) incorpora:
 \toprule
 \textbf{Prueba} & \textbf{Resultado} & \textbf{Criterio}\\
 \midrule
-Directa $\rightarrow$ inversa $\rightarrow$ directa (2205 puntos) & error $2.3\times10^{-13}$ & $<10^{-6}$\\
-Jacobiano analítico frente a diferencias finitas & error $3.7\times10^{-8}$ & $<10^{-4}$\\
+Directa $\rightarrow$ inversa $\rightarrow$ directa (2205 puntos) & error $1.7\times10^{-13}$ & $<10^{-6}$\\
+Jacobiano analítico frente a diferencias finitas & error $4.7\times10^{-8}$ & $<10^{-4}$\\
+Pose del manual (fig. 1.3.3 A): pivotes $B$ y $C$ & $<5$ mm & foto de perfil\\
 Python frente a JavaScript (25 puntos) & 0.05 mm & redondeo de la tabla\\
 TCP del modelo 3D frente a la directa (visor) & $<10^{-13}$ mm & --\\
-Lazo cerrado en todo el recorrido & sí & $110 \le d \le 370$ mm\\
+Lazo cerrado en todo el recorrido & sí & $90 \le d \le 380$ mm\\
 Singularidades en el recorrido & ninguna & $|\det J| > 0$\\
 \bottomrule
 \end{tabular}
 \caption{Validación numérica (\codigo{pruebas\_cinematica.js}, \codigo{graficas\_cinematica.py} y página).}
 \end{table}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.49\textwidth}\includegraphics[width=\textwidth]{referencia_manual_perfil.png}
+\caption{Foto de perfil del manual de fábrica.}\end{subfigure}
+\begin{subfigure}{0.49\textwidth}\includegraphics[width=\textwidth]{modelo_3d_pose_manual.png}
+\caption{Modelo con $s_X = 0$, $s_Y = 125$ mm.}\end{subfigure}
+\caption{Comparación cualitativa con la foto del manual: posición de la biela 12, la escuadra 8, la varilla 13
+y la pinza. Las cotas estimadas se ajustaron con esta foto.}
+\label{fig:comparacion}
+\end{figure}
 
 Con estas pruebas queda verificada la \textbf{consistencia interna}: las implementaciones coinciden entre
 sí y con el modelo 3D. \textbf{Falta la validación contra la planta}, porque no se tuvo acceso a mover los
@@ -627,7 +644,7 @@ actuadores. Se propone el siguiente protocolo para el próximo laboratorio, comp
 seguridad de la Guía 4:
 \begin{enumerate}
 \item Hacer homing y llevar los carros a las 25 posiciones de \codigo{cinematica/tabla\_cinematica.csv}
-      (combinaciones de $s_X, s_Y \in \{0, 42.5, 85, 127.5, 170\}$ mm, con sus pulsos).
+      (combinaciones de $s_X \in \{0, 30, 60, 90, 120\}$ y $s_Y \in \{0, 42.5, 85, 127.5, 170\}$ mm, con sus pulsos).
 \item En cada una, medir con flexómetro o escuadra la distancia horizontal del eje de giro al centro de las
       mordazas ($r$) y su altura sobre la mesa ($z$).
 \item Comparar con la tabla. Ajustar primero el paso del husillo con el desplazamiento de $s_X$, luego $h_A$
@@ -642,13 +659,13 @@ seguridad de la Guía 4:
 \toprule
 $s_X$ [mm] & $s_Y$ [mm] & $\varphi$ [°] & $r$ [mm] & $z$ [mm] & pulsos X & pulsos Y\\
 \midrule
-0 & 0 & 51.87 & 410.2 & 413.5 & 0 & 0\\
-0 & 85 & 14.09 & 516.0 & 250.5 & 0 & 27200\\
-0 & 170 & $-27.55$ & 491.0 & 38.7 & 0 & 54400\\
-85 & 85 & 14.09 & 601.0 & 250.5 & 27200 & 27200\\
-170 & 0 & 51.87 & 580.2 & 413.5 & 54400 & 0\\
-170 & 127.5 & $-5.91$ & 693.4 & 146.6 & 54400 & 40800\\
-170 & 170 & $-27.55$ & 661.0 & 38.7 & 54400 & 54400\\
+0 & 0 & 47.04 & 411.5 & 435.5 & 0 & 0\\
+0 & 85 & 12.04 & 500.4 & 278.6 & 0 & 27200\\
+0 & 170 & $-32.60$ & 459.7 & 54.4 & 0 & 54400\\
+60 & 85 & 12.04 & 560.4 & 278.6 & 19200 & 27200\\
+120 & 0 & 47.04 & 531.5 & 435.5 & 38400 & 0\\
+120 & 127.5 & $-8.56$ & 623.7 & 171.3 & 38400 & 40800\\
+120 & 170 & $-32.60$ & 579.7 & 54.4 & 38400 & 54400\\
 \bottomrule
 \end{tabular}
 \caption{Extracto de la tabla de validación (posiciones previstas por el modelo).}
@@ -705,9 +722,9 @@ Versionado en GitHub (ramas y merge) & Rama \codigo{feat/cinematica-modelo-3d}, 
       (Grübler), y con la base y la garra suma los 4 GDL del equipo.
 \item La cinemática directa se reduce a cerrar un triángulo con la ley de cosenos. La inversa es analítica
       y, con la rama de montaje y los límites aplicados, da una solución única por cada $\theta$. No hay
-      singularidades en el recorrido, y el ángulo de transmisión (49°--109°) es adecuado.
+      singularidades en el recorrido, y el ángulo de transmisión (38°--92°) es aceptable.
 \item Con los supuestos actuales, la resolución es de 0.003 mm/pulso en los carros y 0.045 °/pulso en la
-      base. Como $d\varphi/ds_Y \approx -0.46$ °/mm, un pulso del carro Y mueve el TCP unos 7.5 µm: la
+      base. Como $d\varphi/ds_Y \approx -0.45$ °/mm, un pulso del carro Y mueve el TCP unos 7.4 µm: la
       precisión real no la limitan los pulsos, sino las holguras y la pérdida de pasos.
 \item El PTO compartido de la CPU 224 (Q0.1 con los relés K1 y K2) impide mover X e Y a la vez. Toda
       trayectoria programada en el PLC debe planificarse por turnos, y en una futura etapa de lazo cerrado
@@ -750,6 +767,7 @@ Versionado en GitHub (ramas y merge) & Rama \codigo{feat/cinematica-modelo-3d}, 
 \bibitem{manual} \emph{XK-JS1-1 Robotic Arm Training Device: Instruction Book} (manual de fábrica). Repositorio: \codigo{global/manuales/manual\_xk-js1-1\_en.pdf}.
 \bibitem{s7200} Siemens AG, \emph{S7-200 Programmable Controller System Manual} y hoja de datos CPU 224 (6ES7214-1AD23-0XB0).
 \bibitem{guia5} J. A. Nava, \emph{Guía de Laboratorio N.º 5}, ETN-902/ETN-1034/ETN-1000, UMSA, 2026.
+\bibitem{ficha} Shandong Xingke Intelligent Technology Co., \emph{Educational Trainer, Robotic Arm Training Device (XK-JS1-1)}, ficha comercial. \url{https://www.china-manufacturer-directory.com/product/educational-trainer-robotic-arm-training-device-xk-js1-1_681727552.html}
 \bibitem{gltf} Khronos Group, \emph{glTF 2.0 Specification}, 2021. \url{https://registry.khronos.org/glTF/}
 \end{thebibliography}
 
