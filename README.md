@@ -16,6 +16,7 @@ Sistemas de Control II (ETN-902) · Aplicación de Técnicas de Control (ETN-103
 [Descripción](#descripción) ·
 [Hardware](#ficha-técnica-del-hardware) ·
 [E/S del PLC](#mapa-de-entradas-y-salidas) ·
+[Cinemática y 3D](#cinemática-y-modelo-3d) ·
 [Control](#arquitectura-de-control) ·
 [Datos](#arquitectura-de-datos) ·
 [Avance](#avance-por-semestre) ·
@@ -83,6 +84,43 @@ Según el vector multifase medido con multímetro (Informe 1, II-2026).
 
 > En la verificación se encontró un desfase de 1 bit en `I0.0`-`I0.3` respecto a la tabla 2-1 del manual heredado. `Q0.7` (garra) es la única señal validada por completo contra el manual.
 
+> **Por confirmar (II-2026).** La CPU 224 solo genera trenes de pulsos por hardware en `Q0.0` y `Q0.1`. Según la tabla 2-1 del manual y el Informe Lab 2, `Q0.1` es un PTO **compartido** por X e Y, y `Q0.5` / `Q0.6` accionan los relés K1 / K2 que lo dirigen a cada driver: X e Y no pueden moverse a la vez. El manual asigna además `I0.0` al sensor inductivo e `I0.1`-`I0.4` a los finales de carrera.
+
+## Cinemática y modelo 3D
+
+<p align="center">
+  <img src="semestres/2026_II/modelo-3d/informe/figuras/modelo_3d_lateral.png" width="640" alt="Modelo 3D articulado del brazo, vista lateral"><br>
+  <sub>Modelo 3D articulado a escala, generado con <code>global/modelo-3d/generar_modelo.js</code>.</sub>
+</p>
+
+El brazo **no es cartesiano**:
+
+- El **carro X** (husillo inferior) desliza todo el bastidor de husillos a través del bloque fijo a la columna, y con eso traslada el brazo en dirección radial.
+- El **carro Y** (husillo superior) mueve un bloque que, mediante la biela 12, hace girar el brazo 9 (mecanismo biela-manivela). La garra se mueve sobre un arco.
+- Un paralelogramo (varilla 13 y postes 14) mantiene la pinza horizontal.
+
+En el plano del brazo la movilidad es 2 (Grübler: 7 eslabones, 8 pares). Con el giro de la base y la garra suman 4 GDL.
+
+| | |
+|---|---|
+| Directa | $r = u_{50} + s_X + u_A + L_9\cos\varphi(s_Y) + d_g$, $z = h_A + L_9\sin\varphi(s_Y) - h_g$, $(X, Y) = r(\cos\theta, \sin\theta)$ |
+| Inversa | Analítica. Una solución válida por cada $\theta$, con aviso si la posición es inalcanzable |
+| Espacio de trabajo | $r$ de 410 a 695 mm, $z$ de 39 a 414 mm, $\theta$ ±175°. Sin singularidades |
+| Resolución | 0.003125 mm/pulso (X, Y) y 0.045 °/pulso (base) |
+
+Todo lo anterior depende de varios **SUPUESTOS** (pivotes, paso del husillo de 5 mm/rev, 1600 pulsos/rev y reducción 5:1 de la base) que hay que medir en la planta.
+
+- Desarrollo completo: [informe de cinemática y modelo 3D](semestres/2026_II/modelo-3d/informe/informe_cinematica_modelo_3d.pdf).
+- Ecuaciones resumidas: [cinematica_y_modelo_3d.md](semestres/2026_II/modelo-3d/cinematica_y_modelo_3d.md).
+- Medidas: [levantamiento](semestres/2026_II/modelo-3d/levantamiento/levantamiento_medidas.md).
+
+En la [página](https://brazo-4gdl.pages.dev/#modelo3d) el modelo se controla desde el navegador:
+
+- Control articular y cartesiano (cinemática inversa con trayectoria interpolada).
+- Homing simulado y telemetría de pulsos y E/S.
+- Secuencias pick & place exportables a CSV de pulsos para el PLC.
+- Interfaz `web/js/conexion-plc.js` preparada para el middleware.
+
 ## Arquitectura de control
 
 ```mermaid
@@ -149,6 +187,7 @@ El modelo entidad-relación preliminar está en [`semestres/2026_II/base-de-dato
 | [Guía 1](semestres/2026_II/guias/guia_laboratorio_1.pdf) · [Informe 1](semestres/2026_II/informes/informe_1_auditoria_y_requerimientos.pdf) | Auditoría y levantamiento de requerimientos | Ficha técnica unificada, reporte de discrepancias Kaizen, diagrama de bloques fenomenológico, arquitectura de datos y modelo E-R preliminar |
 | [Guía 2](semestres/2026_II/guias/guia_laboratorio_2.pdf) | Semanas 3 y 4 (18 ago - 1 sep) | Mockups y organigrama del sistema (ETN-1000) |
 | [Guía 3](semestres/2026_II/guias/guia_laboratorio_3.pdf) | Semanas 5 y 6 (1 - 15 sep) | En curso |
+| Guía 5 (complemento) · [Informe](semestres/2026_II/modelo-3d/informe/informe_cinematica_modelo_3d.pdf) | Gemelo digital geométrico | Levantamiento de medidas, cinemática directa e inversa, espacio de trabajo, modelo 3D y simulador en la página |
 
 **Discrepancias Kaizen** encontradas entre el plano histórico y la planta real:
 
@@ -178,17 +217,19 @@ En el mantenimiento preventivo se resoldaron conexiones de los finales de carrer
 │   ├── manuales/             Manual XK-JS1-1, Ladder (KOP) y MAP_SERV de Siemens
 │   ├── normativas/           ISA S5.1 e IEC 60617
 │   ├── programas-plc/        Proyecto Micro/WIN del brazo y librerías MAP_SERV
+│   ├── modelo-3d/            Modelo 3D articulado (.glb) y su generador
 │   └── plantillas/           Plantilla LaTeX de informes
 │
 ├── semestres/
 │   ├── 2026_I/               informes/ · planos/electrico · planos/pid
 │   └── 2026_II/              guias/ · informes/ · planos/ · diagramas/ ·
 │                             base-de-datos/ · programas-plc/ · hmi/ ·
-│                             pruebas/ · evidencias/
+│                             pruebas/ · evidencias/ · modelo-3d/
 │
 ├── config/                   Títulos, descripciones, semestres, equipo y videos de la página
 ├── scripts/build-catalog.js  Genera el catálogo de la página
 ├── web/                      Estilos, código e imágenes de la página
+│                             (js/cinematica.js: cinemática y parámetros del brazo)
 ├── index.html                Página principal
 └── .github/workflows/        Publicación alternativa en GitHub Pages
 ```

@@ -15,6 +15,8 @@ Guía para el equipo: dónde poner cada archivo y cómo hacer que aparezca bien 
 | Base de datos (modelo, `.sql`, mockups) | `semestres/2026_II/base-de-datos/` |
 | Datos de ensayos | `semestres/2026_II/pruebas/` |
 | Fotos del laboratorio | `semestres/2026_II/evidencias/` |
+| Medidas, cinemática e informe del modelo 3D | `semestres/2026_II/modelo-3d/` |
+| Modelo 3D (`.glb`) y su generador | `global/modelo-3d/` |
 | Foto de un componente de la planta | `global/fotos-planta/` (`.jpg`, máximo ~1600 px) |
 | Datasheet de un componente | `global/datasheets/` |
 | Manual | `global/manuales/` |
@@ -100,6 +102,24 @@ Los videos pesan demasiado para el repositorio (GitHub rechaza archivos de más 
 }
 ```
 
-## 6. Semestres y equipo (`config/semestres.json`)
+## 6. Cinemática y modelo 3D
+
+Las medidas del brazo y la cinemática están en un solo archivo: `web/js/cinematica.js` (bloque `PARAMETROS`).
+Los valores marcados `SUPUESTO` todavía no se midieron en la planta. Al cambiar uno, actualizar lo que
+depende de él:
+
+```bash
+node global/modelo-3d/generar_modelo.js                          # modelo 3D (.glb)
+node semestres/2026_II/modelo-3d/cinematica/pruebas_cinematica.js  # pruebas, parametros.json y tabla
+python3 semestres/2026_II/modelo-3d/cinematica/graficas_cinematica.py  # figuras del informe
+```
+
+- No editar a mano `brazo_xk-js1-1.glb` ni `parametros.json`: se generan.
+- Si una medida deja de ser `SUPUESTO`, poner en el comentario de dónde sale (boceto, foto o medición) y
+  quitarla de la lista `SUPUESTOS` del mismo archivo.
+- Las librerías externas de la página se cargan solo desde CDN y con versión fija (por ejemplo
+  `three@0.160.0`).
+
+## 7. Semestres y equipo (`config/semestres.json`)
 
 Ahí va el resumen de cada semestre, el docente y los integrantes de cada grupo. Se muestran en la página y conviene actualizarlo al empezar cada gestión.

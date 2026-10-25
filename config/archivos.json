@@ -405,5 +405,84 @@
   "semestres/2026_II/base-de-datos/modelo/modelo_er_preliminar.png": {
     "titulo": "Modelo entidad-relación preliminar",
     "descripcion": "Borrador del modelo E-R (Informe 1, II-2026)."
+  },
+  "global/modelo-3d/": {
+    "subsistemas": [
+      1,
+      2,
+      3
+    ]
+  },
+  "global/modelo-3d/brazo_xk-js1-1.glb": {
+    "titulo": "Modelo 3D articulado del brazo (GLB)",
+    "descripcion": "Modelo a escala real con una pieza por nodo y el origen en cada pivote o guía. Lo usa la sección Modelo 3D de la página. 193 KB.",
+    "orden": 0
+  },
+  "global/modelo-3d/generar_modelo.js": {
+    "titulo": "Generador del modelo 3D",
+    "descripcion": "node global/modelo-3d/generar_modelo.js: construye el GLB a partir de las cotas de web/js/cinematica.js, sin Blender."
+  },
+  "semestres/2026_II/modelo-3d/": {
+    "subsistemas": [
+      1,
+      2,
+      3
+    ]
+  },
+  "semestres/2026_II/modelo-3d/informe/informe_cinematica_modelo_3d.pdf": {
+    "titulo": "Informe - Cinemática y modelo 3D del brazo",
+    "descripcion": "Levantamiento de medidas, esquema cinemático, cinemática directa e inversa, jacobiano, relación pulsos-movimiento, espacio de trabajo, validación y gemelo digital en la página (II-2026).",
+    "subsistemas": [
+      1,
+      2,
+      3,
+      5,
+      6
+    ],
+    "orden": 0
+  },
+  "semestres/2026_II/modelo-3d/informe/informe_cinematica_modelo_3d.tex": {
+    "titulo": "Informe - Cinemática y modelo 3D (fuente LaTeX)",
+    "descripcion": "Compilar en esta carpeta con latexmk -pdf. Figuras en informe/figuras."
+  },
+  "semestres/2026_II/modelo-3d/cinematica_y_modelo_3d.md": {
+    "titulo": "Resumen - Cinemática y modelo 3D (ecuaciones)",
+    "descripcion": "Ecuaciones de la cinemática directa e inversa, jacobiano, pulsos y espacio de trabajo, con los supuestos actuales.",
+    "orden": 1
+  },
+  "semestres/2026_II/modelo-3d/levantamiento/levantamiento_medidas.md": {
+    "titulo": "Levantamiento de medidas y estructura cinemática",
+    "descripcion": "Tabla de piezas con cotas en mm, estado de cada medida (leída, estimada, SUPUESTO), funcionamiento del mecanismo y grados de libertad.",
+    "orden": 2
+  },
+  "semestres/2026_II/modelo-3d/levantamiento/esquema_cinematico.svg": {
+    "titulo": "Esquema cinemático del brazo (plano r-z)"
+  },
+  "semestres/2026_II/modelo-3d/levantamiento/fotos/": {
+    "subsistemas": [
+      1,
+      2,
+      3
+    ]
+  },
+  "semestres/2026_II/modelo-3d/cinematica/pruebas_cinematica.js": {
+    "titulo": "Pruebas de la cinemática",
+    "descripcion": "Directa-inversa-directa, jacobiano analítico frente a numérico y rangos; genera parametros.json y la tabla de validación."
+  },
+  "semestres/2026_II/modelo-3d/cinematica/graficas_cinematica.py": {
+    "titulo": "Gráficas de la cinemática (Python)",
+    "descripcion": "Espacio de trabajo, φ(sY) y posturas del mecanismo para el informe. Requiere numpy y matplotlib."
+  },
+  "semestres/2026_II/modelo-3d/cinematica/cinematica_brazo.m": {
+    "titulo": "Cinemática del brazo (MATLAB)",
+    "descripcion": "Directa, inversa, jacobiano y espacio de trabajo a partir de parametros.json."
+  },
+  "semestres/2026_II/modelo-3d/cinematica/parametros.json": {
+    "titulo": "Parámetros cinemáticos (JSON)",
+    "descripcion": "Exportados desde web/js/cinematica.js; los leen los scripts de Python y MATLAB."
+  },
+  "semestres/2026_II/modelo-3d/cinematica/tabla_cinematica.csv": {
+    "titulo": "Tabla de validación de la cinemática",
+    "descripcion": "25 combinaciones de carros X e Y con sus pulsos y la posición prevista de la garra, para medir en la planta."
   }
 }

@@ -14,7 +14,9 @@
   // ---------------------------------------------------------------- utilidades
   const LIBS = {
     marked: 'https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js',
-    purify: 'https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js'
+    purify: 'https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js',
+    katex: 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js',
+    katexCss: 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css'
   };
   const cargados = {};
   function cargar(src) {
@@ -28,9 +30,35 @@
     return cargados[src];
   }
 
+  function cargarCss(href) {
+    if (!document.querySelector(`link[href="${href}"]`)) {
+      const l = document.createElement('link');
+      l.rel = 'stylesheet'; l.href = href;
+      document.head.appendChild(l);
+    }
+  }
+
+  // Ecuaciones $$...$$ (bloque) y $...$ (en línea) con KaTeX. Se apartan antes de
+  // pasar el texto por marked para que no altere los _ y \ de LaTeX.
   async function markdownAHtml(texto, base) {
-    await Promise.all([cargar(LIBS.marked), cargar(LIBS.purify)]);
-    const html = window.DOMPurify.sanitize(window.marked.parse(texto));
+    const formulas = [];
+    const conMate = /\$/.test(texto);
+    if (conMate) {
+      texto = texto
+        .replace(/\$\$([\s\S]+?)\$\$/g, (m, f) => `\n\nKATEXFORMULA${formulas.push({ f, bloque: true }) - 1}FIN\n\n`)
+        .replace(/(^|[^\\$])\$([^$\n]+?)\$/g, (m, pre, f) => `${pre}KATEXFORMULA${formulas.push({ f, bloque: false }) - 1}FIN`);
+    }
+    const libs = [cargar(LIBS.marked), cargar(LIBS.purify)];
+    if (formulas.length) { libs.push(cargar(LIBS.katex)); cargarCss(LIBS.katexCss); }
+    await Promise.all(libs);
+    let html = window.DOMPurify.sanitize(window.marked.parse(texto));
+    if (formulas.length) {
+      html = html.replace(/(<p>)?KATEXFORMULA(\d+)FIN(<\/p>)?/g, (m, a, i, b) => {
+        const { f, bloque } = formulas[Number(i)];
+        const r = window.katex.renderToString(f, { displayMode: bloque, throwOnError: false, output: 'html' });
+        return bloque ? `<div class="formula">${r}</div>` : (a || '') + r + (b || '');
+      });
+    }
     const div = document.createElement('div');
     div.innerHTML = html;
     // Rutas relativas de imágenes y enlaces dentro del README
