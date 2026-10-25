@@ -46,6 +46,9 @@
     // Bastidor
     largoGuias: 300,      // leida: piezas 16, Ø16 × 300
     espesorPlaca: 13,     // leida: placas 5 y 10
+    anchoPlaca: 120,      // leida (f02, f04): 12.06 cm; agujeros a 22, 57 y 97 mm de un borde
+    altoPlaca: 110,       // leida: 11.03 cm
+    zGuias: 37.5,         // leida (f02): guías a ±37.5 mm del husillo (97 - 22 = 75 entre centros)
     holgura: 2,           // SUPUESTO: distancia bloque-placa al pisar el final de carrera
     // Recorridos útiles (entre finales de carrera)
     recorridoX: 120,      // SUPUESTO: ficha del fabricante "adelante-atrás 0-120 mm" (el manual dice 200,

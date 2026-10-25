@@ -95,7 +95,7 @@ Ejes de la pieza: **L** a lo largo de las guías, **W** transversal horizontal, 
 | 7 | Columna en H con ranuras | Base | H 120 × W 100 × L 71; nervios 23 / 15 / 10 | leída (lectura del boceto a confirmar: lo rotulé 7, se ve como "9") | disco 11 sup. | fija |
 | 2 | Bloque fijo del husillo X | Base | L 100 × W 130 × H 40; bujes Ø28 (LM16UU), tuerca Ø50, separación 10 | leída | columna 7 | fija |
 | — | Motor base NEMA 17 + reductor | Base | 42 × 42 × 48 | fabricante | disco 11 sup. | fija (mueve θ) |
-| 10 | Placa trasera del bastidor | CarroHorizontal | 110.3 × 120.6 × 13.1; 6 agujeros: 2 niveles a ~44 entre ejes | leída | bastidor | fija |
+| 10 | Placa trasera del bastidor | CarroHorizontal | 120.6 de ancho × 110.3 de alto × 13.1; 6 agujeros en 2 niveles a ~44 entre ejes; por nivel: guía, husillo y guía a 22, 57 y 97 mm de un borde (guías a ±37.5 del husillo) | leída | bastidor | fija |
 | 5 | Placa delantera del bastidor | CarroHorizontal | igual que 10 ("es igual que la 5") | leída | bastidor | fija |
 | 16 | Guías lineales ×4 | CarroHorizontal | Ø16 × 300 | leída | placas 5-10 | fija |
 | — | Husillos de bolas ×2 | CarroHorizontal | Ø ~21 (boceto: "2,1 cm"), **paso: falta** | leída / **falta** | placas 5-10 | fija (gira) |

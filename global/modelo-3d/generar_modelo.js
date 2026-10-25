@@ -142,6 +142,9 @@ caja(giro.geo, 'aluminio', 0, hCol + 5, 0, 90, 10, 120);
 // Bloque 2 (fijo) con la tuerca del husillo inferior
 caja(giro.geo, 'aluminio', 0, D.hEjeX, 0, P.largoBloque, P.hBloque2, P.anchoBloque);
 cilindro(giro.geo, 'motor', [P.largoBloque / 2, D.hEjeX, 0], [P.largoBloque / 2 + 8, D.hEjeX, 0], 24, 24);
+for (const x of [-P.largoBloque / 2 - 1, P.largoBloque / 2]) {                   // bujes lineales (Ø28)
+  for (const z of [-P.zGuias, P.zGuias]) cilindro(giro.geo, 'goma', [x, D.hEjeX, z], [x + 1, D.hEjeX, z], 14, 20);
+}
 // Motor NEMA 17 delante de la columna (fotos f11, f13) con su acople hacia el engranaje, y sensor inductivo
 caja(giro.geo, 'motor', 62, hCol + 30, 0, 42, 48, 42);
 cilindro(giro.geo, 'acero', [62, hCol, 0], [62, hCol + 6, 0], 13, 20);
@@ -151,10 +154,11 @@ cilindro(giro.geo, 'sensor', [-45, hCol, 58], [-45, hCol + 45, 58], 6, 16);
 const cx = nodo('carro_x', giro, { t: [D.u5_0, D.hEjeX, 0], extras: { articulacion: 'prismatica', eje: 'x', variable: 'sX' } });
 const xp10 = -(P.largoGuias - 2 * P.espesorPlaca);        // cara interior de la placa 10
 const yPlaca = P.sepNiveles / 2;
-caja(cx.geo, 'aluminio', P.espesorPlaca / 2, yPlaca, 0, P.espesorPlaca, 120, 110);
-caja(cx.geo, 'aluminio', xp10 - P.espesorPlaca / 2, yPlaca, 0, P.espesorPlaca, 120, 110);
+// Placas 5 y 10: 120 de ancho (lateral) × 110 de alto, con los dos niveles de guías y husillo
+caja(cx.geo, 'aluminio', P.espesorPlaca / 2, yPlaca, 0, P.espesorPlaca, P.altoPlaca, P.anchoPlaca);
+caja(cx.geo, 'aluminio', xp10 - P.espesorPlaca / 2, yPlaca, 0, P.espesorPlaca, P.altoPlaca, P.anchoPlaca);
 for (const y of [0, P.sepNiveles]) {
-  for (const z of [-49, 49]) cilindro(cx.geo, 'acero', [xp10 - P.espesorPlaca, y, z], [P.espesorPlaca, y, z], 8, 20);
+  for (const z of [-P.zGuias, P.zGuias]) cilindro(cx.geo, 'acero', [xp10 - P.espesorPlaca, y, z], [P.espesorPlaca, y, z], 8, 20);
   cilindro(cx.geo, 'acero', [xp10 - P.espesorPlaca, y, 0], [P.espesorPlaca, y, 0], 8, 20);   // husillo
 }
 // Motores NEMA 23 con adaptadores 3 (arriba Y, abajo X); separados para que no se crucen (SUPUESTO)
@@ -166,8 +170,9 @@ for (const [y, nombre] of [[-8, 'X'], [P.sepNiveles + 8, 'Y']]) {
 }
 // Barras de finales de carrera en las placas 5 y 10 (dos interruptores cada una)
 for (const x of [P.espesorPlaca / 2, xp10 - P.espesorPlaca / 2]) {
-  caja(cx.geo, 'aluminio', x, yPlaca, -62, 16, 110, 8);
-  for (const y of [0, P.sepNiveles]) caja(cx.geo, 'motor', x + (x > 0 ? -12 : 12), y, -62, 12, 18, 10);
+  const zBarra = -(P.anchoPlaca / 2 + 4);
+  caja(cx.geo, 'aluminio', x, yPlaca, zBarra, 16, P.altoPlaca, 8);
+  for (const y of [0, P.sepNiveles]) caja(cx.geo, 'motor', x + (x > 0 ? -12 : 12), y, zBarra, 12, 18, 10);
 }
 // Horquilla 17 en la cara delantera de la placa 5 (pivote A, a la altura del husillo superior)
 const xH = P.espesorPlaca, largoH = P.uA - P.espesorPlaca + 12;
@@ -175,7 +180,7 @@ caja(cx.geo, 'aluminio', xH + largoH / 2, P.dhA, -24, largoH, 34, 6);
 caja(cx.geo, 'aluminio', xH + largoH / 2, P.dhA, 24, largoH, 34, 6);
 pasador(cx.geo, P.uA, P.dhA, -32, 32);
 // Soporte sobre la placa 5 y poste 14 del pivote A' (paralelogramo)
-const yTopPlaca = P.sepNiveles / 2 + 60;
+const yTopPlaca = P.sepNiveles / 2 + P.altoPlaca / 2;
 caja(cx.geo, 'aluminio', (P.uA + 6) / 2, yTopPlaca + 5, 40, P.uA + 6, 10, 20);
 cilindro(cx.geo, 'acero', [P.uA, yTopPlaca + 10, 40], [P.uA, P.dhA + P.L14, 40], 5, 16);
 
@@ -184,6 +189,9 @@ const xBloque1_0 = -(D.carreraLibre - P.holgura);
 const cyN = nodo('carro_y', cx, { t: [xBloque1_0, 0, 0], extras: { articulacion: 'prismatica', eje: 'x', variable: 'sY' } });
 caja(cyN.geo, 'aluminio', -P.largoBloque / 2, P.sepNiveles, 0, P.largoBloque, P.hBloque1, P.anchoBloque);
 cilindro(cyN.geo, 'motor', [0, P.sepNiveles, 0], [8, P.sepNiveles, 0], 24, 24);
+for (const x of [-P.largoBloque - 1, 0]) {                                        // bujes lineales (Ø28)
+  for (const z of [-P.zGuias, P.zGuias]) cilindro(cyN.geo, 'goma', [x, P.sepNiveles, z], [x + 1, P.sepNiveles, z], 14, 20);
+}
 const yTop1 = P.hBloque2 / 2 + P.hBloque1;            // cara superior del bloque 1 (relativa al eje inferior)
 const hCrel = D.hCabs - D.hEjeX;                       // pivote C (relativo al eje inferior)
 for (const z0 of [-17, 6]) {

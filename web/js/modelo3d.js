@@ -273,6 +273,9 @@ async function iniciarVisor() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // Mapeo de tonos: evita que las caras de aluminio iluminadas desde arriba salgan blancas
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
   renderer.domElement.setAttribute('aria-label', 'Vista 3D del brazo; arrastre para girar la cámara');
   renderer.domElement.setAttribute('role', 'img');
 
@@ -286,19 +289,19 @@ async function iniciarVisor() {
   controles.maxDistance = 4;
 
   escena.add(new THREE.HemisphereLight(0xffffff, 0x8a8f98, 1.6));
-  const sol = new THREE.DirectionalLight(0xffffff, 2.2);
-  sol.position.set(0.9, 1.6, 1.1);
+  const sol = new THREE.DirectionalLight(0xffffff, 2.0);
+  sol.position.set(0.35, 2.2, 0.45);     // casi cenital: la sombra cae debajo del brazo
   sol.castShadow = true;
   sol.shadow.mapSize.set(2048, 2048);
   sol.shadow.radius = 4;
   Object.assign(sol.shadow.camera, { left: -0.9, right: 0.9, top: 0.9, bottom: -0.9, near: 0.1, far: 4 });
   escena.add(sol);
 
-  // Mesa (900 × 640 mm según el manual) y rejilla de 50 mm
+  // Mesa (900 × 640 mm según el manual), con el brazo al centro, y rejilla de 50 mm
   const matMesa = new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0.1 });
   const mesa = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.64), matMesa);
   mesa.rotation.x = -Math.PI / 2;
-  mesa.position.set(0.2, 0, 0);
+  mesa.position.set(0, 0, 0);
   mesa.receiveShadow = true;
   escena.add(mesa);
   const rejilla = new THREE.GridHelper(1.8, 36);
@@ -412,12 +415,13 @@ async function iniciarVisor() {
 
   // Vistas rápidas con transición suave
   const VISTAS = {
-    iso: [1.05, 0.8, 0.95], frontal: [1.45, 0.35, 0.0], lateral: [0.3, 0.3, 1.4], superior: [0.3, 1.55, 0.001]
+    iso: [1.05, 0.8, 0.95], frontal: [1.45, 0.35, 0.0], lateral: [0.3, 0.3, 1.4], superior: [0.1, 1.4, 0.001]
   };
   let anim = null;
   function irAVista(nombre) {
     const destino = new THREE.Vector3(...VISTAS[nombre]);
-    anim = { desde: camara.position.clone(), hasta: destino, t0: performance.now(), tDesde: controles.target.clone() };
+    const objetivo = nombre === 'superior' ? new THREE.Vector3(0.1, 0, 0) : new THREE.Vector3(0.3, 0.2, 0);
+    anim = { desde: camara.position.clone(), hasta: destino, t0: performance.now(), tDesde: controles.target.clone(), objetivo };
   }
   document.querySelectorAll('[data-vista]').forEach(b => b.addEventListener('click', () => irAVista(b.dataset.vista)));
   camara.position.set(...VISTAS.iso);
@@ -457,7 +461,7 @@ async function iniciarVisor() {
     if (anim) {
       const t = Math.min(1, (ahora - anim.t0) / 600), w = t * t * (3 - 2 * t);
       camara.position.lerpVectors(anim.desde, anim.hasta, w);
-      controles.target.lerpVectors(anim.tDesde, new THREE.Vector3(0.3, 0.2, 0), w);
+      controles.target.lerpVectors(anim.tDesde, anim.objetivo, w);
       if (t >= 1) anim = null;
       sucio = true;
     }
