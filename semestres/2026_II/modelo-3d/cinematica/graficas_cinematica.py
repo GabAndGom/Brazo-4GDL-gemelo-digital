@@ -31,9 +31,9 @@ plt.rcParams.update({"font.size": 10, "axes.grid": True, "grid.alpha": 0.3, "fig
 NARANJA, AZUL, GRIS = "#c2620c", "#2f7fc1", "#8a8f98"
 
 
-def psi_de(sY):
-    """Ángulo de A-B (rad) para la carrera sY: cierre del lazo A-B-C."""
-    cx, cz = sY + D["cu0"], D["ch"]
+def psi_de(g):
+    """Ángulo de A-B (rad) para la posición geométrica g del bloque 1 (desde su tope trasero)."""
+    cx, cz = g + D["cu0"], D["ch"]
     dist = np.hypot(cx, cz)
     cosg = (P["a"] ** 2 + dist ** 2 - P["L12"] ** 2) / (2 * P["a"] * dist)
     return np.arctan2(cz, cx) - np.arccos(cosg)
@@ -42,12 +42,13 @@ def psi_de(sY):
 def directa(theta, sX, sY):
     """Devuelve dict con phi [°], r, z, X, Y, Z [mm] y puntos A, B, C, E del plano."""
     sX, sY = np.broadcast_arrays(np.asarray(sX, float), np.asarray(sY, float))
-    psi = psi_de(sY)
+    g = P["recorridoY"] - sY          # sY = 0 en el final inferior (homing)
+    psi = psi_de(g)
     phi = psi - BETA
     uA = D["u5_0"] + sX + P["uA"]
     A = (uA, D["hA"])
     B = (uA + P["a"] * np.cos(psi), D["hA"] + P["a"] * np.sin(psi))
-    C = (uA + sY + D["cu0"], D["hCabs"])
+    C = (uA + g + D["cu0"], D["hCabs"])
     E = (uA + P["L9"] * np.cos(phi), D["hA"] + P["L9"] * np.sin(phi))
     r, z = E[0] + P["dg"], E[1] - P["hg"]
     th = np.radians(theta)
@@ -55,7 +56,8 @@ def directa(theta, sX, sY):
 
 
 def dphi_num(sY, h=1e-4):
-    return (np.degrees(psi_de(sY + h)) - np.degrees(psi_de(sY - h))) / (2 * h)
+    g = P["recorridoY"] - sY
+    return -(np.degrees(psi_de(g + h)) - np.degrees(psi_de(g - h))) / (2 * h)
 
 
 # ---------------------------------------------------------------- validación cruzada JS vs Python
@@ -75,7 +77,7 @@ K = directa(0, SX, SY)
 # ---------------------------------------------------------------- 1. corte r-z
 fig, ax = plt.subplots(figsize=(6.4, 4.2))
 ax.scatter(K["r"].ravel(), K["z"].ravel(), s=2, color=NARANJA, alpha=0.35, label="combinaciones de carreras")
-for s, est, lab in [(0, "-", "carro Y = 0 (brazo arriba)"), (RY, "--", f"carro Y = {RY:g} mm (brazo abajo)")]:
+for s, est, lab in [(0, "--", "carro Y = 0 (homing, brazo abajo)"), (RY, "-", f"carro Y = {RY:g} mm (brazo arriba)")]:
     k = directa(0, sx, s)
     ax.plot(k["r"], k["z"], est, color=AZUL, lw=1.5, label=lab)
 for s, lab in [(0, "carro X = 0"), (RX, f"carro X = {RX:g} mm")]:
@@ -116,7 +118,7 @@ fig.savefig(os.path.join(FIG, "espacio_trabajo_superior.png"))
 k = directa(0, 0, sy)
 fig, ax1 = plt.subplots(figsize=(6.4, 3.6))
 ax1.plot(sy, k["phi"], color=NARANJA, lw=2)
-ax1.set_xlabel("carrera del carro Y, sY [mm]")
+ax1.set_xlabel("carrera del carro Y desde el homing (final inferior), sY [mm]")
 ax1.set_ylabel("φ: ángulo del brazo 9 [°]", color=NARANJA)
 ax2 = ax1.twinx()
 ax2.plot(sy, [dphi_num(s) for s in sy], color=AZUL, lw=1.5, ls="--")

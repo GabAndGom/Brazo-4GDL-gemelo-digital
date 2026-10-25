@@ -58,15 +58,16 @@ fill([max(R(:))*cos(t), min(R(:))*cos(fliplr(t))], [max(R(:))*sin(t), min(R(:))*
 xlabel('X [mm]'); ylabel('Y [mm]'); title('Vista superior');
 
 % ================================================================ funciones
-function psi = psi_de(P, D, sY)
-    cx = sY + D.cu0; cz = D.ch;
+function psi = psi_de(P, D, g)
+    cx = g + D.cu0; cz = D.ch;
     dist = hypot(cx, cz);
     cosg = (P.a^2 + dist^2 - P.L12^2) / (2*P.a*dist);
     psi = atan2(cz, cx) - acos(cosg);
 end
 
 function k = directa(P, D, theta, sX, sY)
-    psi = psi_de(P, D, sY);
+    % sY = 0 en el final inferior (homing); g = posición del bloque 1 desde su tope trasero
+    psi = psi_de(P, D, P.recorridoY - sY);
     phi = psi - P.beta*pi/180;
     uA = D.u5_0 + sX + P.uA;
     Eu = uA + P.L9*cos(phi);  Eh = D.hA + P.L9*sin(phi);
@@ -84,10 +85,11 @@ function q = inversa(P, D, X, Y, Z)
     sX = r - P.dg - P.L9*cos(phi) - D.u5_0 - P.uA;
     psi = phi + P.beta*pi/180;
     bx = P.a*cos(psi);  bz = P.a*sin(psi);
-    sY = bx - sqrt(P.L12^2 - (D.ch - bz)^2) - D.cu0;
-    if abs(psi_de(P, D, sY) - psi) > 1e-6        % probar la otra raíz
-        sY = bx + sqrt(P.L12^2 - (D.ch - bz)^2) - D.cu0;
+    g = bx - sqrt(P.L12^2 - (D.ch - bz)^2) - D.cu0;
+    if abs(psi_de(P, D, g) - psi) > 1e-6         % probar la otra raíz
+        g = bx + sqrt(P.L12^2 - (D.ch - bz)^2) - D.cu0;
     end
+    sY = P.recorridoY - g;
     q = [theta, sX, sY];
     if sX < 0 || sX > P.recorridoX || sY < 0 || sY > P.recorridoY
         warning('Fuera de recorrido');

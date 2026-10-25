@@ -16,9 +16,9 @@ medidas en [`levantamiento/levantamiento_medidas.md`](levantamiento/levantamient
 | Símbolo | Significado | Rango |
 |---|---|---|
 | $\theta$ | giro de la base (motor Z, NEMA 17) | −175° a 175° (SUPUESTO) |
-| $s_X$ | carrera del carro X: el bastidor completo se desliza por el bloque 2 | 0 a 120 mm (SUPUESTO, ficha del fabricante) |
-| $s_Y$ | carrera del carro Y: el bloque 1 se desliza sobre el bastidor | 0 a 170 mm (SUPUESTO) |
-| $\varphi$ | ángulo del brazo 9 respecto a la horizontal (pasivo) | 47.0° a −32.6° |
+| $s_X$ | carrera del carro X desde su final trasero (homing): el bastidor completo se desliza por el bloque 2 | 0 a 120 mm (SUPUESTO, ficha del fabricante) |
+| $s_Y$ | carrera del carro Y desde su final inferior (homing): al crecer, el bloque 1 retrocede sobre el bastidor y el brazo sube | 0 a 170 mm (SUPUESTO) |
+| $\varphi$ | ángulo del brazo 9 respecto a la horizontal (pasivo) | −32.6° (homing) a 47.0° |
 | $(X, Y, Z)$ | posición de la garra (TCP); origen en el eje de giro sobre la mesa | — |
 
 Grados de libertad en el plano del brazo (Grübler-Kutzbach, $n = 7$ eslabones, $j = 8$ pares de 1 GDL):
@@ -31,12 +31,14 @@ Con el giro de la base y la garra ON/OFF quedan los **4 GDL** del equipo.
 
 **Lazo de la biela 12.** Con $A$ como origen en el bastidor, el pivote $C$ de la escuadra 6 está en
 
-$$ \mathbf{C} - \mathbf{A} = \begin{bmatrix} s_Y + c_{u0} \\ c_h \end{bmatrix}, \qquad c_{u0} = -252\ \text{mm},\quad c_h = 125\ \text{mm} $$
+$$ \mathbf{C} - \mathbf{A} = \begin{bmatrix} g + c_{u0} \\ c_h \end{bmatrix},\qquad g = S_Y - s_Y,\qquad c_{u0} = -252\ \text{mm},\quad c_h = 125\ \text{mm} $$
+
+donde $g$ es cuánto se alejó el bloque 1 de su tope trasero y $S_Y = 170$ mm es la carrera total del carro Y.
 
 y el vértice $B$ del balancín en $\mathbf{B} - \mathbf{A} = a\,[\cos\psi,\ \sin\psi]^T$. Cerrar el lazo
 $|\mathbf{B} - \mathbf{C}| = L_{12}$ da (ley de cosenos):
 
-$$ d = \sqrt{(s_Y + c_{u0})^2 + c_h^2},\qquad \psi = \operatorname{atan2}(c_h,\ s_Y + c_{u0}) - \arccos\!\left(\frac{a^2 + d^2 - L_{12}^2}{2\,a\,d}\right) $$
+$$ d = \sqrt{(g + c_{u0})^2 + c_h^2},\qquad \psi = \operatorname{atan2}(c_h,\ g + c_{u0}) - \arccos\!\left(\frac{a^2 + d^2 - L_{12}^2}{2\,a\,d}\right) $$
 
 El signo menos elige la rama de montaje real. El brazo forma un ángulo fijo $\beta$ con $A$-$B$:
 
@@ -70,7 +72,7 @@ $$ \sin\varphi = \frac{Z + h_g - h_A}{L_9} \;\Rightarrow\; \varphi_1 = \arcsin(\
 
 $$ s_X = r - d_g - L_9\cos\varphi - u_{50} - u_A $$
 
-$$ s_Y = a\cos(\varphi+\beta) \pm \sqrt{L_{12}^2 - \big(c_h - a\sin(\varphi+\beta)\big)^2} - c_{u0} $$
+$$ g = a\cos(\varphi+\beta) \pm \sqrt{L_{12}^2 - \big(c_h - a\sin(\varphi+\beta)\big)^2} - c_{u0},\qquad s_Y = S_Y - g $$
 
 Se generan las combinaciones de $\theta$, $\varphi_{1,2}$ y $\pm$. Solo se acepta la que reproduce la rama de
 montaje de la directa ($\varphi_2$, con el brazo hacia atrás, nunca la cumple). Además deben respetarse los
@@ -79,9 +81,9 @@ negativo o si ninguna solución cumple los límites, la posición es **inalcanza
 
 ## 4. Jacobiano y singularidades
 
-Derivando el cierre del lazo $f = |a\,\mathbf{e}(\psi) - (\mathbf{C} - \mathbf{A})|^2 - L_{12}^2 = 0$:
+Derivando el cierre del lazo $f = |a\,\mathbf{e}(\psi) - (\mathbf{C} - \mathbf{A})|^2 - L_{12}^2 = 0$ respecto de $g$:
 
-$$ \frac{d\varphi}{ds_Y} = \frac{d\psi}{ds_Y} = \frac{(B-C)_u}{a\,(\mathbf{B}-\mathbf{C})\cdot\mathbf{e}_\perp(\psi)} $$
+$$ \frac{d\varphi}{ds_Y} = -\frac{d\psi}{dg} = -\frac{(B-C)_u}{a\,(\mathbf{B}-\mathbf{C})\cdot\mathbf{e}_\perp(\psi)} $$
 
 $$ J = \frac{\partial(X,Y,Z)}{\partial(\theta, s_X, s_Y)} = \begin{bmatrix} -r\sin\theta & \cos\theta & -\cos\theta\,L_9\sin\varphi\,\varphi' \\ r\cos\theta & \sin\theta & -\sin\theta\,L_9\sin\varphi\,\varphi' \\ 0 & 0 & L_9\cos\varphi\,\varphi' \end{bmatrix},\qquad \det J = r\,L_9\cos\varphi\,\varphi' $$
 
@@ -99,7 +101,8 @@ $$ \Delta s = \frac{p}{N_{\text{paso}}\,\mu}\,N_p,\qquad \Delta\theta = \frac{36
 | Base | $\mu_Z = 8$, reducción $i_\theta = 5$ | **0.045 °/pulso** (22.2 pulsos/°) |
 
 A 20 kHz (máximo del PTO) esto da 62.5 mm/s en los carros y 900 °/s en la base. La posición se estima contando
-pulsos desde el homing, $q_{\text{est}} = q_0 + N_p\,\Delta q$.
+pulsos desde el homing, $q_{\text{est}} = q_0 + N_p\,\Delta q$. El homing lleva el carro X a su final trasero (I0.1) y
+el carro Y a su final inferior (I0.4): ahí $s_X = s_Y = 0$ y los contadores parten de cero.
 
 **Observación sobre las salidas.** La CPU 224 solo tiene PTO en Q0.0 y Q0.1. Según el manual (tabla 2-1) y el
 Informe Lab 2, Q0.0 da los pulsos de la base, Q0.1 es un **PTO compartido** para X e Y, y Q0.5/Q0.6 (relés

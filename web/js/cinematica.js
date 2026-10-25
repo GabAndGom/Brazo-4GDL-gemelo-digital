@@ -10,7 +10,11 @@
  *   carro X (sX)  carrera del husillo inferior [mm]: desplaza todo el bastidor
  *                 respecto al bloque 2 (fijo a la columna)
  *   carro Y (sY)  carrera del husillo superior [mm]: desplaza el bloque 1
- *                 respecto al bastidor y, por la biela 12, hace girar el brazo 9
+ *                 respecto al bastidor y, por la biela 12, hace girar el brazo 9.
+ *                 sY = 0 en su final de carrera inferior (homing: brazo abajo,
+ *                 bloque 1 adelante); sY positivo sube el brazo (el bloque 1 va
+ *                 hacia atrás). Así los pulsos cuentan igual que en el PLC.
+ *   carro X (sX)  sX = 0 en su final trasero (homing); positivo hacia la garra.
  *   posición de la garra (X, Y, Z): TCP en coordenadas cartesianas [mm],
  *                 origen en el eje de giro a nivel de la mesa, Z hacia arriba,
  *                 X hacia adelante con θ = 0 (sensor inductivo)
@@ -97,7 +101,7 @@
     const u5_0 = uBloque2 + p.holgura;           // cara interior de la placa 5 con sX = 0
     const hA = hEjeX + p.dhA;
     const hCabs = hEjeX + p.hBloque2 / 2 + p.hBloque1 + p.hC + p.dhC;
-    // C respecto a A (en el bastidor) con sY = 0, bloque 1 atrás del todo
+    // C respecto a A (en el bastidor) con el bloque 1 atrás del todo (posición geométrica g = 0)
     const cu0 = -(carreraLibre - p.holgura) + p.uCBloque - p.uA;
     return { hEjeX, hEjeY, uBloque2, carreraLibre, u5_0, hA, hCabs, cu0, ch: hCabs - hA };
   }
@@ -109,19 +113,23 @@
     const d = derivar(p);
     const beta = p.beta * RAD;
 
-    // Lazo A-B-C: ángulo ψ del segmento A-B para una carrera sY.
+    // Posición geométrica del bloque 1 desde su tope trasero: g = recorridoY - sY
+    // (sY se mide desde el final inferior, que es el homing).
+    const gY = sY => p.recorridoY - sY;
+
+    // Lazo A-B-C: ángulo ψ del segmento A-B para una posición geométrica g del bloque 1.
     // Rama de montaje real: B queda por debajo de la recta A-C.
-    function psiDe(sY) {
-      const cx = sY + d.cu0, cz = d.ch;
+    function psiDe(g) {
+      const cx = g + d.cu0, cz = d.ch;
       const dist = Math.hypot(cx, cz);
       const cosg = (p.a * p.a + dist * dist - p.L12 * p.L12) / (2 * p.a * dist);
       if (cosg < -1 || cosg > 1) return NaN;
       return Math.atan2(cz, cx) - Math.acos(cosg);
     }
 
-    // dψ/dsY analítico, de f = |a·e(ψ) - C|² - L12² = 0
-    function dpsi(sY, psi) {
-      const vx = p.a * Math.cos(psi) - (sY + d.cu0);
+    // dψ/dg analítico, de f = |a·e(ψ) - C|² - L12² = 0  (dψ/dsY = -dψ/dg)
+    function dpsi(g, psi) {
+      const vx = p.a * Math.cos(psi) - (g + d.cu0);
       const vz = p.a * Math.sin(psi) - d.ch;
       return vx / (p.a * (-vx * Math.sin(psi) + vz * Math.cos(psi)));
     }
@@ -129,18 +137,20 @@
     // ---------------------------------------------------------------- directa
     function directa(q) {
       const theta = q.theta || 0, sX = q.sX || 0, sY = q.sY || 0;
-      const psi = psiDe(sY);
+      const g = gY(sY);
+      const psi = psiDe(g);
       if (!isFinite(psi)) return { valida: false, motivo: 'El lazo de bielas no cierra para esa carrera del carro Y.' };
       const phi = psi - beta;
       const uA = d.u5_0 + sX + p.uA;
       const A = { u: uA, h: d.hA };
       const B = { u: uA + p.a * Math.cos(psi), h: d.hA + p.a * Math.sin(psi) };
-      const C = { u: uA + sY + d.cu0, h: d.hCabs };
+      const C = { u: uA + g + d.cu0, h: d.hCabs };
       const E = { u: uA + p.L9 * Math.cos(phi), h: d.hA + p.L9 * Math.sin(phi) };
       const r = E.u + p.dg, z = E.h - p.hg;
       const th = theta * RAD;
       return {
         valida: true, theta, sX, sY, garra: !!q.garra,
+        posBloque1: g,      // desplazamiento del bloque 1 desde su tope trasero (para el modelo 3D)
         phi: phi / RAD, psi: psi / RAD,
         angBiela: Math.atan2(B.h - C.h, B.u - C.u) / RAD,
         r, z, X: r * Math.cos(th), Y: r * Math.sin(th), Z: z,
@@ -190,9 +200,10 @@
         const disc = p.L12 * p.L12 - (d.ch - bz) * (d.ch - bz);
         if (disc < 0) continue;
         for (const sgn of [-1, 1]) {
-          const sY = bx + sgn * Math.sqrt(disc) - d.cu0;
+          const g = bx + sgn * Math.sqrt(disc) - d.cu0;
+          const sY = gY(g);
           // Solo vale la que corresponde a la rama de montaje real
-          const psiReal = psiDe(sY);
+          const psiReal = psiDe(g);
           if (!isFinite(psiReal) || Math.abs(norm180((psiReal - psi) / RAD)) > 1e-6) continue;
           for (const theta of thetas) {
             const q = { theta, sX, sY };
@@ -216,7 +227,7 @@
       const fk = directa(q);
       if (!fk.valida) return null;
       const th = fk.theta * RAD, phi = fk.phi * RAD;
-      const dphi = dpsi(fk.sY, fk.psi * RAD);
+      const dphi = -dpsi(fk.posBloque1, fk.psi * RAD);
       const drY = -p.L9 * Math.sin(phi) * dphi;
       const dzY = p.L9 * Math.cos(phi) * dphi;
       const c = Math.cos(th), s = Math.sin(th);

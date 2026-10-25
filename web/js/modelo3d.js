@@ -130,13 +130,14 @@ function fijarGarra(cerrada) {
   b.textContent = sim.garra ? 'Abrir garra' : 'Cerrar garra';
 }
 
-// Homing simulado: Y hasta su final superior (I0.3), X hasta el trasero (I0.1)
-// y la base hasta el sensor inductivo (I0.0), a velocidad reducida como pide el manual.
+// Homing simulado, como en la planta: la base hasta el sensor inductivo (I0.0), el carro X
+// hacia atrás hasta su final (I0.1) y el carro Y hacia abajo hasta su final (I0.4), a
+// velocidad reducida como pide el manual. Ahí los tres ejes quedan en 0 pulsos.
 async function homing() {
   if (sim.homing) return { ok: false };
   sim.homing = true;
   try {
-    for (const destino of [{ sY: 0 }, { sX: 0 }, { theta: 0 }]) {
+    for (const destino of [{ theta: 0 }, { sX: 0 }, { sY: 0 }]) {
       const r = await moverArticular(Object.assign({}, sim.q, destino), 0.5);
       if (r.detenido) return { ok: false, detenido: true };
     }
@@ -154,8 +155,8 @@ function entradas() {
     'I0.0': Math.abs(q.theta) < 0.5,
     'I0.1': q.sX <= 0.2,
     'I0.2': q.sX >= P.recorridoX - 0.2,
-    'I0.3': q.sY <= 0.2,
-    'I0.4': q.sY >= P.recorridoY - 0.2
+    'I0.3': q.sY >= P.recorridoY - 0.2,   // final Y arriba
+    'I0.4': q.sY <= 0.2                     // final Y abajo (homing)
   };
 }
 function salidas() {
@@ -364,7 +365,7 @@ async function iniciarVisor() {
     if (!fk.valida) return;
     N.giro.rotation.y = sim.q.theta * RAD;
     N.carroX.position.x = base.carroX.x + sim.q.sX * M;
-    N.carroY.position.x = base.carroY.x + sim.q.sY * M;
+    N.carroY.position.x = base.carroY.x + fk.posBloque1 * M;   // el bloque 1 retrocede al subir el brazo
     N.biela.rotation.z = fk.angBiela * RAD;
     N.brazo.rotation.z = fk.phi * RAD;
     N.pinza.rotation.z = -fk.phi * RAD;        // paralelogramo: la pinza queda horizontal

@@ -104,10 +104,10 @@
   <text x="486" y="320" font-size="14" font-style="italic">φ</text>
 
   <!-- Coordenadas articulares -->
-  <line x1="54" y1="214" x2="230" y2="214" stroke="#333" marker-start="url(#fl)" marker-end="url(#fl)"/>
-  <text x="60" y="208" font-weight="600">s_Y — P2 (carro Y)</text>
+  <line x1="330" y1="228" x2="404" y2="228" stroke="#333" marker-start="url(#fl)" marker-end="url(#fl)"/>
+  <text x="336" y="221" font-weight="600">s_Y — P2</text>
   <line x1="270" y1="350" x2="404" y2="350" stroke="#333" marker-start="url(#fl)" marker-end="url(#fl)"/>
-  <text x="262" y="368" font-weight="600">s_X (bastidor respecto al bloque 2) — P1</text>
+  <text x="230" y="368" font-weight="600">s_X — P1 (bastidor respecto al bloque 2)</text>
 
   <!-- Coordenadas cilíndricas del TCP -->
   <line x1="220" y1="505" x2="847" y2="505" stroke="#c0392b" marker-start="url(#fl)" marker-end="url(#fl)"/>
@@ -125,6 +125,6 @@
     <text x="600" y="140">Plano r-z: n = 7 eslabones, j = 8 pares (1 GDL c/u)</text>
     <text x="600" y="158">M = 3(n−1) − 2j = 18 − 16 = 2  →  (s_X, s_Y)</text>
     <text x="600" y="176">+ θ base (R1) + garra ON/OFF = 4 GDL</text>
-    <text x="600" y="196" fill="#777" font-size="11">Esquema sin escala. Cotas en levantamiento_medidas.md</text>
+    <text x="600" y="196" fill="#777" font-size="11">Homing: s_X = s_Y = 0 (X atrás, Y abajo). Sin escala.</text>
   </g>
 </svg>

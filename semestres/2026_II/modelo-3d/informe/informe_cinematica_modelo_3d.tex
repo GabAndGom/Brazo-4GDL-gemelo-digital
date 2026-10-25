@@ -312,7 +312,7 @@ $L_9$ & distancia $A$--$E$ del brazo & 300 mm & igual a la varilla 13\\
 $L_{14}$ & postes del paralelogramo (entre pivotes) & 70 mm & estimado (poste de 46 + soporte)\\
 $u_{50}$ & placa 5 con $s_X=0$ (desde el eje $\theta$) & 52 mm & bloque 2 + holgura\\
 $u_A$, $h_A$ & pivote $A$ (desde la placa 5; sobre la mesa) & 20 mm; 236 mm & estimado (foto)\\
-$c_{u0}$, $c_h$ & pivote $C$ respecto de $A$ con $s_Y=0$ & $-252$ mm; 125 mm & derivado\\
+$c_{u0}$, $c_h$ & pivote $C$ respecto de $A$ (bloque 1 en su tope trasero) & $-252$ mm; 125 mm & derivado\\
 $d_g$, $h_g$ & TCP respecto del pivote $E$ & 135 mm; 20 mm & estimado (foto)\\
 $s_X$ & recorrido útil del carro X & 0--120 mm & \supuesto{} (ficha del fabricante)\\
 $s_Y$ & recorrido útil del carro Y & 0--170 mm & \supuesto{} (300 $-$ 2·13 $-$ 100 $-$ 2·2)\\
@@ -355,21 +355,23 @@ $Z$ hacia arriba.
 
 \paragraph{Paso 1: posición de los pivotes en el bastidor.} Con $A$ como origen,
 \begin{equation}
-\mathbf{C}-\mathbf{A} = \begin{bmatrix} s_Y + c_{u0}\\ c_h\end{bmatrix},\qquad
+\mathbf{C}-\mathbf{A} = \begin{bmatrix} g + c_{u0}\\ c_h\end{bmatrix},\qquad
 \mathbf{B}-\mathbf{A} = a\begin{bmatrix}\cos\psi\\ \sin\psi\end{bmatrix}.
 \end{equation}
-La posición de $C$ respecto de $A$ \textbf{no depende de} $s_X$, porque el bloque 1 y el pivote $A$ viajan
+Aquí $g = S_Y - s_Y$ es cuánto se alejó el bloque 1 de su tope trasero ($S_Y = 170$ mm): $s_Y$ se mide desde
+el final inferior, que es el homing, y al crecer el bloque 1 retrocede y el brazo sube. La posición de $C$
+respecto de $A$ \textbf{no depende de} $s_X$, porque el bloque 1 y el pivote $A$ viajan
 juntos con el bastidor.
 
 \paragraph{Paso 2: cierre del lazo $A$--$B$--$C$.} La biela es rígida: $|\mathbf{B}-\mathbf{C}| = L_{12}$.
 En el triángulo $A B C$ se conocen los tres lados, $a$, $L_{12}$ y $d = |\mathbf{C}-\mathbf{A}|$. Por la
 ley de cosenos, el ángulo $\gamma$ en $A$ es
 \begin{equation}
-d = \sqrt{(s_Y+c_{u0})^2 + c_h^2},\qquad \cos\gamma = \frac{a^2 + d^2 - L_{12}^2}{2ad},
+d = \sqrt{(g+c_{u0})^2 + c_h^2},\qquad \cos\gamma = \frac{a^2 + d^2 - L_{12}^2}{2ad},
 \end{equation}
 y el ángulo de $A$--$B$ resulta
 \begin{equation}
-\psi = \operatorname{atan2}(c_h,\, s_Y + c_{u0}) - \gamma .
+\psi = \operatorname{atan2}(c_h,\, g + c_{u0}) - \gamma .
 \label{eq:psi}
 \end{equation}
 El signo menos elige la \emph{rama de montaje} real, con $B$ por debajo de la recta $A$--$C$, como en las
@@ -401,8 +403,8 @@ $\varphi(s_Y)$ y mueve la garra sobre un arco de radio $L_9$, cambiando a la vez
 \label{fig:phi}
 \end{figure}
 
-Con los parámetros de la tabla~\ref{tab:parametros}, $\varphi$ va de $47.0°$ ($s_Y=0$, brazo arriba) a
-$-32.6°$ ($s_Y = 170$ mm, brazo abajo), con $d\varphi/ds_Y \approx -0.45$ °/mm casi constante.
+Con los parámetros de la tabla~\ref{tab:parametros}, $\varphi$ va de $-32.6°$ ($s_Y=0$, homing, brazo abajo) a
+$47.0°$ ($s_Y = 170$ mm, brazo arriba), con $d\varphi/ds_Y \approx 0.47$ °/mm en promedio.
 
 %==================================================================== 7
 \section{Cinemática inversa}
@@ -432,7 +434,7 @@ s_X = r - d_g - L_9\cos\varphi - u_{50} - u_A .
 \paragraph{Carro Y.} Con $\psi = \varphi + \beta$ queda determinado $B$. El pivote $C$ está a altura
 fija $c_h$ y a distancia $L_{12}$ de $B$:
 \begin{equation}
-s_Y = a\cos\psi \pm \sqrt{L_{12}^2 - \left(c_h - a\sin\psi\right)^2} - c_{u0}.
+g = a\cos\psi \pm \sqrt{L_{12}^2 - \left(c_h - a\sin\psi\right)^2} - c_{u0},\qquad s_Y = S_Y - g .
 \end{equation}
 Si el radicando es negativo, la biela no alcanza y la posición es inalcanzable.
 
@@ -451,11 +453,11 @@ motivo concreto (por ejemplo, ``carro X fuera de recorrido'').
 %==================================================================== 8
 \section{Jacobiano y singularidades}
 
-Derivando la ecuación de cierre $f(\psi, s_Y) = |a\,\mathbf{e}(\psi) - (\mathbf{C}-\mathbf{A})|^2 - L_{12}^2 = 0$,
+Derivando la ecuación de cierre $f(\psi, g) = |a\,\mathbf{e}(\psi) - (\mathbf{C}-\mathbf{A})|^2 - L_{12}^2 = 0$,
 con $\mathbf{e}_\perp = (-\sin\psi, \cos\psi)$:
 \begin{equation}
-\varphi' \equiv \frac{d\varphi}{ds_Y} = \frac{d\psi}{ds_Y} = -\frac{\partial f/\partial s_Y}{\partial f/\partial\psi}
-= \frac{(B-C)_u}{a\,(\mathbf{B}-\mathbf{C})\cdot\mathbf{e}_\perp}.
+\varphi' \equiv \frac{d\varphi}{ds_Y} = -\frac{d\psi}{dg} = \frac{\partial f/\partial g}{\partial f/\partial\psi}
+= -\frac{(B-C)_u}{a\,(\mathbf{B}-\mathbf{C})\cdot\mathbf{e}_\perp}.
 \end{equation}
 Entonces
 \begin{equation}
@@ -477,10 +479,10 @@ Hay singularidad en estos casos:
 \end{itemize}
 Recorriendo todo el rango se obtiene $|\det J| \ge 579$ mm²/rad y un ángulo de transmisión entre 38° y
 92°. \textbf{No hay singularidades dentro del recorrido} y la transmisión es adecuada. Como ejemplo, en
-$\mathbf{q} = (30°, 100, 150)$:
+$\mathbf{q} = (30°, 100, 20)$:
 \begin{equation}
-J = \begin{bmatrix} -293.7 & 0.866 & -0.918\\ 508.7 & 0.500 & -0.530\\ 0 & 0 & -2.783\end{bmatrix},
-\qquad \det J = -1635 .
+J = \begin{bmatrix} -293.7 & 0.866 & 0.918\\ 508.7 & 0.500 & 0.530\\ 0 & 0 & 2.783\end{bmatrix},
+\qquad \det J = 1635 .
 \end{equation}
 
 %==================================================================== 9
@@ -581,8 +583,8 @@ Las bielas pasivas no se animan a mano: la página calcula sus ángulos con la c
 \begin{subfigure}{0.49\textwidth}\includegraphics[width=\textwidth]{modelo_3d_lateral.png}
 \caption{Vista lateral ($\theta=0$).}\end{subfigure}\\[4pt]
 \begin{subfigure}{0.7\textwidth}\includegraphics[width=\textwidth]{modelo_3d_superior.png}
-\caption{Vista superior ($\theta=0$, $s_X = 40$, $s_Y = 130$ mm) sobre la mesa de 900 × 640 mm.}\end{subfigure}
-\caption{Modelo 3D en el visor de la página ($s_X = 80$ mm, $s_Y = 120$ mm salvo indicación).}
+\caption{Vista superior ($\theta=0$, $s_X = 40$, $s_Y = 40$ mm) sobre la mesa de 900 × 640 mm.}\end{subfigure}
+\caption{Modelo 3D en el visor de la página ($s_X = 80$ mm, $s_Y = 50$ mm salvo indicación).}
 \label{fig:modelo}
 \end{figure}
 
@@ -612,8 +614,9 @@ La página (\url{https://brazo-4gdl.pages.dev}) incorpora:
 \item \textbf{Control cartesiano}: la cinemática inversa mueve el modelo por una recta interpolada. Si un
       punto intermedio no es alcanzable, interpola en el espacio articular. Los objetivos inalcanzables se
       avisan con su motivo.
-\item \textbf{Homing simulado}: carro Y a su final superior (I0.3), carro X al trasero (I0.1) y base hasta el
-      sensor inductivo (I0.0), a velocidad reducida como recomienda el manual.
+\item \textbf{Homing simulado}, como en la planta: base hasta el sensor inductivo (I0.0), carro X hacia atrás
+      hasta su final (I0.1) y carro Y hacia abajo hasta su final (I0.4), a velocidad reducida como recomienda
+      el manual. Ahí $s_X = s_Y = 0$ y los contadores de pulsos parten de cero.
 \item \textbf{Telemetría}: $\theta$, carreras, $\varphi$, pulsos por eje desde el origen, bits DIR, estado de
       I0.0--I0.4 y Q0.0--Q0.7, posición de la garra, $\det J$ y ángulo de transmisión.
 \item \textbf{Secuencias pick \& place}: se graban puntos, se reproducen, se guardan en el navegador y se
@@ -652,7 +655,7 @@ Singularidades en el recorrido & ninguna & $|\det J| > 0$\\
 \begin{subfigure}{0.49\textwidth}\includegraphics[width=\textwidth]{referencia_manual_perfil.png}
 \caption{Foto de perfil del manual de fábrica.}\end{subfigure}
 \begin{subfigure}{0.49\textwidth}\includegraphics[width=\textwidth]{modelo_3d_pose_manual.png}
-\caption{Modelo con $s_X = 0$, $s_Y = 125$ mm.}\end{subfigure}
+\caption{Modelo con $s_X = 0$, $s_Y = 45$ mm.}\end{subfigure}
 \caption{Comparación cualitativa con la foto del manual: posición de la biela 12, la escuadra 8, la varilla 13
 y la pinza. Las cotas estimadas se ajustaron con esta foto.}
 \label{fig:comparacion}
@@ -679,13 +682,13 @@ seguridad de la Guía 4:
 \toprule
 $s_X$ [mm] & $s_Y$ [mm] & $\varphi$ [°] & $r$ [mm] & $z$ [mm] & pulsos X & pulsos Y\\
 \midrule
-0 & 0 & 47.04 & 411.5 & 435.5 & 0 & 0\\
+0 & 0 & $-32.60$ & 459.7 & 54.4 & 0 & 0\\
 0 & 85 & 12.04 & 500.4 & 278.6 & 0 & 27200\\
-0 & 170 & $-32.60$ & 459.7 & 54.4 & 0 & 54400\\
+0 & 170 & 47.04 & 411.5 & 435.5 & 0 & 54400\\
 60 & 85 & 12.04 & 560.4 & 278.6 & 19200 & 27200\\
-120 & 0 & 47.04 & 531.5 & 435.5 & 38400 & 0\\
-120 & 127.5 & $-8.56$ & 623.7 & 171.3 & 38400 & 40800\\
-120 & 170 & $-32.60$ & 579.7 & 54.4 & 38400 & 54400\\
+120 & 0 & $-32.60$ & 579.7 & 54.4 & 38400 & 0\\
+120 & 42.5 & $-8.56$ & 623.7 & 171.3 & 38400 & 13600\\
+120 & 170 & 47.04 & 531.5 & 435.5 & 38400 & 54400\\
 \bottomrule
 \end{tabular}
 \caption{Extracto de la tabla de validación (posiciones previstas por el modelo).}
@@ -744,7 +747,7 @@ Versionado en GitHub (ramas y merge) & Rama \codigo{feat/cinematica-modelo-3d}, 
       y, con la rama de montaje y los límites aplicados, da una solución única por cada $\theta$. No hay
       singularidades en el recorrido, y el ángulo de transmisión (38°--92°) es aceptable.
 \item Con los supuestos actuales, la resolución es de 0.003 mm/pulso en los carros y 0.045 °/pulso en la
-      base. Como $d\varphi/ds_Y \approx -0.45$ °/mm, un pulso del carro Y mueve el TCP unos 7.4 µm: la
+      base. Como $d\varphi/ds_Y \approx 0.47$ °/mm, un pulso del carro Y mueve el TCP unos 7.7 µm: la
       precisión real no la limitan los pulsos, sino las holguras y la pérdida de pasos.
 \item El PTO compartido de la CPU 224 (Q0.1 con los relés K1 y K2) impide mover X e Y a la vez. Toda
       trayectoria programada en el PLC debe planificarse por turnos, y en una futura etapa de lazo cerrado
