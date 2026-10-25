@@ -117,7 +117,7 @@ comercial del fabricante indica 0-400 mm en vertical y 0-120 mm adelante-atrás,
 
 ## 7. Modelo 3D y validación
 
-- `global/modelo-3d/brazo_xk-js1-1.glb` (256 KB) se genera con `node global/modelo-3d/generar_modelo.js` a partir
+- `global/modelo-3d/brazo_xk-js1-1.glb` (260 KB) se genera con `node global/modelo-3d/generar_modelo.js` a partir
   de los mismos parámetros. Cada pieza móvil es un nodo con el origen en su pivote o su guía.
 - Las pruebas (`node semestres/2026_II/modelo-3d/cinematica/pruebas_cinematica.js`) dan:
   - directa → inversa → directa: error < 1e-12 mm;

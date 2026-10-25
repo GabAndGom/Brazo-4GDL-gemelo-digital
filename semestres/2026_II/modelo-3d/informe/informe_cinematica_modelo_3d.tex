@@ -262,7 +262,8 @@ del equipo; la única referencia externa es la ficha comercial del fabricante \c
       $B$ de la escuadra 8. La escuadra 8 está fija al \textbf{brazo 9} y forma con él un balancín que
       pivota en $A$, sobre la placa delantera 5.
 \item La \textbf{varilla 13} y los dos \textbf{postes 14} forman con el brazo 9 un paralelogramo que mantiene
-      la pinza siempre horizontal.
+      la pinza siempre horizontal. Están en el plano central del brazo: la varilla pasa entre las dos placas
+      de la escuadra 8, y los postes van al centro de la placa 5 y al centro de la pinza.
 \item Los finales de carrera van en barras sobre las placas 5 y 10. En cada barra, el de arriba toca el
       bloque 1 y el de abajo el bloque 2: son dos por eje, como indica el manual.
 \end{enumerate}
@@ -557,7 +558,7 @@ El GLB de trabajo (\codigo{brazo\_robotico\_v2.glb}) es una malla generada por I
 es aproximada (la base mide 187 mm frente a los 165 mm reales) y los orígenes no están en los ejes, así que
 se \textbf{rehízo de forma paramétrica}. El script \codigo{global/modelo-3d/generar\_modelo.js} (Node, sin
 dependencias) construye cada pieza con primitivas a partir de las cotas de \codigo{web/js/cinematica.js} y
-escribe el glTF binario. El resultado es \codigo{brazo\_xk-js1-1.glb}: 256 KB, 12 nodos y unos 3\,400
+escribe el glTF binario. El resultado es \codigo{brazo\_xk-js1-1.glb}: 260 KB, 12 nodos y unos 3\,400
 triángulos. Cada pieza móvil tiene el origen en su pivote o en su guía, y la jerarquía sigue el mecanismo:
 \begin{lstlisting}
 brazo_xk_js1_1
@@ -757,7 +758,7 @@ Versionado en GitHub (ramas y merge) & Rama \codigo{feat/cinematica-modelo-3d}, 
 \item La cinemática vive en un único módulo JavaScript sin dependencias (\codigo{web/js/cinematica.js}).
       Lo usan la página, el generador del modelo 3D y las pruebas, y exporta \codigo{parametros.json}
       para Python y MATLAB. Corregir una cota en ese archivo actualiza todo.
-\item El modelo 3D se genera con un script reproducible, sin Blender: pesa 256 KB (el GLB de IA, 4.5 MB) y
+\item El modelo 3D se genera con un script reproducible, sin Blender: pesa 260 KB (el GLB de IA, 4.5 MB) y
       los orígenes de sus nodos están en los ejes reales.
 \item El visor se carga en diferido y no frena el resto de la página. Funciona en escritorio y en
       celulares desde 375 px, en tema claro u oscuro, y sus controles se pueden usar con teclado.

@@ -179,10 +179,11 @@ const xH = P.espesorPlaca, largoH = P.uA - P.espesorPlaca + 12;
 caja(cx.geo, 'aluminio', xH + largoH / 2, P.dhA, -24, largoH, 34, 6);
 caja(cx.geo, 'aluminio', xH + largoH / 2, P.dhA, 24, largoH, 34, 6);
 pasador(cx.geo, P.uA, P.dhA, -32, 32);
-// Soporte sobre la placa 5 y poste 14 del pivote A' (paralelogramo)
+// Soporte sobre la placa 5 y poste 14 del pivote A' (paralelogramo), en el plano central del brazo:
+// la varilla 13 pasa entre las dos placas de la escuadra 8
 const yTopPlaca = P.sepNiveles / 2 + P.altoPlaca / 2;
-caja(cx.geo, 'aluminio', (P.uA + 6) / 2, yTopPlaca + 5, 40, P.uA + 6, 10, 20);
-cilindro(cx.geo, 'acero', [P.uA, yTopPlaca + 10, 40], [P.uA, P.dhA + P.L14, 40], 5, 16);
+caja(cx.geo, 'aluminio', (P.uA + 6) / 2, yTopPlaca + 5, 0, P.uA + 6, 10, 20);
+cilindro(cx.geo, 'acero', [P.uA, yTopPlaca + 10, 0], [P.uA, P.dhA + P.L14, 0], 5, 16);
 
 // Carro Y: bloque 1 con la escuadra 6. Origen: cara delantera del bloque 1 sobre el eje inferior
 const xBloque1_0 = -(D.carreraLibre - P.holgura);
@@ -221,8 +222,8 @@ for (const [x, z] of [[15, -12], [35, 10], [55, -12], [35, -12]]) {             
   cilindro(pinza.geo, 'motor', [x, yCuerpo + P.hCuerpoPinza / 2, z], [x, yCuerpo + P.hCuerpoPinza / 2 + 0.6, z], 2.5, 10);
 }
 const yTopCuerpo = P.hCuerpoPinza - P.pinzaBajoE;
-caja(pinza.geo, 'aluminio', 0, yTopCuerpo + 5, 34, 16, 10, 20);
-cilindro(pinza.geo, 'acero', [0, yTopCuerpo, 40], [0, P.L14, 40], 5, 16);
+cilindro(pinza.geo, 'aluminio', [0, yTopCuerpo, 0], [0, yTopCuerpo + 6, 0], 9, 16);          // base del poste
+cilindro(pinza.geo, 'acero', [0, yTopCuerpo, 0], [0, P.L14, 0], 5, 16);                  // poste 14 al centro de la pinza
 // Mordazas 15: dos dedos planos que abren y cierran en el plano HORIZONTAL (fotos f13 y f18).
 // Cada dedo pivota sobre un eje vertical en una esquina delantera del cuerpo 4 y termina en un
 // bloque de agarre. Cerrada: dedos paralelos con los bloques juntos en el centro (TCP).
@@ -244,7 +245,7 @@ for (const [nombre, s] of [['mordaza_der', 1], ['mordaza_izq', -1]]) {
 nodo('tcp', pinza, { t: [P.dg, -P.hg, 0] });
 
 // Varilla 13: origen en A', paralela al brazo
-const varilla = nodo('varilla_13', cx, { t: [P.uA, P.dhA + P.L14, 40], extras: { articulacion: 'revoluta', eje: 'z', pasiva: true } });
+const varilla = nodo('varilla_13', cx, { t: [P.uA, P.dhA + P.L14, 0], extras: { articulacion: 'revoluta', eje: 'z', pasiva: true } });
 cilindro(varilla.geo, 'aluminio', [0, 0, 0], [P.L9, 0, 0], 5.5, 16);
 cilindro(varilla.geo, 'acero', [0, 0, -6], [0, 0, 6], 7, 16);
 cilindro(varilla.geo, 'acero', [P.L9, 0, -6], [P.L9, 0, 6], 7, 16);

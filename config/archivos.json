@@ -415,7 +415,7 @@
   },
   "global/modelo-3d/brazo_xk-js1-1.glb": {
     "titulo": "Modelo 3D articulado del brazo (GLB)",
-    "descripcion": "Modelo a escala real con una pieza por nodo y el origen en cada pivote o guía. Lo usa la sección Modelo 3D de la página. 256 KB.",
+    "descripcion": "Modelo a escala real con una pieza por nodo y el origen en cada pivote o guía. Lo usa la sección Modelo 3D de la página. 260 KB.",
     "orden": 0
   },
   "global/modelo-3d/generar_modelo.js": {
