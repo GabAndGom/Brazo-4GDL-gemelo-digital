@@ -130,9 +130,9 @@ que importan para la cinemática.
 | d_g, h_g | Desde el pivote E hasta el centro de las mordazas (TCP), en horizontal y en vertical | estimada: 135 / 20 (E en la parte trasera del cuerpo 4, a media altura) |
 | z_base | Altura del eje del husillo inferior sobre la mesa | 15 + 21 (SUPUESTO) + 15 + 120 + 20 = 191 |
 | r_base | Distancia horizontal del eje θ a la cara delantera del bloque 2 | 50 (bloque centrado en el eje: SUPUESTO) |
-| s_X, s_Y | Carrera útil entre finales de carrera (mm) y posición del cero | SUPUESTO: X 0-120 (ficha del fabricante: "adelante-atrás 0-120 mm"), Y 0-170 (máximo entre placas: 300 − 2·13 − 100 − 2·2). El cero de cada eje es su final de homing: trasero en X e inferior en Y (confirmado por el equipo el 25/10/2026). El modelo da ~382 mm de recorrido vertical de la garra (ficha: 0-400 mm; manual: 440 mm) |
+| s_X, s_Y | Carrera útil entre finales de carrera (mm) y posición del cero | X 0-170 (el equipo confirmó el 26/10/2026 que el carro X recorre lo mismo que el Y), Y 0-170 (SUPUESTO) (máximo entre placas: 300 − 2·13 − 100 − 2·2). El cero de cada eje es su final de homing: trasero en X e inferior en Y (confirmado por el equipo el 25/10/2026). El modelo da ~382 mm de recorrido vertical de la garra (ficha: 0-400 mm; manual: 440 mm) |
 | p | Paso del husillo (mm/rev). El boceto f02 dice "1,37 — 5ap" (sin interpretar) | SUPUESTO: 5 mm/rev (SFU1605). Medir con 10 vueltas |
-| μ | Micropasos de los drivers (DIP SW4-SW7 del 2M542) | SUPUESTO: 1600 pulsos/rev (SW4-SW7 = 0 0 1 1); no hubo acceso a los drivers |
+| μ | Micropasos de los drivers (DIP SW5-SW8) | Leído en la foto del tablero (26/10/2026): los tres drivers con SW1-SW8 = OFF OFF ON OFF ON ON ON OFF. En el JMC 2M542-N son 1000 pulsos/rev, 2.37 A pico (1.69 A RMS) y media corriente en reposo. El driver de la base (DIP rojo) es de otro modelo: SUPUESTO la misma tabla |
 | i_θ | Reducción del engranaje de la base y rango de giro útil | SUPUESTO: 5:1 y ±175° (manual: 360°) |
 
 La búsqueda en internet (25/10/2026) encontró una ficha comercial del fabricante (Shandong Xingke Intelligent

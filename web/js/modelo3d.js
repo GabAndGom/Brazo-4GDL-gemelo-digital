@@ -140,14 +140,15 @@ function fijarGarra(cerrada) {
   b.textContent = sim.garra ? 'Abrir garra' : 'Cerrar garra';
 }
 
-// Homing simulado, como en la planta: la base hasta el sensor inductivo (I0.0), el carro X
-// hacia atrás hasta su final (I0.1) y el carro Y hacia abajo hasta su final (I0.4), a
-// velocidad reducida como pide el manual. Ahí los tres ejes quedan en 0 pulsos.
+// Homing simulado, como el programa del PLC (subrutina Origen): los carros X e Y a la vez con
+// K1 y K2 cerrados, X hacia atrás hasta su final (I0.1) e Y hacia abajo hasta su final (I0.3),
+// y después la base hasta el sensor inductivo (I0.0), a velocidad reducida. Ahí los tres
+// ejes quedan en 0 pulsos.
 async function homing() {
   if (sim.homing) return { ok: false };
   sim.homing = true;
   try {
-    for (const destino of [{ theta: 0 }, { sX: 0 }, { sY: 0 }]) {
+    for (const destino of [{ sX: 0, sY: 0 }, { theta: 0 }]) {
       const r = await moverArticular(Object.assign({}, sim.q, destino), 0.5);
       if (r.detenido) return { ok: false, detenido: true };
     }
@@ -165,8 +166,8 @@ function entradas() {
     'I0.0': Math.abs(q.theta) < 0.5,
     'I0.1': q.sX <= 0.2,
     'I0.2': q.sX >= P.recorridoX - 0.2,
-    'I0.3': q.sY >= P.recorridoY - 0.2,   // final Y arriba
-    'I0.4': q.sY <= 0.2                     // final Y abajo (homing)
+    'I0.3': q.sY <= 0.2,                    // final Y abajo (homing en el programa Origen)
+    'I0.4': q.sY >= P.recorridoY - 0.2      // final Y arriba
   };
 }
 function salidas() {
@@ -177,7 +178,7 @@ function salidas() {
   };
 }
 const NOMBRES_IO = {
-  'I0.0': 'Inductivo θ = 0', 'I0.1': 'Final X atrás', 'I0.2': 'Final X adelante', 'I0.3': 'Final Y arriba', 'I0.4': 'Final Y abajo',
+  'I0.0': 'Inductivo θ = 0', 'I0.1': 'Final X atrás', 'I0.2': 'Final X adelante', 'I0.3': 'Final Y abajo', 'I0.4': 'Final Y arriba',
   'Q0.0': 'PTO base (Z)', 'Q0.1': 'PTO X/Y', 'Q0.2': 'DIR base', 'Q0.3': 'DIR X', 'Q0.4': 'DIR Y',
   'Q0.5': 'Relé K1 → X', 'Q0.6': 'Relé K2 → Y', 'Q0.7': 'Garra (K3)'
 };

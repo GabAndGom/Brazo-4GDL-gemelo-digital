@@ -450,6 +450,11 @@
     "descripcion": "Ecuaciones de la cinemática directa e inversa, jacobiano, pulsos y espacio de trabajo, con los supuestos actuales.",
     "orden": 1
   },
+  "semestres/2026_II/modelo-3d/drivers_y_programa_plc.md": {
+    "titulo": "Drivers de los motores y programa actual del PLC",
+    "descripcion": "DIP de los drivers JMC 2M542-N (1000 pulsos/rev, 2.37 A), sugerencias de dinámica y análisis del programa del laboratorio 4 (homing, relés K1/K2, contadores).",
+    "orden": 3
+  },
   "semestres/2026_II/modelo-3d/levantamiento/levantamiento_medidas.md": {
     "titulo": "Levantamiento de medidas y estructura cinemática",
     "descripcion": "Tabla de piezas con cotas en mm, estado de cada medida (leída, estimada, SUPUESTO), funcionamiento del mecanismo y grados de libertad.",

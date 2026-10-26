@@ -95,14 +95,14 @@ dentro del recorrido.** El ángulo de transmisión de la biela varía entre 38°
 
 $$ \Delta s = \frac{p}{N_{\text{paso}}\,\mu}\,N_p,\qquad \Delta\theta = \frac{360^\circ}{N_{\text{paso}}\,\mu_Z\,i_\theta}\,N_p $$
 
-| Eje | Supuesto | Resolución |
+| Eje | Dato | Resolución |
 |---|---|---|
-| Carros X, Y | $p = 5$ mm/rev, $N_{\text{paso}} = 200$, $\mu = 8$ (DIP SW4-SW7 = 0 0 1 1, 1600 pulsos/rev) | **0.003125 mm/pulso** (320 pulsos/mm) |
-| Base | $\mu_Z = 8$, reducción $i_\theta = 5$ | **0.045 °/pulso** (22.2 pulsos/°) |
+| Carros X, Y | $p = 5$ mm/rev (SUPUESTO), $N_{\text{paso}} = 200$, $\mu = 5$ (leído: JMC 2M542-N con SW5-SW8 = ON ON ON OFF, 1000 pulsos/rev) | **0.005 mm/pulso** (200 pulsos/mm) |
+| Base | $\mu_Z = 5$ (SUPUESTO: mismos DIP), reducción $i_\theta = 5$ (SUPUESTO) | **0.072 °/pulso** (13.9 pulsos/°) |
 
-A 20 kHz (máximo del PTO) esto da 62.5 mm/s en los carros y 900 °/s en la base. La posición se estima contando
+A 20 kHz (máximo del PTO) esto da 100 mm/s en los carros y 1440 °/s en la base; el programa actual del PLC usa 6000 pulsos/s de arranque y 10000 pulsos/s de máximo (30 y 50 mm/s). La reducción de la base hay que medirla: el programa del laboratorio 4 lleva la base a 88500 pulsos, que con 5:1 serían casi 18 vueltas. La posición se estima contando
 pulsos desde el homing, $q_{\text{est}} = q_0 + N_p\,\Delta q$. El homing lleva el carro X a su final trasero (I0.1) y
-el carro Y a su final inferior (I0.4): ahí $s_X = s_Y = 0$ y los contadores parten de cero.
+el carro Y a su final inferior (I0.3, según la subrutina Origen del programa del PLC), los dos a la vez, y después la base al inductivo (I0.0): ahí $s_X = s_Y = 0$ y los contadores parten de cero.
 
 **Observación sobre las salidas.** La CPU 224 solo tiene PTO en Q0.0 y Q0.1. Según el manual (tabla 2-1) y el
 Informe Lab 2, Q0.0 da los pulsos de la base, Q0.1 es un **PTO compartido** para X e Y, y Q0.5/Q0.6 accionan
@@ -122,7 +122,7 @@ en X e Y), pero sí el movimiento simultáneo. La página simula ambos casos y e
 
 ![Vista superior](informe/figuras/espacio_trabajo_superior.png)
 
-Alcance $r$ de 411 a 627 mm y altura $z$ de 54 a 436 mm. Son unos 382 mm de recorrido vertical: la ficha
+Alcance $r$ de 411 a 677 mm y altura $z$ de 54 a 436 mm. Son unos 382 mm de recorrido vertical: la ficha
 comercial del fabricante indica 0-400 mm en vertical y 0-120 mm adelante-atrás, y el manual 440 mm para el eje Y. En planta el alcance es una corona de ±175°.
 
 ## 7. Modelo 3D y validación

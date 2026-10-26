@@ -314,7 +314,7 @@ $u_{50}$ & placa 5 con $s_X=0$ (desde el eje $\theta$) & 52 mm & bloque 2 + holg
 $u_A$, $h_A$ & pivote $A$ (desde la placa 5; sobre la mesa) & 20 mm; 236 mm & estimado (foto)\\
 $c_{u0}$, $c_h$ & pivote $C$ respecto de $A$ (bloque 1 en su tope trasero) & $-252$ mm; 125 mm & derivado\\
 $d_g$, $h_g$ & TCP respecto del pivote $E$ & 135 mm; 20 mm & estimado (foto)\\
-$s_X$ & recorrido útil del carro X & 0--120 mm & \supuesto{} (ficha del fabricante)\\
+$s_X$ & recorrido útil del carro X & 0--170 mm & dato del equipo (igual que el carro Y)\\
 $s_Y$ & recorrido útil del carro Y & 0--170 mm & \supuesto{} (300 $-$ 2·13 $-$ 100 $-$ 2·2)\\
 $\theta$ & rango de la base & $\pm$175° & \supuesto{} (manual: 360°)\\
 \bottomrule
@@ -443,7 +443,7 @@ $\varphi_{1,2}$ y el signo $\pm$). Una combinación es válida si cumple todo lo
 \begin{enumerate}
 \item reproduce la rama de montaje de la ecuación (\ref{eq:psi}), comprobado evaluando la directa; las
       demás corresponderían a desarmar el mecanismo;
-\item $0 \le s_X \le 120$ mm, $0 \le s_Y \le 170$ mm y $\theta$ dentro de su rango;
+\item $0 \le s_X \le 170$ mm, $0 \le s_Y \le 170$ mm y $\theta$ dentro de su rango;
 \item no hay colisión con la mesa: la parte baja de la pinza y del TCP debe quedar sobre $z = 0$.
 \end{enumerate}
 La rama $\varphi_2$ (brazo hacia atrás) nunca cumple la primera condición en este mecanismo, así que en la
@@ -500,12 +500,12 @@ J = \begin{bmatrix} -293.7 & 0.866 & 0.918\\ 508.7 & 0.500 & 0.530\\ 0 & 0 & 2.7
 \textbf{Dato} & \textbf{Carros X e Y} & \textbf{Base ($\theta$)}\\
 \midrule
 Motor & NEMA 23, 57J1854-828, 1.8° & NEMA 17, 42J1848-604, 1.8°\\
-Driver & 2M542 & 2M530\\
-Micropasos \supuesto & $\mu = 8$: 1600 pulsos/rev & $\mu_Z = 8$: 1600 pulsos/rev\\
-DIP asumidos & SW4--SW7 = 0 0 1 1 & equivalente\\
+Driver & JMC 2M542-N & otro modelo (DIP rojo), por confirmar\\
+Micropasos & $\mu = 5$: 1000 pulsos/rev (leído) & $\mu_Z = 5$: 1000 pulsos/rev \supuesto\\
+DIP (foto 26/10/2026) & SW1--SW8 = OFF OFF ON OFF ON ON ON OFF & la misma posición\\
 Transmisión \supuesto & husillo de bolas, $p = 5$ mm/rev & engranaje $i_\theta = 5$\\
-\textbf{Resolución} & \textbf{0.003125 mm/pulso} (320 pulsos/mm) & \textbf{0.045 °/pulso} (22.2 pulsos/°)\\
-Velocidad a 20 kHz & 62.5 mm/s & 900 °/s\\
+\textbf{Resolución} & \textbf{0.005 mm/pulso} (200 pulsos/mm) & \textbf{0.072 °/pulso} (13.9 pulsos/°)\\
+Velocidad a 20 kHz & 100 mm/s & 1440 °/s\\
 \bottomrule
 \end{tabular}
 \caption{Relación pulsos $\rightarrow$ movimiento (unidad del PLC: pulsos).}
@@ -551,9 +551,9 @@ I0.0--I0.3. Hay que confirmarlo en la planta.
 \label{fig:espacio}
 \end{figure}
 
-El corte $r$--$z$ es la imagen del rectángulo de carreras $[0,120]\times[0,170]$. Los bordes $s_Y = $ constante son
+El corte $r$--$z$ es la imagen del rectángulo de carreras $[0,170]\times[0,170]$. Los bordes $s_Y = $ constante son
 segmentos horizontales, porque $s_X$ solo traslada en $r$. Los bordes $s_X = $ constante son arcos de radio
-$L_9 = 300$ mm. El TCP alcanza $r \in [411, 627]$ mm y $z \in [54, 436]$ mm, unos 382 mm de recorrido
+$L_9 = 300$ mm. El TCP alcanza $r \in [411, 677]$ mm y $z \in [54, 436]$ mm, unos 382 mm de recorrido
 vertical. La ficha comercial del fabricante indica 0--400 mm en vertical y 0--120 mm adelante--atrás
 \cite{ficha}, y el manual 440 mm para el eje Y. La diferencia se atribuye a los supuestos de la
 tabla~\ref{tab:parametros}. En planta, el volumen es una corona de $\pm175°$.
@@ -673,7 +673,7 @@ actuadores. Se propone el siguiente protocolo para el próximo laboratorio, comp
 seguridad de la Guía 4:
 \begin{enumerate}
 \item Hacer homing y llevar los carros a las 25 posiciones de \codigo{cinematica/tabla\_cinematica.csv}
-      (combinaciones de $s_X \in \{0, 30, 60, 90, 120\}$ y $s_Y \in \{0, 42.5, 85, 127.5, 170\}$ mm, con sus pulsos).
+      (combinaciones de $s_X \in \{0, 42.5, 85, 127.5, 170\}$ y $s_Y \in \{0, 42.5, 85, 127.5, 170\}$ mm, con sus pulsos).
 \item En cada una, medir con flexómetro o escuadra la distancia horizontal del eje de giro al centro de las
       mordazas ($r$) y su altura sobre la mesa ($z$).
 \item Comparar con la tabla. Ajustar primero el paso del husillo con el desplazamiento de $s_X$, luego $h_A$
@@ -689,12 +689,12 @@ seguridad de la Guía 4:
 $s_X$ [mm] & $s_Y$ [mm] & $\varphi$ [°] & $r$ [mm] & $z$ [mm] & pulsos X & pulsos Y\\
 \midrule
 0 & 0 & $-32.60$ & 459.7 & 54.4 & 0 & 0\\
-0 & 85 & 12.04 & 500.4 & 278.6 & 0 & 27200\\
-0 & 170 & 47.04 & 411.5 & 435.5 & 0 & 54400\\
-60 & 85 & 12.04 & 560.4 & 278.6 & 19200 & 27200\\
-120 & 0 & $-32.60$ & 579.7 & 54.4 & 38400 & 0\\
-120 & 42.5 & $-8.56$ & 623.7 & 171.3 & 38400 & 13600\\
-120 & 170 & 47.04 & 531.5 & 435.5 & 38400 & 54400\\
+0 & 85 & 12.04 & 500.4 & 278.6 & 0 & 17000\\
+0 & 170 & 47.04 & 411.5 & 435.5 & 0 & 34000\\
+85 & 85 & 12.04 & 585.4 & 278.6 & 17000 & 17000\\
+170 & 0 & $-32.60$ & 629.7 & 54.4 & 34000 & 0\\
+170 & 42.5 & $-8.56$ & 673.7 & 171.3 & 34000 & 8500\\
+170 & 170 & 47.04 & 581.5 & 435.5 & 34000 & 34000\\
 \bottomrule
 \end{tabular}
 \caption{Extracto de la tabla de validación (posiciones previstas por el modelo).}
@@ -752,8 +752,8 @@ Versionado en GitHub (ramas y merge) & Rama \codigo{feat/cinematica-modelo-3d}, 
 \item La cinemática directa se reduce a cerrar un triángulo con la ley de cosenos. La inversa es analítica
       y, con la rama de montaje y los límites aplicados, da una solución única por cada $\theta$. No hay
       singularidades en el recorrido, y el ángulo de transmisión (38°--92°) es aceptable.
-\item Con los supuestos actuales, la resolución es de 0.003 mm/pulso en los carros y 0.045 °/pulso en la
-      base. Como $d\varphi/ds_Y \approx 0.47$ °/mm, un pulso del carro Y mueve el TCP unos 7.7 µm: la
+\item Con los supuestos actuales, la resolución es de 0.005 mm/pulso en los carros y 0.072 °/pulso en la
+      base. Como $d\varphi/ds_Y \approx 0.47$ °/mm, un pulso del carro Y mueve el TCP unos 12 µm: la
       precisión real no la limitan los pulsos, sino las holguras y la pérdida de pasos.
 \item El PTO compartido de la CPU 224 (Q0.1 con los relés independientes K1 y K2) permite mover X e Y a la
       vez, pero siempre a la misma velocidad: cada movimiento se programa como un tramo común y un tramo

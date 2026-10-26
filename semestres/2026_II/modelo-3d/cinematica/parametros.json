@@ -17,7 +17,7 @@
     "altoPlaca": 110,
     "zGuias": 37.5,
     "holgura": 2,
-    "recorridoX": 120,
+    "recorridoX": 170,
     "recorridoY": 170,
     "thetaMin": -175,
     "thetaMax": 175,
@@ -37,8 +37,8 @@
     "pinzaBajoE": 35,
     "pasoHusillo": 5,
     "pasosMotor": 200,
-    "micropasosXY": 8,
-    "micropasosZ": 8,
+    "micropasosXY": 5,
+    "micropasosZ": 5,
     "reduccionBase": 5,
     "fMaxPTO": 20000
   },
@@ -54,14 +54,14 @@
     "ch": 125
   },
   "transmision": {
-    "pulsosRevXY": 1600,
-    "pulsosRevZ": 1600,
-    "mmPorPulso": 0.003125,
-    "pulsosPorMm": 320,
-    "gradosPorPulso": 0.045,
-    "pulsosPorGrado": 22.22222222222222,
-    "vMaxXY": 62.5,
-    "wMaxBase": 900
+    "pulsosRevXY": 1000,
+    "pulsosRevZ": 1000,
+    "mmPorPulso": 0.005,
+    "pulsosPorMm": 200,
+    "gradosPorPulso": 0.072,
+    "pulsosPorGrado": 13.88888888888889,
+    "vMaxXY": 100,
+    "wMaxBase": 1440
   },
   "supuestos": [
     "hEntreDiscos",
@@ -83,7 +83,6 @@
     "hg",
     "pinzaBajoE",
     "pasoHusillo",
-    "micropasosXY",
     "micropasosZ",
     "reduccionBase"
   ]

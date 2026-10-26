@@ -55,8 +55,8 @@
     zGuias: 37.5,         // leida (f02): guías a ±37.5 mm del husillo (97 - 22 = 75 entre centros)
     holgura: 2,           // SUPUESTO: distancia bloque-placa al pisar el final de carrera
     // Recorridos útiles (entre finales de carrera)
-    recorridoX: 120,      // SUPUESTO: ficha del fabricante "adelante-atrás 0-120 mm" (el manual dice 200,
-                          // pero entre placas caben como máximo 300 - 2·13 - 100 - 2·2 = 170)
+    recorridoX: 170,      // dato del equipo: el carro X recorre lo mismo que el carro Y (máximo
+                          // geométrico entre placas: 300 - 2·13 - 100 - 2·2 = 170)
     recorridoY: 170,      // SUPUESTO: máximo geométrico entre placas (fabricante: vertical 0-400 mm de la garra)
     thetaMin: -175,       // SUPUESTO: el manual dice 360°; se limita por los cables
     thetaMax: 175,        // SUPUESTO
@@ -81,16 +81,21 @@
     // Transmisión
     pasoHusillo: 5,       // SUPUESTO [mm/rev]: husillo de bolas tipo SFU1605
     pasosMotor: 200,      // fabricante: 1.8°/paso
-    micropasosXY: 8,      // SUPUESTO: DIP 2M542 SW4-SW7 = 0 0 1 1 -> 1600 pulsos/rev
-    micropasosZ: 8,       // SUPUESTO: 2M530 a 1600 pulsos/rev
-    reduccionBase: 5,     // SUPUESTO: engranaje de la base 5:1 (manual: "gear drive")
+    micropasosXY: 5,      // leida (foto del tablero): JMC 2M542-N con SW5-SW8 = ON ON ON OFF -> 1000 pulsos/rev
+                          // (tabla del fabricante); SW1-SW3 = OFF OFF ON -> 2.37 A pico; SW4 OFF -> medio
+                          // corriente en reposo
+    micropasosZ: 5,       // SUPUESTO: el driver de la base tiene los DIP en la misma posición; se asume
+                          // la misma tabla (1000 pulsos/rev) hasta confirmar su modelo
+    reduccionBase: 5,     // SUPUESTO: engranaje de la base 5:1 (manual: "gear drive"). Ojo: el programa
+                          // del laboratorio 4 lleva la base a 88500 pulsos, lo que con 5:1 serían 17 vueltas;
+                          // la reducción real debe ser mucho mayor: medir pulsos por vuelta de la base
     fMaxPTO: 20000        // fabricante: PTO de la CPU 224 hasta 20 kHz
   };
 
   // Supuestos y estimaciones de foto: deben medirse en la planta
   const SUPUESTOS = ['hEntreDiscos', 'holgura', 'recorridoX', 'recorridoY', 'thetaMin', 'thetaMax', 'uA', 'dhA',
     'dhC', 'uCBloque', 'L12', 'a', 'beta', 'L9', 'L14', 'dg', 'hg', 'pinzaBajoE',
-    'pasoHusillo', 'micropasosXY', 'micropasosZ', 'reduccionBase'];
+    'pasoHusillo', 'micropasosZ', 'reduccionBase'];
 
   // ------------------------------------------------------------------ geometría derivada
   function derivar(p) {
