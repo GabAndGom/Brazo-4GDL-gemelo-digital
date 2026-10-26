@@ -1,0 +1,805 @@
+ORGANIZATION_BLOCK MAIN:OB1
+TITLE=Brazo XK-JS1-1 - programa para el gemelo digital (v1)
+// Basado en "BRAZO MIGUEL ROBADO": mismo modo manual (selector I0.5 = 0) y mismo homing.
+// Agrega: cuenta de pulsos por eje, finales de carrera que cortan el PTO y mando remoto
+// desde la PC por PPI (selector I0.5 = 1), con watchdog.
+//
+// Mando (lo escribe la PC):      Estado (lo escribe el PLC):
+//  VB1100 orden 1 homing 2 mover  VB1120 estado 0 reposo 1 homing 2 moviendo
+//         3 paro 4 cerrar garra    VB1121 eco de la secuencia
+//         5 abrir garra            VB1122 .0 referenciado .1 remoto .2 PTO0 ocupado
+//  VB1101 secuencia (+1 por orden)        .3 PTO1 ocupado .4 posicion incierta .5 watchdog
+//  VW1102 latido (la PC lo cambia) VB1123 error 1 ocupado 2 fuera de rango 3 watchdog
+//  VD1104 pulsos base (con signo)         4 sin referencia 5 orden desconocida 6 paro
+//  VD1108 pulsos X (con signo)     VD1124 / VD1128 / VD1132 posicion base / X / Y [pulsos]
+//  VD1112 pulsos Y (con signo)     VW1136 paso   VB1138 IB0  VB1139 IB1  VB1140 QB0
+//  VW1116 ciclo X/Y [us]           VB1141 firma 16#47
+//  VW1118 ciclo base [us]          VD1144 / VD1148 / VD1152 tramo en curso base / X / Y
+//                                  VW1156 / VW1158 ciclo en curso X/Y / base [us]
+// Sentidos: X+ con Q0.3 = 0 (adelante), Y+ con Q0.4 = 0 (arriba), base+ con Q0.2 = 0 (SUPUESTO).
+// Recorridos: X e Y 0..34000 pulsos (170 mm a 0.005 mm/pulso); base +-50000 pulsos (SUPUESTO).
+BEGIN
+Network 1 // Primer ciclo: salidas y PTO apagados, memoria de mando y estado en cero
+LD     SM0.1
+R      Q0.0, 8
+MOVB   16#0, SMB67
+MOVB   16#0, SMB77
+FILL   +0, VW1100, 55
+MOVW   +250, VW1116
+MOVW   +250, VW1118
+
+Network 2 // Firma del programa (la app la usa para reconocerlo)
+LD     SM0.0
+MOVB   16#47, VB1141
+
+Network 3 // Paro: pulsador I0.6 o cambio del selector manual/remoto I0.5
+LD     I0.6
+EU
+LD     I0.5
+EU
+OLD
+LD     I0.5
+ED
+OLD
+MOVB   6, VB1123
+CALL   SBR0
+
+Network 4 // Final X atras (I0.1) con X yendo hacia atras: corta Q0.1 y X = 0
+LD     I0.1
+A      Q0.5
+A      Q0.3
+AN     SM76.7
+LPS
+MOVB   16#0, SMB77
+PLS    1
+R      V1200.1, 1
+MOVD   +0, VD1128
+LPP
+A      Q0.6
+S      V1200.2, 1
+
+Network 5 // Final X adelante (I0.2) con X yendo hacia adelante: corta Q0.1 y X = 34000
+LD     I0.2
+A      Q0.5
+AN     Q0.3
+AN     SM76.7
+LPS
+MOVB   16#0, SMB77
+PLS    1
+R      V1200.1, 1
+MOVD   +34000, VD1128
+LPP
+A      Q0.6
+S      V1200.2, 1
+
+Network 6 // Final Y abajo (I0.3) con Y bajando: corta Q0.1 e Y = 0
+LD     I0.3
+A      Q0.6
+A      Q0.4
+AN     SM76.7
+LPS
+MOVB   16#0, SMB77
+PLS    1
+R      V1200.1, 1
+MOVD   +0, VD1132
+LPP
+A      Q0.5
+S      V1200.2, 1
+
+Network 7 // Final Y arriba (I0.4) con Y subiendo: corta Q0.1 e Y = 34000
+LD     I0.4
+A      Q0.6
+AN     Q0.4
+AN     SM76.7
+LPS
+MOVB   16#0, SMB77
+PLS    1
+R      V1200.1, 1
+MOVD   +34000, VD1132
+LPP
+A      Q0.5
+S      V1200.2, 1
+
+Network 8 // Fin de un tramo de la base: suma sus pulsos a la posicion
+LD     SM66.7
+EU
+A      V1200.0
++D     VD1144, VD1124
+R      V1200.0, 1
+
+Network 9 // Fin de un tramo de Q0.1: suma los pulsos a X y/o Y segun los reles
+LD     SM76.7
+EU
+A      V1200.1
++D     VD1148, VD1128
++D     VD1152, VD1132
+R      V1200.1, 1
+
+Network 10 // Modo manual (panel), igual que el programa de Miguel
+LDN    I0.5
+CALL   SBR3
+
+Network 11 // Modo remoto (ordenes de la PC)
+LD     I0.5
+CALL   SBR4
+
+Network 12 // Copia de entradas y salidas para la PC
+LD     SM0.0
+MOVB   IB0, VB1138
+MOVB   IB1, VB1139
+MOVB   QB0, VB1140
+
+Network 13 // Banderas de estado
+LD     V1200.3
+=      V1122.0
+LD     I0.5
+=      V1122.1
+LDN    SM66.7
+=      V1122.2
+LDN    SM76.7
+=      V1122.3
+LD     V1200.2
+=      V1122.4
+LD     V1200.5
+=      V1122.5
+END_ORGANIZATION_BLOCK
+SUBROUTINE_BLOCK PARO:SBR0
+TITLE=Paro: corta los dos PTO, abre los reles y vuelve al reposo
+BEGIN
+Network 1 // Corta los trenes de pulsos
+LD     SM0.0
+MOVB   16#0, SMB67
+PLS    0
+MOVB   16#0, SMB77
+PLS    1
+
+Network 2 // Si habia un tramo en curso la posicion ya no es exacta: pide homing
+LD     V1200.0
+O      V1200.1
+S      V1200.2, 1
+R      V1200.3, 1
+
+Network 3 // Reposo
+LD     SM0.0
+R      V1200.0, 2
+R      V1200.6, 2
+R      V1201.0, 1
+R      Q0.5, 2
+MOVW   +0, VW1136
+MOVB   0, VB1120
+END_SUBROUTINE_BLOCK
+SUBROUTINE_BLOCK PULSO_BASE:SBR1
+TITLE=Inicia un tramo en Q0.0: pulsos en VD1202, ciclo en VW1198 (us)
+BEGIN
+Network 1 // Arranca el PTO0 y guarda el tramo con su signo (Q0.2 = 1 resta)
+LD     SM0.0
+MOVB   16#85, SMB67
+MOVW   VW1198, SMW68
+MOVD   VD1202, SMD72
+PLS    0
+MOVW   VW1198, VW1158
+MOVD   VD1202, VD1144
+S      V1200.0, 1
+
+Network 2
+LD     Q0.2
+MOVD   +0, VD1144
+-D     VD1202, VD1144
+END_SUBROUTINE_BLOCK
+SUBROUTINE_BLOCK PULSO_XY:SBR2
+TITLE=Inicia un tramo en Q0.1: pulsos en VD1202, ciclo en VW1196 (us)
+BEGIN
+Network 1 // Arranca el PTO1; los pulsos van a X si K1 esta cerrado y a Y si K2 esta cerrado
+LD     SM0.0
+MOVB   16#85, SMB77
+MOVW   VW1196, SMW78
+MOVD   VD1202, SMD82
+PLS    1
+MOVW   VW1196, VW1156
+MOVD   +0, VD1148
+MOVD   +0, VD1152
+S      V1200.1, 1
+
+Network 2 // X adelante
+LD     Q0.5
+AN     Q0.3
+MOVD   VD1202, VD1148
+
+Network 3 // X atras
+LD     Q0.5
+A      Q0.3
+-D     VD1202, VD1148
+
+Network 4 // Y arriba
+LD     Q0.6
+AN     Q0.4
+MOVD   VD1202, VD1152
+
+Network 5 // Y abajo
+LD     Q0.6
+A      Q0.4
+-D     VD1202, VD1152
+END_SUBROUTINE_BLOCK
+SUBROUTINE_BLOCK MANUAL:SBR3
+TITLE=Modo manual con los pulsadores del panel (como el programa de Miguel)
+// Diferencias con el original: cada paquete de 100 pulsos se termina (no se corta al soltar)
+// para que la cuenta sea exacta, y la direccion se fija antes de dar pulsos.
+BEGIN
+Network 1 // I0.7: abre o cierra la garra
+LD     I0.7
+EU
+LPS
+AN     Q0.7
+S      M10.0, 1
+LRD
+A      Q0.7
+R      Q0.7, 1
+LPP
+A      M10.0
+S      Q0.7, 1
+R      M10.0, 1
+
+Network 2 // Base con I1.0: direccion Q0.2 = 0
+LD     I1.0
+AN     I1.1
+A      SM66.7
+R      Q0.2, 1
+
+Network 3
+LD     I1.0
+AN     I1.1
+TON    T106, +1
+
+Network 4 // Paquete de 100 pulsos a 4 kHz
+LD     T106
+AN     Q0.2
+A      SM66.7
+MOVD   +100, VD1202
+MOVW   +250, VW1198
+CALL   SBR1
+
+Network 5 // Base con I1.1: direccion Q0.2 = 1
+LD     I1.1
+AN     I1.0
+A      SM66.7
+S      Q0.2, 1
+
+Network 6
+LD     I1.1
+AN     I1.0
+TON    T107, +1
+
+Network 7
+LD     T107
+A      Q0.2
+A      SM66.7
+MOVD   +100, VD1202
+MOVW   +250, VW1198
+CALL   SBR1
+
+Network 8 // X adelante con I1.2: cierra K1, Q0.3 = 0
+LD     I1.2
+AN     I1.3
+AN     Q0.6
+A      SM76.7
+S      Q0.5, 1
+R      Q0.3, 1
+
+Network 9
+LD     I1.2
+AN     I1.3
+TON    T101, +2
+
+Network 10
+LD     T101
+A      Q0.5
+AN     Q0.3
+AN     Q0.6
+AN     I0.2
+A      SM76.7
+MOVD   +100, VD1202
+MOVW   +250, VW1196
+CALL   SBR2
+
+Network 11 // X atras con I1.3: cierra K1, Q0.3 = 1
+LD     I1.3
+AN     I1.2
+AN     Q0.6
+A      SM76.7
+S      Q0.5, 1
+S      Q0.3, 1
+
+Network 12
+LD     I1.3
+AN     I1.2
+TON    T102, +2
+
+Network 13
+LD     T102
+A      Q0.5
+A      Q0.3
+AN     Q0.6
+AN     I0.1
+A      SM76.7
+MOVD   +100, VD1202
+MOVW   +250, VW1196
+CALL   SBR2
+
+Network 14 // Y arriba con I1.4: cierra K2, Q0.4 = 0
+LD     I1.4
+AN     I1.5
+AN     Q0.5
+A      SM76.7
+S      Q0.6, 1
+R      Q0.4, 1
+
+Network 15
+LD     I1.4
+AN     I1.5
+TON    T103, +2
+
+Network 16
+LD     T103
+A      Q0.6
+AN     Q0.4
+AN     Q0.5
+AN     I0.4
+A      SM76.7
+MOVD   +100, VD1202
+MOVW   +250, VW1196
+CALL   SBR2
+
+Network 17 // Y abajo con I1.5: cierra K2, Q0.4 = 1
+LD     I1.5
+AN     I1.4
+AN     Q0.5
+A      SM76.7
+S      Q0.6, 1
+S      Q0.4, 1
+
+Network 18
+LD     I1.5
+AN     I1.4
+TON    T104, +2
+
+Network 19
+LD     T104
+A      Q0.6
+A      Q0.4
+AN     Q0.5
+AN     I0.3
+A      SM76.7
+MOVD   +100, VD1202
+MOVW   +250, VW1196
+CALL   SBR2
+
+Network 20 // Sin pulsadores de X/Y y con Q0.1 quieto: abre los reles despues de 300 ms
+LDN    I1.2
+AN     I1.3
+AN     I1.4
+AN     I1.5
+A      SM76.7
+TON    T105, +3
+
+Network 21
+LD     T105
+R      Q0.5, 2
+END_SUBROUTINE_BLOCK
+SUBROUTINE_BLOCK REMOTO:SBR4
+TITLE=Modo remoto: ordenes de la PC (VB1100..VB1119) y maquina de pasos (VW1136)
+BEGIN
+Network 1 // Limites de velocidad: ciclo X/Y entre 200 y 2000 us, base entre 250 y 4000 us
+LDW<   VW1116, +200
+MOVW   +200, VW1116
+
+Network 2
+LDW>   VW1116, +2000
+MOVW   +2000, VW1116
+
+Network 3
+LDW<   VW1118, +250
+MOVW   +250, VW1118
+
+Network 4
+LDW>   VW1118, +4000
+MOVW   +4000, VW1118
+
+Network 5 // Watchdog: con una orden de la PC en curso, el latido VW1102 debe cambiar cada 2 s
+LDW=   VW1102, VW1160
+A      V1200.6
+AW<>   VW1136, +0
+TON    T110, +20
+
+Network 6
+LDW<>  VW1102, VW1160
+MOVW   VW1102, VW1160
+
+Network 7
+LD     T110
+S      V1200.5, 1
+MOVB   3, VB1123
+CALL   SBR0
+
+Network 8 // Orden nueva: la secuencia VB1101 cambio
+LDB<>  VB1101, VB1121
+MOVB   VB1101, VB1121
+MOVB   VB1100, VB1162
+MOVB   0, VB1123
+R      V1200.5, 1
+S      V1200.7, 1
+
+Network 9 // Orden 3: paro (siempre se acepta)
+LD     V1200.7
+AB=    VB1162, 3
+R      V1200.7, 1
+MOVB   6, VB1123
+CALL   SBR0
+
+Network 10 // Otra orden con un movimiento en curso: se rechaza (error 1)
+LD     V1200.7
+AW<>   VW1136, +0
+MOVB   1, VB1123
+R      V1200.7, 1
+
+Network 11 // Orden 4: cerrar garra
+LD     V1200.7
+AB=    VB1162, 4
+S      Q0.7, 1
+R      V1200.7, 1
+
+Network 12 // Orden 5: abrir garra
+LD     V1200.7
+AB=    VB1162, 5
+R      Q0.7, 1
+R      V1200.7, 1
+
+Network 13 // Orden 1: homing
+LD     V1200.7
+AB=    VB1162, 1
+S      V1200.6, 1
+MOVW   +100, VW1136
+MOVB   1, VB1120
+R      V1200.7, 1
+
+Network 14 // I0.7 del panel en reposo: homing sin la PC
+LD     I0.7
+EU
+AW=    VW1136, +0
+R      V1200.6, 1
+MOVW   +100, VW1136
+MOVB   1, VB1120
+
+Network 15 // Orden 2 sin homing previo: se rechaza (error 4)
+LD     V1200.7
+AB=    VB1162, 2
+AN     V1200.3
+MOVB   4, VB1123
+R      V1200.7, 1
+
+Network 16 // Orden 2: posiciones de destino
+LD     V1200.7
+AB=    VB1162, 2
+MOVD   VD1128, VD1164
++D     VD1108, VD1164
+MOVD   VD1132, VD1168
++D     VD1112, VD1168
+MOVD   VD1124, VD1172
++D     VD1104, VD1172
+
+Network 17 // Destino fuera del recorrido: se rechaza (error 2)
+LD     V1200.7
+AB=    VB1162, 2
+LDD<   VD1164, +0
+OD>    VD1164, +34000
+OD<    VD1168, +0
+OD>    VD1168, +34000
+OD<    VD1172, -50000
+OD>    VD1172, +50000
+ALD
+MOVB   2, VB1123
+R      V1200.7, 1
+
+Network 18 // Orden 2 aceptada
+LD     V1200.7
+AB=    VB1162, 2
+S      V1200.6, 1
+MOVW   +10, VW1136
+MOVB   2, VB1120
+R      V1200.7, 1
+
+Network 19 // Orden desconocida (error 5)
+LD     V1200.7
+MOVB   5, VB1123
+R      V1200.7, 1
+
+Network 20 // Paso 10: valores absolutos de los tramos
+LDW=   VW1136, +10
+MOVD   VD1108, VD1176
+MOVD   VD1112, VD1180
+MOVD   VD1104, VD1184
+
+Network 21
+LDW=   VW1136, +10
+AD<    VD1108, +0
+MOVD   +0, VD1176
+-D     VD1108, VD1176
+
+Network 22
+LDW=   VW1136, +10
+AD<    VD1112, +0
+MOVD   +0, VD1180
+-D     VD1112, VD1180
+
+Network 23
+LDW=   VW1136, +10
+AD<    VD1104, +0
+MOVD   +0, VD1184
+-D     VD1104, VD1184
+
+Network 24 // Tramo comun = el menor de X e Y; resto = el mayor menos el comun
+LDW=   VW1136, +10
+MOVD   VD1176, VD1188
+MOVD   VD1176, VD1192
+
+Network 25
+LDW=   VW1136, +10
+AD<    VD1180, VD1188
+MOVD   VD1180, VD1188
+
+Network 26
+LDW=   VW1136, +10
+AD>    VD1180, VD1192
+MOVD   VD1180, VD1192
+
+Network 27
+LDW=   VW1136, +10
+-D     VD1188, VD1192
+
+Network 28 // Reles y direcciones
+LDW=   VW1136, +10
+AD>    VD1176, +0
+S      Q0.5, 1
+
+Network 29
+LDW=   VW1136, +10
+AD>    VD1180, +0
+S      Q0.6, 1
+
+Network 30
+LDW=   VW1136, +10
+AD<    VD1108, +0
+S      Q0.3, 1
+
+Network 31
+LDW=   VW1136, +10
+AD>=   VD1108, +0
+R      Q0.3, 1
+
+Network 32
+LDW=   VW1136, +10
+AD<    VD1112, +0
+S      Q0.4, 1
+
+Network 33
+LDW=   VW1136, +10
+AD>=   VD1112, +0
+R      Q0.4, 1
+
+Network 34
+LDW=   VW1136, +10
+AD<    VD1104, +0
+S      Q0.2, 1
+
+Network 35
+LDW=   VW1136, +10
+AD>=   VD1104, +0
+R      Q0.2, 1
+
+Network 36 // 300 ms para que cierren los reles
+LDW=   VW1136, +10
+TON    T111, +3
+
+Network 37
+LDW=   VW1136, +10
+A      T111
+MOVW   +11, VW1136
+
+Network 38 // Paso 11: la base arranca en paralelo
+LDW=   VW1136, +11
+AD>    VD1184, +0
+A      SM66.7
+MOVD   VD1184, VD1202
+MOVW   VW1118, VW1198
+CALL   SBR1
+
+Network 39 // Paso 11: tramo comun de X e Y (K1 y K2 cerrados)
+LDW=   VW1136, +11
+AD>    VD1188, +0
+A      SM76.7
+MOVD   VD1188, VD1202
+MOVW   VW1116, VW1196
+S      V1201.0, 1
+CALL   SBR2
+
+Network 40 // Tramo comun arrancado: paso 12
+LD     V1201.0
+R      V1201.0, 1
+MOVW   +12, VW1136
+
+Network 41 // Sin tramo comun: paso 13
+LDW=   VW1136, +11
+AD<=   VD1188, +0
+MOVW   +13, VW1136
+
+Network 42 // Paso 12: fin del tramo comun; se abre el rele del eje que ya llego
+LDW=   VW1136, +12
+TON    T112, +1
+
+Network 43
+LDW=   VW1136, +12
+A      T112
+A      SM76.7
+LPS
+AD<=   VD1176, VD1188
+R      Q0.5, 1
+LRD
+AD<=   VD1180, VD1188
+R      Q0.6, 1
+LPP
+MOVW   +13, VW1136
+
+Network 44 // Paso 13: espera 300 ms y da el resto al eje que falta
+LDW=   VW1136, +13
+TON    T113, +3
+
+Network 45
+LDW=   VW1136, +13
+A      T113
+A      SM76.7
+AD>    VD1192, +0
+MOVD   VD1192, VD1202
+MOVW   VW1116, VW1196
+S      V1201.0, 1
+CALL   SBR2
+
+Network 46 // Resto arrancado: paso 14
+LD     V1201.0
+R      V1201.0, 1
+MOVW   +14, VW1136
+
+Network 47 // Sin resto: paso 15
+LDW=   VW1136, +13
+A      T113
+AD<=   VD1192, +0
+MOVW   +15, VW1136
+
+Network 48 // Paso 14: fin del resto
+LDW=   VW1136, +14
+TON    T114, +1
+
+Network 49
+LDW=   VW1136, +14
+A      T114
+A      SM76.7
+MOVW   +15, VW1136
+
+Network 50 // Paso 15: espera a la base, abre los reles y vuelve al reposo
+LDW=   VW1136, +15
+TON    T115, +1
+
+Network 51
+LDW=   VW1136, +15
+A      T115
+A      SM66.7
+A      SM76.7
+R      Q0.5, 2
+R      V1200.6, 1
+MOVB   0, VB1120
+MOVW   +0, VW1136
+
+Network 52 // Homing paso 100: Y hacia abajo (K2, Q0.4 = 1)
+LDW=   VW1136, +100
+R      Q0.5, 1
+S      Q0.6, 1
+S      Q0.4, 1
+TON    T120, +3
+
+Network 53
+LDW=   VW1136, +100
+A      T120
+A      I0.3
+MOVW   +103, VW1136
+
+Network 54
+LDW=   VW1136, +100
+A      T120
+AN     I0.3
+A      SM76.7
+MOVB   16#85, SMB77
+MOVW   +250, SMW78
+MOVD   +500000, SMD82
+PLS    1
+MOVW   +102, VW1136
+
+Network 55 // Paso 102: llega a I0.3 (la red 6 del OB1 ya corta el PTO y pone Y = 0)
+LDW=   VW1136, +102
+A      I0.3
+MOVB   16#0, SMB77
+PLS    1
+MOVD   +0, VD1132
+MOVW   +103, VW1136
+
+Network 56 // Paso 103: X hacia atras (K1, Q0.3 = 1)
+LDW=   VW1136, +103
+R      Q0.6, 1
+S      Q0.5, 1
+S      Q0.3, 1
+TON    T121, +3
+
+Network 57
+LDW=   VW1136, +103
+A      T121
+A      I0.1
+MOVW   +106, VW1136
+
+Network 58
+LDW=   VW1136, +103
+A      T121
+AN     I0.1
+A      SM76.7
+MOVB   16#85, SMB77
+MOVW   +250, SMW78
+MOVD   +500000, SMD82
+PLS    1
+MOVW   +105, VW1136
+
+Network 59 // Paso 105: llega a I0.1
+LDW=   VW1136, +105
+A      I0.1
+MOVB   16#0, SMB77
+PLS    1
+MOVD   +0, VD1128
+MOVW   +106, VW1136
+
+Network 60 // Paso 106: abre la garra y gira la base (Q0.2 = 1) hacia el inductivo
+LDW=   VW1136, +106
+R      Q0.5, 1
+R      Q0.7, 1
+S      Q0.2, 1
+TON    T122, +4
+
+Network 61
+LDW=   VW1136, +106
+A      T122
+A      I0.0
+MOVW   +109, VW1136
+
+Network 62
+LDW=   VW1136, +106
+A      T122
+AN     I0.0
+A      SM66.7
+MOVB   16#85, SMB67
+MOVW   +400, SMW68
+MOVD   +500000, SMD72
+PLS    0
+MOVW   +108, VW1136
+
+Network 63 // Paso 108: llega a I0.0
+LDW=   VW1136, +108
+A      I0.0
+MOVB   16#0, SMB67
+PLS    0
+MOVW   +109, VW1136
+
+Network 64 // Paso 109: origen en los tres ejes
+LDW=   VW1136, +109
+MOVD   +0, VD1124
+MOVD   +0, VD1128
+MOVD   +0, VD1132
+R      V1200.0, 3
+S      V1200.3, 1
+R      V1200.6, 1
+MOVB   0, VB1120
+MOVW   +0, VW1136
+END_SUBROUTINE_BLOCK

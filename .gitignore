@@ -40,3 +40,7 @@ node_modules/
 Thumbs.db
 desktop.ini
 *~
+
+# App del gemelo digital
+semestres/2026_II/gemelo-digital/app/registro_gemelo.log
+__pycache__/

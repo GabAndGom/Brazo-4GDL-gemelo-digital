@@ -76,6 +76,7 @@ function cancelar() {
 // Avance de la simulación en cada cuadro
 let tPrev = performance.now();
 function paso(ahora) {
+  if (planta.activa) sim.plan = null;
   if (sim.plan) {
     const pl = sim.plan;
     let seg = pl.segmentos[pl.i];
@@ -103,6 +104,12 @@ function paso(ahora) {
     sim.activos[ej] = Math.abs(v) > 1e-3;
     if (sim.activos[ej]) sim.dir[ej] = Math.sign(v);
   }
+  const real = planta.activa && planta.e && planta.e.salidas;
+  if (real) {
+    // Con el brazo real, los ejes activos y los sentidos salen de las salidas del PLC
+    sim.activos = { Z: real['Q0.0'], X: real['Q0.1'] && real['Q0.5'], Y: real['Q0.1'] && real['Q0.6'] };
+    sim.dir = { Z: real['Q0.2'] ? -1 : 1, X: real['Q0.3'] ? -1 : 1, Y: real['Q0.4'] ? -1 : 1 };
+  }
   sim.qPrev = Object.assign({}, sim.q);
   visor.actualizar();
   telemetria(ahora);
@@ -115,6 +122,7 @@ function fijarQ(q) {
 
 function moverArticular(q, factor) {
   const destino = { theta: limitar('theta', q.theta), sX: limitar('sX', q.sX), sY: limitar('sY', q.sY) };
+  if (planta.activa) return ordenPlanta('mover', destino).then(r => r.error ? { detenido: true, error: r.error } : esperarFin());
   return ejecutar(segmentosArticulares(Object.assign({}, sim.q), destino, factor));
 }
 
@@ -124,8 +132,9 @@ async function moverCartesiano(obj) {
   const tr = K.trayectoria(sim.q, obj, pasos);
   if (!tr.valida) return { valida: false, motivo: tr.motivo };
   visor.marcarObjetivo(obj);
-  if ($('#m3d-pto').checked) {
-    await moverArticular(tr.qFin);
+  if ($('#m3d-pto').checked || planta.activa) {
+    const r = await moverArticular(tr.qFin);
+    if (r.error) return { valida: false, motivo: r.error };
     return { valida: true, nota: 'Con el PTO compartido X e Y avanzan juntos a la misma velocidad hasta que el de menor recorrido termina: la trayectoria no es recta.' };
   }
   const ruta = [Object.assign({}, sim.q)].concat(tr.qs);
@@ -145,6 +154,10 @@ function fijarGarra(cerrada) {
 // y después la base hasta el sensor inductivo (I0.0), a velocidad reducida. Ahí los tres
 // ejes quedan en 0 pulsos.
 async function homing() {
+  if (planta.activa) {
+    const r = await ordenPlanta(planta.info.ordenes.includes('homing') ? 'homing' : 'iniciar');
+    return r.error ? { ok: false, error: r.error } : esperarFin(240);
+  }
   if (sim.homing) return { ok: false };
   sim.homing = true;
   try {
@@ -161,6 +174,7 @@ async function homing() {
 }
 
 function entradas() {
+  if (planta.activa && planta.e && planta.e.entradas) return filtrarIO(planta.e.entradas, 'I');
   const q = sim.q;
   return {
     'I0.0': Math.abs(q.theta) < 0.5,
@@ -171,6 +185,7 @@ function entradas() {
   };
 }
 function salidas() {
+  if (planta.activa && planta.e && planta.e.salidas) return filtrarIO(planta.e.salidas, 'Q');
   const a = sim.activos;
   return {
     'Q0.0': a.Z, 'Q0.1': a.X || a.Y, 'Q0.2': sim.dir.Z > 0, 'Q0.3': sim.dir.X > 0, 'Q0.4': sim.dir.Y > 0,
@@ -180,8 +195,16 @@ function salidas() {
 const NOMBRES_IO = {
   'I0.0': 'Inductivo θ = 0', 'I0.1': 'Final X atrás', 'I0.2': 'Final X adelante', 'I0.3': 'Final Y abajo', 'I0.4': 'Final Y arriba',
   'Q0.0': 'PTO base (Z)', 'Q0.1': 'PTO X/Y', 'Q0.2': 'DIR base', 'Q0.3': 'DIR X', 'Q0.4': 'DIR Y',
-  'Q0.5': 'Relé K1 → X', 'Q0.6': 'Relé K2 → Y', 'Q0.7': 'Garra (K3)'
+  'Q0.5': 'Relé K1 → X', 'Q0.6': 'Relé K2 → Y', 'Q0.7': 'Garra (K3)',
+  'I0.5': 'Selector automático', 'I0.6': 'Paro / reset', 'I0.7': 'Garra / inicio',
+  'I1.0': 'Base Q0.2 = 0', 'I1.1': 'Base Q0.2 = 1', 'I1.2': 'X adelante', 'I1.3': 'X atrás',
+  'I1.4': 'Y arriba', 'I1.5': 'Y abajo'
 };
+function filtrarIO(obj, letra) {
+  const r = {};
+  for (const k of Object.keys(NOMBRES_IO)) if (k[0] === letra && k in obj) r[k] = !!obj[k];
+  return r;
+}
 
 PLC.registrarSimulador({
   mover: q => { if (q.garra != null) fijarGarra(q.garra); return moverArticular(q); },
@@ -213,7 +236,8 @@ function telemetria(ahora) {
       <dt>Carro X</dt><dd>${fmt(sim.q.sX)} mm</dd>
       <dt>Carro Y</dt><dd>${fmt(sim.q.sY)} mm</dd>
       <dt>φ brazo 9</dt><dd>${fmt(fk.phi)} °</dd>
-      <dt>Biela 12</dt><dd>${fmt(fk.angBiela)} °</dd></dl></div>
+      <dt>Biela 12</dt><dd>${fmt(fk.angBiela)} °</dd>
+      ${planta.activa ? `<dt>Origen</dt><dd>${planta.e && planta.e.estimado ? 'estimada (pulsos leídos)' : 'contada en el PLC'}</dd>` : ''}</dl></div>
     <div class="m3d-tarjeta"><h3>Posición de la garra (TCP)</h3><dl>
       <dt>X</dt><dd>${fmt(fk.X)} mm</dd><dt>Y</dt><dd>${fmt(fk.Y)} mm</dd><dt>Z</dt><dd>${fmt(fk.Z)} mm</dd>
       <dt>r · z</dt><dd>${fmt(fk.r)} · ${fmt(fk.z)}</dd>
@@ -223,7 +247,7 @@ function telemetria(ahora) {
       <dt>X (Q0.1 + K1)</dt><dd>${pul(n.nX)}</dd><dt>DIR X Q0.3</dt><dd>${dir(sim.dir.X)}</dd>
       <dt>Y (Q0.1 + K2)</dt><dd>${pul(n.nY)}</dd><dt>DIR Y Q0.4</dt><dd>${dir(sim.dir.Y)}</dd>
       <dt>Resolución</dt><dd>${T.mmPorPulso} mm · ${T.gradosPorPulso}°</dd></dl></div>
-    <div class="m3d-tarjeta"><h3>E/S del PLC (simuladas)</h3>
+    <div class="m3d-tarjeta"><h3>E/S del PLC (${planta.activa ? 'en vivo' : 'simuladas'})</h3>
       <div class="m3d-io">${io(ent)}${io(sal)}</div></div>
     <div class="m3d-tarjeta"><h3>Análisis</h3><dl>
       <dt>det J</dt><dd>${jac ? (jac.det / 1000).toFixed(1) + '·10³' : '—'}</dd>
@@ -233,7 +257,7 @@ function telemetria(ahora) {
       <dt>Referencia</dt><dd>${sim.referenciado ? 'sí (homing)' : 'no'}</dd></dl></div>`;
 
   // Indicadores
-  const chips = [];
+  const chips = chipsPlanta();
   if (!sim.referenciado) chips.push(['alerta', 'Sin referencia: haga homing']);
   if (sim.homing) chips.push(['', 'Homing en curso']);
   if (ent['I0.1'] || ent['I0.2']) chips.push(['alerta', 'Límite carro X']);
@@ -242,10 +266,10 @@ function telemetria(ahora) {
   if (K.colision(fk)) chips.push(['alerta', 'Colisión con la mesa']);
   // Con un solo PTO, X e Y pueden moverse a la vez pero solo a la misma velocidad
   const vx = Math.abs(sim.vel.X), vy = Math.abs(sim.vel.Y);
-  if (sim.activos.X && sim.activos.Y && Math.abs(vx - vy) > 0.05 * Math.max(vx, vy)) {
+  if (!planta.activa && sim.activos.X && sim.activos.Y && Math.abs(vx - vy) > 0.05 * Math.max(vx, vy)) {
     chips.push(['alerta', 'X e Y a distinta velocidad: el PLC real (un solo PTO) no puede']);
   }
-  if (sim.plan) chips.push(['ok', 'En movimiento']);
+  if (sim.plan || (planta.activa && planta.e && planta.e.en_movimiento)) chips.push(['ok', 'En movimiento']);
   const html = chips.map(([c, t]) => `<span class="m3d-chip ${c}">${t}</span>`).join('');
   if ($('#m3d-chips').innerHTML !== html) $('#m3d-chips').innerHTML = html;
 
@@ -493,16 +517,20 @@ function prepararControles() {
     const r = $('#m3d-' + id), num = $('#m3d-' + id + '-num');
     for (const el of [r, num]) { el.min = LIMITES[eje][0]; el.max = LIMITES[eje][1]; }
     // Deslizador: movimiento directo (jog). Número: movimiento animado al soltar.
-    r.addEventListener('input', () => { cancelar(); fijarQ(Object.assign({}, sim.q, { [eje]: Number(r.value) })); });
+    r.addEventListener('input', () => { if (planta.activa) return; cancelar(); fijarQ(Object.assign({}, sim.q, { [eje]: Number(r.value) })); });
+    r.addEventListener('change', () => { if (planta.activa) moverArticular(Object.assign({}, sim.q, { [eje]: Number(r.value) })); });
     num.addEventListener('change', () => {
       const val = Number(num.value);
       if (!isFinite(val)) return;
       moverArticular(Object.assign({}, sim.q, { [eje]: val }));
     });
   }
-  $('#m3d-garra').addEventListener('click', () => fijarGarra(!sim.garra));
-  $('#m3d-homing').addEventListener('click', () => PLC.homing());
-  $('#m3d-detener').addEventListener('click', () => { detenerSecuencia = true; cancelar(); });
+  $('#m3d-garra').addEventListener('click', () => garra(!sim.garra));
+  $('#m3d-homing').addEventListener('click', () => homing());
+  $('#m3d-detener').addEventListener('click', () => {
+    detenerSecuencia = true; cancelar();
+    if (planta.activa) ordenPlanta(planta.info.ordenes.includes('detener') ? 'detener' : 'emergencia');
+  });
   const vel = $('#m3d-velocidad');
   vel.addEventListener('input', () => { $('#m3d-velocidad-txt').textContent = vel.value + ' mm/s'; });
 
@@ -550,8 +578,28 @@ function prepararControles() {
   });
 
   // Conexión
-  $('#m3d-modo').addEventListener('change', e => PLC.configurar({ modo: e.target.value }));
-  $('#m3d-url').addEventListener('change', e => PLC.configurar({ url: e.target.value }));
+  $('#m3d-modo').addEventListener('change', async e => {
+    if (e.target.value === 'planta') {
+      try { await activarPlanta($('#m3d-url').value.trim()); }
+      catch (err) { e.target.value = 'simulacion'; mensajePlanta(err.message, true); }
+    } else desactivarPlanta();
+  });
+  $('#m3d-url').addEventListener('change', e => { if (!planta.activa) PLC.configurar({ url: e.target.value.trim() }); });
+  $('#m3d-mando').addEventListener('change', async e => {
+    const si = e.target.checked;
+    if (si && !confirm('Va a mandar el brazo REAL desde esta página. ¿Hay alguien junto a la parada de emergencia y el área está despejada?')) { e.target.checked = false; return; }
+    try { await PLC.mando(si); mensajePlanta(si ? 'Mando habilitado.' : 'Mando deshabilitado.'); }
+    catch (err) { e.target.checked = false; mensajePlanta(err.message, true); }
+  });
+  $('#m3d-planta-ordenes').addEventListener('click', e => {
+    const b = e.target.closest('button[data-orden]');
+    if (b) ordenPlanta(b.dataset.orden);
+  });
+  const hz = $('#m3d-hz');
+  const txtHz = () => { $('#m3d-hz-txt').textContent = `${hz.value} Hz · ${fmt(hz.value / (1 / T.mmPorPulso), 0)} mm/s`; };
+  hz.addEventListener('input', txtHz);
+  hz.addEventListener('change', () => ordenPlanta('velocidad', { hz: Number(hz.value) }));
+  txtHz();
   $('#m3d-probar').addEventListener('click', async () => {
     const out = $('#m3d-respuesta');
     try { out.textContent = JSON.stringify(await PLC.leerEstado(), (k, v) => typeof v === 'number' ? Math.round(v * 1000) / 1000 : v, 2); }
@@ -626,7 +674,7 @@ async function reproducir() {
     msg.textContent = `Punto ${i + 1} de ${secuencia.length}`;
     const r = await PLC.enviarPosicion({ theta: secuencia[i].theta, sX: secuencia[i].sX, sY: secuencia[i].sY });
     if (r && r.detenido) break;
-    fijarGarra(secuencia[i].garra);
+    await garra(secuencia[i].garra);
     await new Promise(ok => setTimeout(ok, 350));
   }
   renderSecuencia();
@@ -649,7 +697,7 @@ function prepararSecuencias() {
   $('#m3d-lista').addEventListener('click', e => {
     const b = e.target.closest('button');
     if (!b) return;
-    if (b.dataset.ir != null) { const p = secuencia[+b.dataset.ir]; moverArticular(p).then(() => fijarGarra(p.garra)); }
+    if (b.dataset.ir != null) { const p = secuencia[+b.dataset.ir]; moverArticular(p).then(r => { if (!r.detenido) garra(p.garra); }); }
     if (b.dataset.quitarPunto != null) { secuencia.splice(+b.dataset.quitarPunto, 1); guardarSecuencia(); renderSecuencia(); }
   });
   $('#m3d-exp-json').addEventListener('click', () => descargar('secuencia_brazo.json', 'application/json', JSON.stringify({
@@ -676,6 +724,117 @@ function prepararSecuencias() {
   });
 }
 
+// ================================================================== planta (brazo real)
+// La app del gemelo (Python) lee el PLC; aquí se sondea su estado y el modelo lo sigue.
+const planta = { activa: false, info: null, e: null, sondeo: null, mensaje: '' };
+const dormir = ms => new Promise(ok => setTimeout(ok, ms));
+
+async function activarPlanta(url) {
+  const info = await PLC.detectar(url);
+  if (!info) throw new Error('No se encontró la app del gemelo en ' + (url || location.origin) + '. ¿Está corriendo gemelo_brazo.py?');
+  cancelar();
+  PLC.configurar({ modo: 'planta', url: url || '' });
+  planta.activa = true;
+  planta.info = info;
+  $('#m3d-modo').value = 'planta';
+  $('#m3d-mando').checked = !!info.mando;
+  sondear();
+  renderPlanta();
+}
+
+function desactivarPlanta() {
+  planta.activa = false;
+  planta.e = null;
+  clearTimeout(planta.sondeo);
+  PLC.configurar({ modo: 'simulacion' });
+  renderPlanta();
+}
+
+async function sondear() {
+  if (!planta.activa) return;
+  try {
+    const e = await PLC.leerEstado();
+    planta.e = e;
+    if (e.theta_deg != null) fijarQ({ theta: e.theta_deg, sX: e.sX_mm, sY: e.sY_mm });
+    if (e.garra != null && e.garra !== sim.garra) fijarGarra(e.garra);
+    sim.referenciado = !!e.referenciado;
+    if (!!e.mando !== $('#m3d-mando').checked) $('#m3d-mando').checked = !!e.mando;
+    if (e.perfil && planta.info && e.perfil !== planta.info.perfil) { planta.info = await PLC.info(); renderPlanta(); }
+    if (!planta.info.conectado && e.conectado) { planta.info = await PLC.info(); renderPlanta(); }
+  } catch (err) {
+    planta.e = Object.assign({}, planta.e, { conectado: false, error: 'la app del gemelo no responde' });
+    planta.sondeo = setTimeout(sondear, 1500);     // sin app: reintenta despacio
+    return;
+  }
+  planta.sondeo = setTimeout(sondear, 120);
+}
+
+// Espera a que el PLC empiece y termine el movimiento pedido
+async function esperarFin(maxS = 120) {
+  detenerSecuencia = false;
+  const t0 = performance.now();
+  let visto = false;
+  while (performance.now() - t0 < maxS * 1000) {
+    await dormir(150);
+    if (!planta.activa || detenerSecuencia) return { detenido: true };
+    const e = planta.e || {};
+    if (e.en_movimiento) visto = true;
+    else if (visto || performance.now() - t0 > 900) return { detenido: false };
+  }
+  return { detenido: true };
+}
+
+async function ordenPlanta(nombre, datos) {
+  try {
+    const r = await PLC.orden(nombre, datos);
+    mensajePlanta('Orden enviada: ' + nombre);
+    return r;
+  } catch (err) {
+    mensajePlanta(err.message, true);
+    return { error: err.message };
+  }
+}
+
+async function garra(cerrada) {
+  if (!planta.activa) return fijarGarra(cerrada);
+  if (!planta.info.ordenes.includes('garra')) return mensajePlanta('El programa del PLC no deja mover la garra desde la PC', true);
+  await ordenPlanta('garra', { cerrada });
+  await dormir(600);
+}
+
+function mensajePlanta(texto, error) {
+  const m = $('#m3d-msg-planta');
+  m.className = 'm3d-mensaje' + (error ? ' error' : ' ok');
+  m.textContent = texto;
+}
+
+function renderPlanta() {
+  $('#m3d-planta').hidden = !planta.activa;
+  if (!planta.activa) return;
+  const i = planta.info || {};
+  $('#m3d-planta-info').textContent = i.conectado
+    ? `PLC ${i.simulado ? 'SIMULADO' : 'en ' + i.puerto + ', dirección PPI ' + i.direccion} · programa: ${i.descripcion}`
+    : 'La app está corriendo pero todavía no hay conexión con el PLC' + (i.error ? ': ' + i.error : '');
+  const ordenes = i.ordenes || [];
+  for (const b of document.querySelectorAll('#m3d-planta-ordenes [data-orden]')) b.hidden = !ordenes.includes(b.dataset.orden);
+  $('#m3d-planta-vel').hidden = !ordenes.includes('velocidad');
+}
+
+function chipsPlanta() {
+  if (!planta.activa) return [];
+  const e = planta.e || {};
+  const c = [];
+  if (!e.conectado) c.push(['alerta', 'Sin conexión con el PLC' + (e.error ? ': ' + e.error : '')]);
+  else c.push(['ok', 'Brazo real' + (planta.info && planta.info.simulado ? ' (simulado)' : '') + ' · ' + (e.perfil || '')]);
+  if (e.conectado && e.estimado) c.push(['alerta', 'Posición estimada']);
+  if (e.conectado && !e.mando) c.push(['', 'Mando desde la PC deshabilitado']);
+  if (e.conectado && e.modo_auto === false) c.push(['alerta', 'Selector en manual (I0.5): mando desde el panel']);
+  if (e.plc && e.plc.error) c.push(['alerta', 'PLC: ' + e.plc.error]);
+  if (e.plc && e.plc.falla_homing) c.push(['alerta', 'Falla de homing: use Rearmar']);
+  if (e.plc && e.plc.en_curso && e.plc.en_curso !== 'reposo') c.push(['ok', 'PLC: ' + e.plc.en_curso]);
+  return c;
+}
+
 // ================================================================== inicio
 prepararControles();
 fijarGarra(false);
@@ -685,5 +844,10 @@ new IntersectionObserver((e, obs) => {
   if (e[0].isIntersecting) { obs.disconnect(); cargarVisor(); }
 }, { rootMargin: '250px' }).observe($('#modelo3d'));
 
+// Abierta desde la app del gemelo (localhost): modo planta automático
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+  PLC.detectar('').then(i => { if (i) activarPlanta('').catch(() => {}); });
+}
+
 // Acceso para depuración y pruebas desde la consola
-window.__brazo = { sim, K, homing, moverArticular, moverCartesiano, visor };
+window.__brazo = { sim, K, homing, moverArticular, moverCartesiano, visor, planta };

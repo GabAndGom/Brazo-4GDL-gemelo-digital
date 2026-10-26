@@ -205,16 +205,32 @@
           </div>
 
           <div class="m3d-pagina" id="m3d-conexion" role="tabpanel" aria-labelledby="tab-conexion" hidden>
-            <p class="m3d-ayuda">El módulo <span class="codigo-inline">web/js/conexion-plc.js</span> ofrece <span class="codigo-inline">enviarPosicion()</span>, <span class="codigo-inline">leerEstado()</span> y <span class="codigo-inline">homing()</span>. Hoy actúa sobre la simulación; con el middleware de la capa de aplicación (Node-RED o Python) podrá mover la planta real.</p>
+            <p class="m3d-ayuda">Con la app del gemelo digital (<span class="codigo-inline">semestres/2026_II/gemelo-digital/app/gemelo_brazo.py</span>) esta vista sigue al brazo real conectado al PLC y, si el programa del PLC lo permite, lo mueve.
+              <button class="enlace-boton" data-ver="semestres/2026_II/gemelo-digital/README.md">Cómo conectarlo</button></p>
             <div class="m3d-xyz">
               <label>Modo
                 <select id="m3d-modo">
                   <option value="simulacion">Simulación</option>
-                  <option value="middleware">Middleware (planta real)</option>
+                  <option value="planta">Brazo real (app del gemelo)</option>
                 </select>
               </label>
-              <label>URL <input type="url" id="m3d-url" value="http://localhost:1880/brazo"></label>
+              <label>URL de la app <input type="url" id="m3d-url" placeholder="este mismo servidor" value=""></label>
               <div class="m3d-botones"><button type="button" class="boton" id="m3d-probar">Leer estado</button></div>
+            </div>
+            <div class="m3d-planta" id="m3d-planta" hidden>
+              <div class="m3d-mensaje" id="m3d-planta-info" role="status"></div>
+              <label class="m3d-check"><input type="checkbox" id="m3d-mando"> Habilitar el mando del brazo real desde esta página (con alguien junto a la parada de emergencia)</label>
+              <div class="m3d-botones" id="m3d-planta-ordenes">
+                <button type="button" class="boton" data-orden="iniciar">Iniciar (homing o secuencia siguiente)</button>
+                <button type="button" class="boton" data-orden="rearmar">Rearmar</button>
+                <button type="button" class="boton boton-peligro" data-orden="emergencia">Paro de emergencia (PC)</button>
+              </div>
+              <div class="m3d-control m3d-control-simple" id="m3d-planta-vel">
+                <label for="m3d-hz">Pulsos <small>X/Y y base</small></label>
+                <input type="range" id="m3d-hz" min="500" max="5000" step="250" value="4000">
+                <output id="m3d-hz-txt" for="m3d-hz">4000 Hz</output>
+              </div>
+              <div class="m3d-mensaje" id="m3d-msg-planta" role="status"></div>
             </div>
             <pre class="m3d-respuesta" id="m3d-respuesta" aria-live="polite"></pre>
           </div>

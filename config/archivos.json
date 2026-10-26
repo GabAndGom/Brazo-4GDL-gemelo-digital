@@ -445,6 +445,21 @@
     "titulo": "Informe - Cinemática y modelo 3D (fuente LaTeX)",
     "descripcion": "Compilar en esta carpeta con latexmk -pdf. Figuras en informe/figuras."
   },
+  "semestres/2026_II/gemelo-digital/README.md": {
+    "titulo": "Gemelo digital: arranque rápido de la app",
+    "descripcion": "Cómo conectar la PC al PLC por el cable USB-PPI, arrancar gemelo_brazo.py y ver o mandar el brazo real desde el visor 3D.",
+    "orden": 1
+  },
+  "semestres/2026_II/gemelo-digital/manual/manual_gemelo_digital.pdf": {
+    "titulo": "Manual de conexión y uso del gemelo digital",
+    "descripcion": "Conexión paso a paso, uso de la página con cada programa del PLC, carga del programa brazo_gemelo, mapa de memoria y solución de problemas.",
+    "orden": 2
+  },
+  "semestres/2026_II/gemelo-digital/plc/brazo_gemelo.awl": {
+    "titulo": "Programa del PLC para el gemelo digital (AWL)",
+    "descripcion": "Modo manual y homing del programa de Miguel, cuenta de pulsos por eje, finales de carrera que cortan el PTO y mando remoto por PPI con watchdog. Compila sin errores en Micro/WIN 4.0.",
+    "orden": 3
+  },
   "semestres/2026_II/modelo-3d/cinematica_y_modelo_3d.md": {
     "titulo": "Resumen - Cinemática y modelo 3D (ecuaciones)",
     "descripcion": "Ecuaciones de la cinemática directa e inversa, jacobiano, pulsos y espacio de trabajo, con los supuestos actuales.",

@@ -21,8 +21,12 @@
   "diagramas": "Diagramas",
   "modelo": "Modelo E-R",
   "modelo-3d": "Modelo 3D",
+  "gemelo-digital": "Gemelo digital (app y PLC)",
   "levantamiento": "Levantamiento de medidas",
   "cinematica": "Cinemática",
   "figuras": "Figuras del informe",
-  "fotos": "Fotos y bocetos"
+  "fotos": "Fotos y bocetos",
+  "app": "App en Python",
+  "plc": "Programa del PLC",
+  "manual": "Manual"
 }

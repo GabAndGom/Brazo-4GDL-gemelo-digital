@@ -484,6 +484,10 @@ button, input, select { font: inherit; color: inherit; }
 .m3d-mensaje { font-size: 13px; min-height: 20px; }
 .m3d-mensaje.error { color: #c0392b; }
 .m3d-mensaje.ok { color: var(--exito); }
+.m3d [hidden] { display: none !important; }
+.m3d-planta { display: grid; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--borde); }
+.boton.boton-peligro { border-color: #c0392b; color: #c0392b; }
+.boton.boton-peligro:hover { background: #c0392b; color: #fff; }
 .m3d-lista { margin: 0 0 10px; padding: 0; list-style: none; display: grid; gap: 6px; max-height: 240px; overflow: auto; }
 .m3d-lista li {
   display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 8px; align-items: center;

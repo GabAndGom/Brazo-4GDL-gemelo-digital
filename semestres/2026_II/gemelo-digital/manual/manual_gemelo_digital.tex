@@ -1,0 +1,279 @@
+% Manual de conexión y uso del gemelo digital del brazo XK-JS1-1 (II-2026)
+% Compilar desde esta carpeta:  pdflatex manual_gemelo_digital.tex (dos veces)
+\documentclass[a4paper,11pt]{article}
+\usepackage{geometry}
+\geometry{letterpaper, margin=2.2cm}
+\usepackage[spanish, es-nodecimaldot, mexico]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[table]{xcolor}
+\definecolor{naranja}{RGB}{194,98,12}
+\definecolor{rojo}{RGB}{192,57,43}
+\definecolor{gris}{RGB}{242,242,242}
+\usepackage{booktabs,longtable,array,tabularx}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\usepackage{enumitem}
+\setlist{itemsep=2pt}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\small, frame=single, backgroundcolor=\color{gris}, breaklines=true,
+  columns=fullflexible, keepspaces=true}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=naranja, urlcolor=naranja}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small Gemelo digital del brazo XK-JS1-1}
+\rhead{\small Manual de conexión y uso}
+\cfoot{\small \thepage}
+\newcommand{\codigo}[1]{\texttt{#1}}
+\newcommand{\aviso}[1]{\par\smallskip\noindent\colorbox{rojo!10}{\parbox{\dimexpr\linewidth-2\fboxsep}{\textbf{\color{rojo}Atención.} #1}}\par\smallskip}
+
+\title{\textbf{Gemelo digital del brazo XK-JS1-1}\\[4pt]\large Manual de conexión y uso de la app en Python}
+\author{ETN-902 / ETN-1034 / ETN-1000 · UMSA · II-2026}
+\date{26 de octubre de 2026}
+
+\begin{document}
+\maketitle
+\thispagestyle{fancy}
+
+\tableofcontents
+
+\section{Qué es}
+
+La app \codigo{gemelo\_brazo.py} une tres cosas:
+\begin{enumerate}
+\item el PLC S7-200 del brazo, a través del cable USB-PPI (protocolo PPI, el mismo de STEP 7-Micro/WIN);
+\item el visor 3D de la página del proyecto (sección \emph{Modelo 3D}), que dibuja el brazo con la cinemática del modelo;
+\item una API local (\codigo{http://localhost:8050/api/...}) por la que la página lee el estado del brazo y, si se permite, le da órdenes.
+\end{enumerate}
+
+\begin{center}
+\begin{tikzpicture}[caja/.style={draw, rounded corners, fill=gris, minimum height=12mm, align=center, font=\small},
+  node distance=13mm, >={Stealth}]
+\node[caja] (plc) {PLC S7-200\\CPU 224 CN\\puerto 0, PPI 6};
+\node[caja, right=of plc] (cable) {cable USB-PPI\\(CH340)\\\codigo{/dev/ttyUSB0}};
+\node[caja, right=of cable] (app) {app Python\\\codigo{gemelo\_brazo.py}};
+\node[caja, right=of app] (web) {navegador\\visor 3D\\\codigo{localhost:8050}};
+\draw[<->] (plc) -- node[below=7mm, font=\scriptsize]{19.2 kbit/s} (cable);
+\draw[<->] (cable) -- (app);
+\draw[<->] (app) -- node[below=7mm, font=\scriptsize]{HTTP/JSON} (web);
+\end{tikzpicture}
+\end{center}
+
+La app reconoce sola el programa que tiene el PLC y se adapta:
+
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{4.2cm} >{\raggedright}X >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Programa en el PLC} & \textbf{Qué muestra la página} & \textbf{Qué se puede mandar desde la página}\\
+\midrule
+Programa actual de secuencias (perfil \emph{cargado}) & Brazo en vivo con la posición \textbf{estimada} a partir de los trenes de pulsos; entradas y salidas reales & Iniciar (homing o secuencia siguiente), Detener, Paro de emergencia, Rearmar\\
+\codigo{plc/brazo\_gemelo} (perfil \emph{gemelo}) & Brazo en vivo con la posición \textbf{contada en el PLC} & Homing, mover a cualquier posición (articular o cartesiana), secuencias grabadas, garra, velocidad\\
+Otro programa (perfil \emph{monitor}) & Entradas, salidas y posición estimada & Nada\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Seguridad}
+\begin{itemize}
+\item Mientras la PC tenga el mando, una persona debe estar junto a la \textbf{seta de emergencia} del tablero. El paro de la página no la reemplaza.
+\item El \textbf{selector del panel (I0.5)} decide quién manda: en \emph{manual} solo el panel; en \emph{automático} la PC.
+\item El mando desde la página está \textbf{deshabilitado} al arrancar. Para habilitarlo hay que marcar la casilla y confirmar.
+\item Si la app, la página o el cable fallan, el PLC se detiene solo. El programa del gemelo tiene un watchdog de 2 s; el programa actual borra las órdenes de la PC a los 5 s.
+\item La app solo escribe en zonas fijas de la memoria V: \codigo{VB100} y \codigo{VB104} con el programa actual, y \codigo{VB1100--VB1119} con el del gemelo. Cualquier otra escritura se rechaza antes de salir por el cable.
+\item Cada orden queda registrada con su hora en \codigo{app/registro\_gemelo.log}.
+\item Antes de mover, hacer siempre el \textbf{homing}: sin él la posición del modelo no coincide con la real.
+\end{itemize}
+
+\section{Requisitos}
+\begin{itemize}
+\item PC con Linux (probado en Ubuntu) y \textbf{Python 3.8 o superior}. No hay que instalar paquetes: la app usa solo la biblioteca estándar.
+\item Cable \textbf{USB-PPI} (el del laboratorio aparece como \codigo{CH340 serial converter}, \codigo{/dev/ttyUSB0}).
+\item El usuario debe estar en el grupo \codigo{dialout} (comprobar con \codigo{groups}). Si no está: \codigo{sudo usermod -aG dialout \$USER} y volver a iniciar sesión.
+\item Navegador Chrome, Edge o Firefox.
+\end{itemize}
+
+\section{Conexión paso a paso}
+\begin{enumerate}
+\item Con el tablero apagado, enchufe el cable USB-PPI al \textbf{puerto 0} del PLC y el USB a la PC. Encienda el tablero; el PLC debe quedar en \textbf{RUN}.
+\item Compruebe que Linux ve el cable:
+\begin{lstlisting}
+ls -l /dev/serial/by-id/
+# usb-1a86_USB2.0-Serial-if00-port0 -> ../../ttyUSB0
+\end{lstlisting}
+\item \textbf{Si la máquina virtual de Windows XP está abierta}: en su ventana, menú \emph{Dispositivos $\rightarrow$ USB}, el elemento \emph{USB2.0-Serial} debe estar \textbf{desmarcado}. El cable lo usa Linux o Micro/WIN, nunca los dos a la vez.
+\item Arranque la app:
+\begin{lstlisting}
+cd semestres/2026_II/gemelo-digital/app
+python3 gemelo_brazo.py
+\end{lstlisting}
+En la terminal debe aparecer:
+\begin{lstlisting}
+buscando el PLC en /dev/ttyUSB0...
+Gemelo digital en http://localhost:8050/#modelo3d  (Ctrl+C para salir)
+conectado: /dev/ttyUSB0, PPI 6, 19200 baudios, perfil "cargado"
+\end{lstlisting}
+El navegador se abre solo en la sección Modelo 3D. Si no, abra \url{http://localhost:8050/#modelo3d}.
+\item Para cerrar la app, \codigo{Ctrl+C} en la terminal. Si el brazo se estaba moviendo, la app manda un paro antes de salir.
+\end{enumerate}
+
+\subsection*{Opciones de la app}
+\begin{center}\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\codigo{--puerto /dev/ttyUSB1} & otro puerto serie\\
+\codigo{--direccion 6} & no buscar el PLC (más rápido al arrancar)\\
+\codigo{--simulado} & PLC simulado con el programa del gemelo: para practicar sin el brazo\\
+\codigo{--http 8060} & otro puerto para la página\\
+\codigo{--sin-navegador} & no abrir el navegador\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+También puede usarse la página publicada (\url{https://brazo-4gdl-gemelo-digital.pages.dev}): en la pestaña \emph{Conexión}, escriba \codigo{http://localhost:8050} en \emph{URL de la app} y elija el modo \emph{Brazo real}.
+
+\section{Uso de la página}
+
+\subsection{Lo que se ve}
+\begin{itemize}
+\item \textbf{Visor 3D}: el brazo en la pose que informa el PLC, unas 5 a 20 veces por segundo.
+\item \textbf{Indicadores} bajo el visor:
+\begin{itemize}
+\item \emph{Brazo real · perfil}: indica si hay conexión.
+\item \emph{Posición estimada}: aparece con el programa actual.
+\item \emph{Selector en manual}: el PLC no acepta órdenes de la PC.
+\item \emph{Sin referencia}: falta el homing.
+\item Errores del PLC: falla de homing, destino fuera del recorrido, watchdog.
+\end{itemize}
+\item \textbf{Telemetría}:
+\begin{itemize}
+\item articulaciones ($\theta$, carros X e Y), posición de la garra y pulsos;
+\item tarjeta \emph{E/S del PLC (en vivo)} con I0.0--I1.5 y Q0.0--Q0.7 reales;
+\item \emph{Origen}: dice si la posición está contada en el PLC o estimada.
+\end{itemize}
+\item \textbf{Pestaña Conexión}: dirección del PLC, programa reconocido, casilla de mando y botones del programa cargado.
+\end{itemize}
+
+\subsection{Con el programa actual (perfil \emph{cargado})}
+Este programa no lleva la cuenta de la posición y solo ejecuta sus secuencias fijas. Por eso la página es sobre todo un \textbf{monitor}.
+\begin{enumerate}
+\item Con el selector en \emph{manual}, mueva el brazo con los pulsadores del panel: el modelo lo sigue. La posición es una estimación y se corrige cada vez que se pisa un final de carrera o pasa el inductivo de la base.
+\item Para usar los botones de la página, ponga el selector en \emph{automático}, marque \emph{Habilitar el mando} y use:
+\begin{itemize}
+\item \textbf{Iniciar}: equivale a I0.7. Sin referencia hace el homing (X atrás, base al inductivo, Y abajo). Con referencia corre la secuencia 1 y, la vez siguiente, la secuencia 2.
+\item \textbf{Detener} (botón de la pestaña Articular): para la secuencia en automático (V104.1).
+\item \textbf{Paro de emergencia (PC)}: corta los dos trenes de pulsos en cualquier modo y queda enclavado (V104.2).
+\item \textbf{Rearmar}: quita el enclavamiento y la falla de homing (V100.3).
+\end{itemize}
+\item Cuando termina el homing la app pone los tres ejes en cero: desde ahí el modelo coincide con el brazo.
+\end{enumerate}
+
+\subsection{Con el programa del gemelo (perfil \emph{gemelo})}
+\begin{enumerate}
+\item Selector en \emph{automático}. Marque \emph{Habilitar el mando} y confirme.
+\item \textbf{Homing} (pestaña Articular). El orden es el del programa de Miguel: Y abajo hasta I0.3, X atrás hasta I0.1, abre la garra y gira la base hasta I0.0. Al terminar, la página deja de mostrar \emph{Sin referencia}.
+\item \textbf{Mover}:
+\begin{itemize}
+\item \emph{Articular}: escriba $\theta$, X o Y en los números, o suelte un deslizador en el valor deseado. El brazo va hasta ahí y el modelo lo sigue.
+\item \emph{Cartesiano}: escriba X, Y y Z de la garra. La página calcula la cinemática inversa y manda las posiciones de los ejes. X e Y comparten el PTO, así que la trayectoria no es recta: los dos carros avanzan juntos a la misma velocidad y el de menor recorrido se detiene antes.
+\item \emph{Secuencias}: grabe puntos con \emph{Grabar punto}, cada uno con su posición y el estado de la garra, y use \emph{Reproducir}. La página espera a que el PLC termine cada punto antes de mandar el siguiente.
+\end{itemize}
+\item \textbf{Garra}: botón \emph{Cerrar garra / Abrir garra}.
+\item \textbf{Velocidad}: deslizador \emph{Pulsos} de la pestaña Conexión, entre 500 y 5000 Hz. A 4000 Hz los carros van a 20 mm/s. El programa no tiene rampas, así que conviene no pasar de 4000 Hz hasta probarlo con carga.
+\item \textbf{Detener}: corta el movimiento. La posición deja de ser exacta y el PLC pide un nuevo homing.
+\end{enumerate}
+
+\section{Cargar el programa del gemelo en el PLC}
+\aviso{Cargar un programa reemplaza el que tiene el PLC. El programa actual quedó respaldado el 26/10/2026 en \codigo{ETN 1034/respaldo\_vm/programa\_plc\_cargado\_20261026.mwp} (también exportado como \codigo{proyecto1\_abierto.awl}). Para volver a él, se carga ese archivo de la misma forma.}
+\begin{enumerate}
+\item Cierre la app (\codigo{Ctrl+C}). En la ventana de la VM, menú \emph{Dispositivos $\rightarrow$ USB}, \textbf{marque} \emph{USB2.0-Serial} para pasar el cable a Windows.
+\item En Micro/WIN, \emph{Archivo $\rightarrow$ Abrir}, escriba esta ruta (carpeta compartida de la VM):
+\begin{lstlisting}
+\\vboxsvr\MIS_COSAS\ETN\ETN 1034\GIT_BRAZO\Brazo-4GDL-gemelo-digital\
+  semestres\2026_II\gemelo-digital\plc\brazo_gemelo.mwp
+\end{lstlisting} Si falta el \codigo{.mwp}, cree un proyecto nuevo e importe \codigo{brazo\_gemelo.awl} (\emph{Archivo $\rightarrow$ Importar}).
+\item \emph{CPU $\rightarrow$ Tipo $\rightarrow$ Leer CPU} para que el proyecto tome la CPU 224 CN. Luego \emph{CPU $\rightarrow$ Compilar todo}: debe decir \emph{Total errores: 0}.
+\item \emph{Archivo $\rightarrow$ Cargar en CPU}. En el cuadro, deje marcado solo el \textbf{Bloque de programa}. Si se carga también el bloque de sistema del proyecto nuevo, la dirección PPI del PLC pasa de 6 a 2; la app la encuentra igual, pero es mejor no cambiarla.
+\item Pase el PLC a RUN. Devuelva el cable a Linux (desmarque \emph{USB2.0-Serial}) y arranque la app: debe decir \codigo{perfil "gemelo"}.
+\item \textbf{Primera prueba}, con los motores a baja velocidad y alguien en la seta:
+\begin{enumerate}
+\item selector en manual: mueva cada eje con el panel y verifique que el modelo lo sigue y que los finales de carrera cortan el movimiento;
+\item selector en automático: homing desde la página;
+\item movimientos cortos de cada eje (por ejemplo X 10 mm, Y 10 mm, $\theta$ 5°), comparando con una regla.
+\end{enumerate}
+\end{enumerate}
+
+\section{Memoria del programa del gemelo}
+\begin{center}\small
+\begin{longtable}{@{}p{4.3cm}p{2.1cm}p{9.6cm}@{}}
+\toprule
+\textbf{Dirección} & \textbf{Quién escribe} & \textbf{Contenido}\\
+\midrule
+VB1100 & PC & orden: 1 homing, 2 mover, 3 paro, 4 cerrar garra, 5 abrir garra\\
+VB1101 & PC & secuencia: el PLC ejecuta la orden cuando cambia\\
+VW1102 & PC & latido (watchdog de 2 s durante un movimiento pedido por la PC)\\
+VD1104 / VD1108 / VD1112 & PC & pulsos relativos de base / X / Y (con signo)\\
+VW1116 / VW1118 & PC & ciclo del tren de pulsos X/Y y base [µs] (200--2000 y 250--4000)\\
+VB1120 & PLC & estado: 0 reposo, 1 homing, 2 moviendo\\
+VB1121 & PLC & eco de la secuencia\\
+VB1122 & PLC & bits: .0 referenciado, .1 remoto (I0.5), .2 PTO0 y .3 PTO1 ocupados, .4 posición incierta, .5 watchdog\\
+VB1123 & PLC & error: 1 ocupado, 2 fuera de recorrido, 3 watchdog, 4 sin homing, 5 orden desconocida, 6 paro\\
+VD1124 / VD1128 / VD1132 & PLC & posición de base / X / Y [pulsos]\\
+VW1136 & PLC & paso de la máquina de estados\\
+VB1138 / VB1139 / VB1140 & PLC & copia de IB0 / IB1 / QB0\\
+VB1141 & PLC & firma 16\#47 (la app reconoce así el programa)\\
+VD1144 / VD1148 / VD1152 & PLC & tramo en curso de base / X / Y [pulsos]\\
+\bottomrule
+\end{longtable}
+\end{center}
+Sentidos: X positivo con Q0.3 = 0 (adelante), Y positivo con Q0.4 = 0 (arriba), base positiva con Q0.2 = 0 (SUPUESTO). Recorridos: X e Y de 0 a 34000 pulsos (170 mm a 0.005 mm/pulso); base $\pm$50000 pulsos (SUPUESTO).
+
+\section{Memoria del programa actual}
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Dirección} & \textbf{Quién escribe} & \textbf{Contenido}\\
+\midrule
+V104.0 & PC & iniciar (igual que I0.7)\\
+V104.1 & PC & paro en automático\\
+V104.2 & PC & emergencia (enclavada)\\
+V104.7 & PC & latido: si no cambia en 5 s el PLC borra VB104\\
+V100.3 & PC & rearmar (flanco)\\
+V200.0 / .1 / .3 / .7 & PLC & listo / ocupado / falla de homing / referenciado\\
+V301.0 / .2 / .4 & PLC & homing / secuencia 1 / secuencia 2 en curso\\
+VW320 / VW322 & PLC & paso del automático / del homing\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Solución de problemas}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{5.2cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Síntoma} & \textbf{Qué hacer}\\
+\midrule
+\codigo{no responde ningún PLC en /dev/ttyUSB0} & PLC apagado, cable en otro puerto, o la VM tomó el USB (desmárquelo en \emph{Dispositivos $\rightarrow$ USB}). Pruebe \codigo{ls /dev/serial/by-id/}.\\
+\codigo{Permission denied: /dev/ttyUSB0} & El usuario no está en \codigo{dialout} (sección 3).\\
+\emph{Sin conexión con el PLC} en la página & La app perdió el cable; reintenta cada 2 s sola. Mire la terminal.\\
+\emph{Selector en manual} & Gire el selector del panel a automático para mandar desde la PC.\\
+\emph{falta hacer homing} al mover & Use Homing (gemelo) o Iniciar (programa actual).\\
+\emph{destino fuera del recorrido} & El punto pedido sale de 0--170 mm en X/Y o del giro permitido.\\
+\emph{watchdog} & La página o la app dejaron de responder durante un movimiento; vuelva a hacer homing.\\
+El modelo no coincide con el brazo & Haga homing. Con el programa actual la posición es estimada: se corrige en los finales de carrera.\\
+La base gira al revés en el modelo & El sentido de la base es un SUPUESTO: cambie el signo de \codigo{pulsosPorGrado} o avise para invertirlo en \codigo{brazo.py}.\\
+Micro/WIN no se comunica & El cable está en Linux: cierre la app y pase el USB a la VM.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Limitaciones y supuestos}
+\begin{itemize}
+\item La reducción de la base (5:1) y su sentido son \textbf{SUPUESTOS}. El programa actual gira la base hasta 88500 pulsos, lo que con 5:1 serían casi 18 vueltas: la reducción real es mayor. Hay que medir cuántos pulsos da una vuelta de la base y corregir \codigo{reduccionBase} en \codigo{web/js/cinematica.js}.
+\item Los dos programas dan los pulsos sin rampa. A más de 4--5 kHz los motores pueden perder pasos.
+\item Con el programa actual la posición se estima leyendo el PLC unas 5 veces por segundo: puede desviarse algunos milímetros entre finales de carrera.
+\item Los finales de carrera de X e Y cortan el PTO en el programa del gemelo. La base no tiene finales: su límite es de software ($\pm$50000 pulsos en el PLC y $\pm$175° en la app).
+\end{itemize}
+
+\end{document}
