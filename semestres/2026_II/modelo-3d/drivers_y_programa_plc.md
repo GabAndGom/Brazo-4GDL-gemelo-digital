@@ -63,3 +63,52 @@ que está cargado hoy en el PLC: hay que confirmarlo subiendo el programa desde 
   cuántos pulsos da una vuelta de la base.
 - Un contador único para X e Y no sirve para un gemelo digital: el programa nuevo debe llevar un contador
   por eje (sumar los pulsos de cada tramo al eje cuyo relé está cerrado, con el signo de su DIR).
+
+## Programa "BRAZO MIGUEL ROBADO" (escritorio de la VM)
+
+Exportado a AWL desde Micro/WIN el 26/10/2026 (copia en `ETN 1034/respaldo_vm/`). "PROGRAMA MIGUEL AJUSTADO"
+tiene la misma lógica; solo cambian los títulos. Proyecto para CPU 224 CN REL 02.01. Bloque de sistema:
+puerto 0 en dirección PPI **7**, 19.2 kbit/s (la CPU 224 tiene un solo puerto).
+
+No usa MAP_SERV: maneja el PTO directamente en modo de un segmento (`SMB67`/`SMB77 = 16#85`, base de tiempo
+en µs) con cantidad de pulsos fija, **sin rampa**. Las posiciones no se cuentan: VD210/VD220 solo se ponen a cero.
+
+| Señal | Uso en el programa |
+|---|---|
+| I0.5 | selector: 0 manual, 1 automático |
+| I0.6 (flanco), I1.0 en automático, V1000.2 | paro: corta los dos PTO y reinicia |
+| I0.7 | manual: abre o cierra la garra; automático: arranca la secuencia siguiente |
+| I1.0 / I1.1 | base con Q0.2 = 0 / 1 (paquetes de 100 pulsos a 4 kHz mientras se pulsa) |
+| I1.2 / I1.3 | carro X con Q0.3 = 0 (hasta I0.2) / Q0.3 = 1 (hasta I0.1); necesita K2 abierto |
+| I1.4 / I1.5 | carro Y con Q0.4 = 0 (hasta I0.4) / Q0.4 = 1 (hasta I0.3); necesita K1 abierto |
+| Q0.5 / Q0.6 | relés K1 (X) y K2 (Y); en manual nunca los dos a la vez |
+| Q0.7 | garra: 1 = cerrada (se pone a 1 al tomar la pieza) |
+
+Velocidades: 4 kHz en X/Y y en la base (ciclo de 250 µs); homing de la base a 2.5 kHz (400 µs).
+Con 1000 pulsos/rev y 5 mm/rev: 20 mm/s en los carros.
+
+**Homing (SBR_HOMING), secuencial:** Y con Q0.4 = 1 hasta I0.3 → X con Q0.3 = 1 hasta I0.1 → abre la garra →
+base con Q0.2 = 1 hasta I0.0 → V1001.1 = listo.
+
+**Secuencia 1 (primer I0.7 o V1000.0):** Y +12000 pulsos (Q0.4 = 0, sube) → base 17000 (Q0.2 = 0) →
+X +14000 (Q0.3 = 0, adelante) → garra abierta.
+
+**Secuencia 2 (segundo I0.7 o V1000.1):** cierra la garra → Y +5000 → X −8000 → base 18000 (Q0.2 = 0) →
+Y −14000 → abre la garra → Y +14000 → base 10000 (Q0.2 = 1) → X +8000 → Y −5000 → garra abierta.
+
+**Interfaz remota ya incluida** (pensada para otra estación por NETR/NETW o un HMI):
+
+| Dirección | Sentido | Significado |
+|---|---|---|
+| V1000.0 | PC → PLC | ejecutar secuencia 1 |
+| V1000.1 | PC → PLC | ejecutar secuencia 2 |
+| V1000.2 | PC → PLC | paro |
+| V1001.0 / .1 | PLC → PC | homing en curso / listo |
+| V1001.2 / .3 | PLC → PC | secuencia 1 en curso / terminada |
+| V1001.4 / .5 | PLC → PC | secuencia 2 en curso / terminada |
+| VD1004 / VD1008 | PLC → PC | posición base / X-Y (hoy siempre 0) |
+
+Como el puerto queda en PPI, una PC puede leer y escribir esta memoria V con el protocolo PPI (dirección 7,
+19.2 kbit/s) **sin cambiar el programa**: es la forma más segura de conectar primero la página web
+(botones de secuencia 1, 2 y paro, y estado leído de VB1001). Para mover a posiciones arbitrarias hace falta
+un programa nuevo con rampas y un contador por eje.
