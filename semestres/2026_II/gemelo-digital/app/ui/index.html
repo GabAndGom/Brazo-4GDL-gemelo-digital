@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gemelo digital · Brazo XK-JS1-1</title>
+  <link rel="icon" href="icono.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/estilos.css">
+  <link rel="stylesheet" href="css/app.css">
+  <!-- three.js 0.160.0 incluido en lib/three: la app funciona sin internet -->
+  <script type="importmap">
+  { "imports": { "three": "./lib/three/three.module.js", "three/addons/": "./lib/three/addons/" } }
+  </script>
+  <script>window.RUTA_GLB_BRAZO = 'modelo/brazo_xk-js1-1.glb';</script>
+</head>
+<body>
+  <header class="app-barra">
+    <img src="icono.svg" alt="" width="28" height="28">
+    <div>
+      <strong>Gemelo digital · Brazo XK-JS1-1</strong>
+      <small>PLC S7-200 por USB-PPI · UMSA II-2026</small>
+    </div>
+    <span class="app-conexion" id="app-conexion">Conectando…</span>
+  </header>
+  <main id="app" class="app-principal">
+    <section id="modelo3d" class="seccion">
+      <div class="encabezado">
+        <h2>Modelo 3D</h2>
+        <p>Gemelo digital articulado: cinemática directa e inversa, pulsos del PLC y secuencias</p>
+      </div>
+      <div class="m3d-aviso" role="note">
+        <strong>Modelo aproximado.</strong> Varias cotas del mecanismo, el paso del husillo, los micropasos y la
+        reducción de la base son <span class="codigo-inline">SUPUESTO</span> hasta medirlos en la planta.
+      </div>
+
+      <div class="m3d">
+        <div class="m3d-visor">
+          <div class="m3d-lienzo" id="m3d-lienzo">
+            <div class="m3d-carga" id="m3d-carga">
+              <button class="boton boton-primario" id="m3d-cargar" type="button">Cargar visor 3D</button>
+              <small id="m3d-estado-carga">El visor (three.js) se descarga al llegar a esta sección.</small>
+            </div>
+          </div>
+          <div class="m3d-barra">
+            <div class="m3d-vistas" role="group" aria-label="Vistas rápidas de la cámara">
+              <button type="button" class="boton boton-chico" data-vista="iso">Isométrica</button>
+              <button type="button" class="boton boton-chico" data-vista="frontal">Frontal</button>
+              <button type="button" class="boton boton-chico" data-vista="lateral">Lateral</button>
+              <button type="button" class="boton boton-chico" data-vista="superior">Superior</button>
+            </div>
+            <div class="m3d-vistas" role="group" aria-label="Capas del visor">
+              <button type="button" class="boton boton-chico" id="m3d-ver-espacio" aria-pressed="false">Espacio de trabajo</button>
+              <button type="button" class="boton boton-chico" id="m3d-ver-traza" aria-pressed="true">Trayectoria</button>
+            </div>
+          </div>
+          <div class="m3d-chips" id="m3d-chips" aria-live="polite"></div>
+        </div>
+
+        <div class="m3d-panel">
+          <div class="pestanas" role="tablist" aria-label="Modo de control">
+            <button class="pestana" role="tab" id="tab-articular" aria-controls="m3d-articular" aria-selected="true">Articular</button>
+            <button class="pestana" role="tab" id="tab-cartesiano" aria-controls="m3d-cartesiano" aria-selected="false" tabindex="-1">Cartesiano</button>
+            <button class="pestana" role="tab" id="tab-secuencias" aria-controls="m3d-secuencias" aria-selected="false" tabindex="-1">Secuencias</button>
+            <button class="pestana" role="tab" id="tab-conexion" aria-controls="m3d-conexion" aria-selected="false" tabindex="-1">Conexión</button>
+          </div>
+
+          <div class="m3d-pagina" id="m3d-articular" role="tabpanel" aria-labelledby="tab-articular">
+            <div class="m3d-control">
+              <label for="m3d-theta">θ base <small>motor Z · NEMA 17</small></label>
+              <input type="range" id="m3d-theta" data-eje="theta" step="0.5">
+              <input type="number" class="m3d-num" id="m3d-theta-num" data-eje="theta" step="0.5" aria-label="θ base en grados">
+              <span class="m3d-unidad">°</span>
+            </div>
+            <div class="m3d-control">
+              <label for="m3d-sx">Carro X <small>husillo inferior · alcance</small></label>
+              <input type="range" id="m3d-sx" data-eje="sX" step="0.5">
+              <input type="number" class="m3d-num" id="m3d-sx-num" data-eje="sX" step="0.5" aria-label="Carro X en milímetros">
+              <span class="m3d-unidad">mm</span>
+            </div>
+            <div class="m3d-control">
+              <label for="m3d-sy">Carro Y <small>husillo superior · altura</small></label>
+              <input type="range" id="m3d-sy" data-eje="sY" step="0.5">
+              <input type="number" class="m3d-num" id="m3d-sy-num" data-eje="sY" step="0.5" aria-label="Carro Y en milímetros">
+              <span class="m3d-unidad">mm</span>
+            </div>
+            <p class="m3d-ayuda" id="m3d-aviso-mover" hidden>El programa cargado en el PLC no acepta posiciones desde la PC: aquí solo se ve el brazo real. Use la pestaña Conexión (Iniciar, paros) o cargue el programa del gemelo digital.</p>
+            <div class="m3d-botones">
+              <button type="button" class="boton" id="m3d-garra" aria-pressed="false">Cerrar garra</button>
+              <button type="button" class="boton" id="m3d-homing">Homing</button>
+              <button type="button" class="boton" id="m3d-detener">Detener</button>
+            </div>
+            <div class="m3d-control m3d-control-simple">
+              <label for="m3d-velocidad">Velocidad <small>de la simulación</small></label>
+              <input type="range" id="m3d-velocidad" min="10" max="100" step="5" value="40">
+              <output id="m3d-velocidad-txt" for="m3d-velocidad">40 mm/s</output>
+            </div>
+            <label class="m3d-check"><input type="checkbox" id="m3d-pto"> Simular el PTO compartido (Q0.1 con los relés K1 y K2): X e Y avanzan juntos a la misma velocidad y el de menor recorrido se detiene antes</label>
+          </div>
+
+          <div class="m3d-pagina" id="m3d-cartesiano" role="tabpanel" aria-labelledby="tab-cartesiano" hidden>
+            <p class="m3d-ayuda">Posición objetivo de la garra (TCP). Origen en el eje de giro sobre la mesa; X hacia el sensor inductivo (θ = 0) y Z hacia arriba.</p>
+            <form id="m3d-form-xyz" class="m3d-xyz">
+              <label>X <input type="number" id="m3d-x" step="1" required> <span>mm</span></label>
+              <label>Y <input type="number" id="m3d-y" step="1" required> <span>mm</span></label>
+              <label>Z <input type="number" id="m3d-z" step="1" required> <span>mm</span></label>
+              <div class="m3d-botones">
+                <button type="submit" class="boton boton-primario">Mover (trayectoria recta)</button>
+                <button type="button" class="boton" id="m3d-usar-actual">Usar posición actual</button>
+              </div>
+            </form>
+            <div class="m3d-mensaje" id="m3d-msg-xyz" role="status"></div>
+          </div>
+
+          <div class="m3d-pagina" id="m3d-secuencias" role="tabpanel" aria-labelledby="tab-secuencias" hidden>
+            <p class="m3d-ayuda">Grabe puntos (posición y garra), reprodúzcalos y expórtelos como tabla de pulsos para programar el PLC. Se guardan en este navegador.</p>
+            <div class="m3d-botones">
+              <button type="button" class="boton boton-primario" id="m3d-grabar">Grabar punto</button>
+              <button type="button" class="boton" id="m3d-reproducir">Reproducir</button>
+              <button type="button" class="boton" id="m3d-borrar">Borrar todo</button>
+            </div>
+            <ol class="m3d-lista" id="m3d-lista" aria-label="Puntos de la secuencia"></ol>
+            <div class="m3d-botones">
+              <button type="button" class="boton boton-chico" id="m3d-exp-json">Exportar JSON</button>
+              <button type="button" class="boton boton-chico" id="m3d-exp-csv">Exportar CSV de pulsos</button>
+              <label class="boton boton-chico" for="m3d-imp-json">Importar JSON</label>
+              <input type="file" id="m3d-imp-json" accept="application/json,.json" class="oculto-visual">
+            </div>
+            <div class="m3d-mensaje" id="m3d-msg-seq" role="status"></div>
+          </div>
+
+          <div class="m3d-pagina" id="m3d-conexion" role="tabpanel" aria-labelledby="tab-conexion" hidden>
+            <p class="m3d-ayuda">Con la app del gemelo digital (<span class="codigo-inline">semestres/2026_II/gemelo-digital/app/gemelo_brazo.py</span>) esta vista sigue al brazo real conectado al PLC y, si el programa del PLC lo permite, lo mueve.</p>
+            <div class="m3d-xyz">
+              <label>Modo
+                <select id="m3d-modo">
+                  <option value="simulacion">Simulación (sin PLC)</option>
+                  <option value="planta" selected>Brazo real (app del gemelo)</option>
+                </select>
+              </label>
+              <label>URL de la app <input type="url" id="m3d-url" placeholder="este mismo servidor" value=""></label>
+              <div class="m3d-botones"><button type="button" class="boton" id="m3d-probar">Leer estado</button></div>
+            </div>
+            <div class="m3d-planta" id="m3d-planta" hidden>
+              <div class="m3d-mensaje" id="m3d-planta-info" role="status"></div>
+              <label class="m3d-check"><input type="checkbox" id="m3d-mando"> Habilitar el mando del brazo real desde esta página (con alguien junto a la parada de emergencia)</label>
+              <div class="m3d-botones" id="m3d-planta-ordenes">
+                <button type="button" class="boton" data-orden="iniciar">Iniciar (homing o secuencia siguiente)</button>
+                <button type="button" class="boton" data-orden="rearmar">Rearmar</button>
+                <button type="button" class="boton boton-peligro" data-orden="emergencia">Paro de emergencia (PC)</button>
+              </div>
+              <div class="m3d-control m3d-control-simple" id="m3d-planta-vel">
+                <label for="m3d-hz">Pulsos <small>X/Y y base</small></label>
+                <input type="range" id="m3d-hz" min="500" max="5000" step="250" value="4000">
+                <output id="m3d-hz-txt" for="m3d-hz">4000 Hz</output>
+              </div>
+              <div class="m3d-mensaje" id="m3d-msg-planta" role="status"></div>
+            </div>
+            <pre class="m3d-respuesta" id="m3d-respuesta" aria-live="polite"></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="m3d-telemetria" id="m3d-telemetria" aria-label="Telemetría"></div>
+    </section>
+
+  </main>
+  <script src="js/cinematica.js"></script>
+  <script src="js/conexion-plc.js"></script>
+  <script type="module" src="js/modelo3d.js"></script>
+  <script>
+    // Estado de la conexión en la barra superior
+    (function () {
+      const el = document.getElementById('app-conexion');
+      async function ver() {
+        try {
+          const r = await fetch('api/estado', { cache: 'no-store' });
+          const e = await r.json();
+          el.className = 'app-conexion ' + (e.conectado ? 'ok' : 'mal');
+          el.textContent = e.conectado
+            ? 'PLC conectado · ' + e.perfil + (e.mando ? ' · MANDO HABILITADO' : ' · solo lectura')
+            : 'Sin PLC' + (e.error ? ': ' + e.error : '');
+        } catch (err) {
+          el.className = 'app-conexion mal';
+          el.textContent = 'La app no responde';
+        }
+        setTimeout(ver, 1000);
+      }
+      ver();
+    })();
+  </script>
+</body>
+</html>

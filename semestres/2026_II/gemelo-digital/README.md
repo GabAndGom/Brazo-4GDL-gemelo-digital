@@ -8,6 +8,20 @@ El manual completo está en [manual_gemelo_digital.pdf](manual/manual_gemelo_dig
 PLC S7-200 (puerto 0, PPI) ⇄ cable USB-PPI (/dev/ttyUSB0) ⇄ app gemelo_brazo.py ⇄ navegador (localhost:8050)
 ```
 
+## App de escritorio
+
+La carpeta `app/` es una aplicación autónoma: solo el gemelo del brazo, con ventana propia (GTK + WebKit),
+three.js incluido (funciona sin internet) y su copia del modelo y de la cinemática. Para llevarla a otra PC:
+
+```bash
+cd semestres/2026_II/gemelo-digital/app
+python3 empaquetar.py --destino ~/gemelo_brazo_app     # carpeta + gemelo_brazo_app.zip
+~/gemelo_brazo_app/instalar_acceso.sh                  # accesos en el menú de aplicaciones
+```
+
+En la PC del laboratorio ya quedó en `ETN 1034/gemelo_brazo_app` con sus accesos
+"Gemelo digital del brazo" y "Gemelo digital del brazo (simulado)" en el menú.
+
 ## Arranque rápido
 
 1. Enchufe el cable USB-PPI al puerto 0 del PLC y a la PC. En VirtualBox, el USB **no** debe estar
@@ -19,9 +33,9 @@ PLC S7-200 (puerto 0, PPI) ⇄ cable USB-PPI (/dev/ttyUSB0) ⇄ app gemelo_brazo
    python3 gemelo_brazo.py
    ```
 
-   La app busca el PLC (dirección PPI 6 a 19.2 kbit/s), reconoce el programa cargado y abre
-   `http://localhost:8050/#modelo3d`. Sin PLC se puede practicar con `python3 gemelo_brazo.py --simulado`.
-3. En la página, la sección **Modelo 3D** sigue al brazo real. En la pestaña **Conexión** está el
+   La app busca el PLC (dirección PPI 6 a 19.2 kbit/s), reconoce el programa cargado y abre su
+   ventana (con `--navegador`, en el navegador: `http://localhost:8050/`). Sin PLC se puede practicar con `python3 gemelo_brazo.py --simulado`.
+3. En la ventana, el modelo 3D sigue al brazo real. En la pestaña **Conexión** está el
    estado del PLC y la casilla **Habilitar el mando**: solo con ella marcada la página puede mover el brazo.
 
 No hace falta instalar nada: la app usa solo la biblioteca estándar de Python 3.

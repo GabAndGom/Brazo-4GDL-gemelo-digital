@@ -13,7 +13,7 @@ const PLC = window.ConexionPLC;
 const $ = s => document.querySelector(s);
 const P = K.parametros, T = K.transmision, D = K.derivados;
 const RAD = Math.PI / 180, M = 0.001;
-const RUTA_GLB = 'global/modelo-3d/brazo_xk-js1-1.glb';
+const RUTA_GLB = window.RUTA_GLB_BRAZO || 'global/modelo-3d/brazo_xk-js1-1.glb';   // la app de escritorio usa su copia
 const CLAVE_SEQ = 'brazo-xk-js1-1-secuencia';
 const LIMITES = {
   theta: [P.thetaMin, P.thetaMax],
@@ -808,15 +808,25 @@ function mensajePlanta(texto, error) {
   m.textContent = texto;
 }
 
+// Con un programa del PLC que no acepta posiciones libres, los controles de posición solo muestran
+function bloquearMover(si) {
+  const ids = ['#m3d-theta', '#m3d-sx', '#m3d-sy', '#m3d-theta-num', '#m3d-sx-num', '#m3d-sy-num', '#m3d-garra',
+    '#m3d-form-xyz button[type="submit"]', '#m3d-reproducir'];
+  for (const id of ids) { const el = $(id); if (el) el.disabled = si; }
+  const aviso = $('#m3d-aviso-mover');
+  if (aviso) aviso.hidden = !si;
+}
+
 function renderPlanta() {
   $('#m3d-planta').hidden = !planta.activa;
-  if (!planta.activa) return;
+  if (!planta.activa) { bloquearMover(false); return; }
   const i = planta.info || {};
   $('#m3d-planta-info').textContent = i.conectado
     ? `PLC ${i.simulado ? 'SIMULADO' : 'en ' + i.puerto + ', dirección PPI ' + i.direccion} · programa: ${i.descripcion}`
     : 'La app está corriendo pero todavía no hay conexión con el PLC' + (i.error ? ': ' + i.error : '');
   const ordenes = i.ordenes || [];
   for (const b of document.querySelectorAll('#m3d-planta-ordenes [data-orden]')) b.hidden = !ordenes.includes(b.dataset.orden);
+  bloquearMover(!ordenes.includes('mover'));
   $('#m3d-planta-vel').hidden = !ordenes.includes('velocidad');
 }
 

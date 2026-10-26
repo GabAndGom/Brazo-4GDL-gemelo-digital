@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gemelo digital · Brazo XK-JS1-1</title>
+  <link rel="icon" href="icono.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/estilos.css">
+  <link rel="stylesheet" href="css/app.css">
+  <!-- three.js 0.160.0 incluido en lib/three: la app funciona sin internet -->
+  <script type="importmap">
+  { "imports": { "three": "./lib/three/three.module.js", "three/addons/": "./lib/three/addons/" } }
+  </script>
+  <script>window.RUTA_GLB_BRAZO = 'modelo/brazo_xk-js1-1.glb';</script>
+</head>
+<body>
+  <header class="app-barra">
+    <img src="icono.svg" alt="" width="28" height="28">
+    <div>
+      <strong>Gemelo digital · Brazo XK-JS1-1</strong>
+      <small>PLC S7-200 por USB-PPI · UMSA II-2026</small>
+    </div>
+    <span class="app-conexion" id="app-conexion">Conectando…</span>
+  </header>
+  <main id="app" class="app-principal">
+{{MODELO3D}}
+  </main>
+  <script src="js/cinematica.js"></script>
+  <script src="js/conexion-plc.js"></script>
+  <script type="module" src="js/modelo3d.js"></script>
+  <script>
+    // Estado de la conexión en la barra superior
+    (function () {
+      const el = document.getElementById('app-conexion');
+      async function ver() {
+        try {
+          const r = await fetch('api/estado', { cache: 'no-store' });
+          const e = await r.json();
+          el.className = 'app-conexion ' + (e.conectado ? 'ok' : 'mal');
+          el.textContent = e.conectado
+            ? 'PLC conectado · ' + e.perfil + (e.mando ? ' · MANDO HABILITADO' : ' · solo lectura')
+            : 'Sin PLC' + (e.error ? ': ' + e.error : '');
+        } catch (err) {
+          el.className = 'app-conexion mal';
+          el.textContent = 'La app no responde';
+        }
+        setTimeout(ver, 1000);
+      }
+      ver();
+    })();
+  </script>
+</body>
+</html>

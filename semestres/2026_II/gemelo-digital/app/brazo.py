@@ -17,8 +17,12 @@ import time
 
 from ppi import ClientePPI, ErrorPPI, buscar_plc
 
-RAIZ_REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
-PARAMETROS = os.path.join(RAIZ_REPO, 'semestres', '2026_II', 'modelo-3d', 'cinematica', 'parametros.json')
+APP = os.path.dirname(os.path.abspath(__file__))
+UI = os.path.join(APP, 'ui')
+# Copia local (la deja empaquetar.py); dentro del repositorio se puede usar la original
+PARAMETROS = os.path.join(APP, 'parametros.json')
+if not os.path.exists(PARAMETROS):
+    PARAMETROS = os.path.join(APP, '..', '..', 'modelo-3d', 'cinematica', 'parametros.json')
 
 
 def bits(byte, prefijo):

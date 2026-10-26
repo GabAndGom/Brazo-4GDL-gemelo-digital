@@ -1,0 +1,25 @@
+/* Ventana de la app del gemelo digital: misma estética que la página, a pantalla completa */
+.app-barra {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 18px; background: var(--tinta); color: var(--tinta-texto);
+  border-bottom: 3px solid var(--acento);
+}
+.app-barra strong { display: block; color: #fff; font-size: 15px; }
+.app-barra small { font-size: 12px; }
+.app-conexion {
+  margin-left: auto; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-family: var(--mono);
+  border: 1px solid currentColor; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55vw;
+}
+.app-conexion.ok { color: #6fd39c; }
+.app-conexion.mal { color: #ff9a8f; }
+
+.app-principal { padding: 0 18px 24px; max-width: 1600px; margin: 0 auto; }
+.app-principal .seccion { padding-top: 14px; }
+.app-principal .encabezado { display: none; }          /* el título ya está en la barra */
+.app-principal .m3d { grid-template-columns: minmax(0, 1.7fr) minmax(340px, 1fr); }
+.app-principal .m3d-lienzo { height: calc(100vh - 190px); min-height: 420px; }
+@media (max-width: 900px) {
+  .app-principal .m3d { grid-template-columns: 1fr; }
+  .app-principal .m3d-lienzo { height: 60vh; }
+}
