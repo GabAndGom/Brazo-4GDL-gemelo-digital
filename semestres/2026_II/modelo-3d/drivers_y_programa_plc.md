@@ -57,8 +57,8 @@ que está cargado hoy en el PLC: hay que confirmarlo subiendo el programa desde 
 ### Lo que cambia en el gemelo digital
 
 - El homing simulado sigue al programa: X e Y juntos, luego la base.
-- El final de homing de Y es **I0.3** (Y abajo) y no I0.4 como decía la tabla anterior. Comprobarlo
-  accionando el final de carrera a mano y mirando el LED de la entrada.
+- El final de homing de Y es **I0.3** (Y abajo) y no I0.4 como decía la tabla anterior (confirmado en la
+  planta el 26/10/2026, ver abajo).
 - La base a 88500 pulsos no cabe con la reducción 5:1 supuesta (serían casi 18 vueltas). Hay que medir
   cuántos pulsos da una vuelta de la base.
 - Un contador único para X e Y no sirve para un gemelo digital: el programa nuevo debe llevar un contador
@@ -112,3 +112,24 @@ Como el puerto queda en PPI, una PC puede leer y escribir esta memoria V con el 
 19.2 kbit/s) **sin cambiar el programa**: es la forma más segura de conectar primero la página web
 (botones de secuencia 1, 2 y paro, y estado leído de VB1001). Para mover a posiciones arbitrarias hace falta
 un programa nuevo con rampas y un contador por eje.
+
+## Prueba de comunicación con el PLC (26/10/2026)
+
+Desde Linux, por el cable USB (CH340, `/dev/ttyUSB0`) y con un cliente PPI propio de **solo lectura**:
+el PLC responde en la **dirección PPI 6** (no en la 7 del proyecto de Miguel), a 19.2 kbit/s, 8E1, con la PC
+como dirección 0. Leer entradas, salidas y VB1000-VB1011 toma unos 145 ms (≈ 7 lecturas por segundo).
+Estado leído: PLC en RUN, valores del PTO iguales a los del jog de la base de Miguel y M0.0 = 1, lo que
+indica que está cargado "BRAZO MIGUEL ROBADO" (falta confirmarlo subiendo el programa).
+
+Con un monitor de cambios se accionó a mano cada sensor y se confirmó el cableado:
+
+| Entrada | Sensor |
+|---|---|
+| I0.0 | inductivo de la base (θ = 0) |
+| I0.1 | final del carro X atrás (homing) |
+| I0.2 | final del carro X adelante |
+| I0.3 | final del carro Y abajo (homing) |
+| I0.4 | final del carro Y arriba |
+
+También se vieron los jog del panel: I1.1 da pulsos en la base (PTO0) con Q0.2 = 1, e I1.2 cierra K1 (Q0.5)
+y da pulsos en Q0.1 con Q0.3 = 0, con lo que el carro X se separa del final trasero (Q0.3 = 0 es hacia adelante).
