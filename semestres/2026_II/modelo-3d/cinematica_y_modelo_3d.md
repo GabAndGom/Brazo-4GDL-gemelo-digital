@@ -105,9 +105,16 @@ pulsos desde el homing, $q_{\text{est}} = q_0 + N_p\,\Delta q$. El homing lleva 
 el carro Y a su final inferior (I0.4): ahí $s_X = s_Y = 0$ y los contadores parten de cero.
 
 **Observación sobre las salidas.** La CPU 224 solo tiene PTO en Q0.0 y Q0.1. Según el manual (tabla 2-1) y el
-Informe Lab 2, Q0.0 da los pulsos de la base, Q0.1 es un **PTO compartido** para X e Y, y Q0.5/Q0.6 (relés
-K1/K2) eligen qué driver recibe esos pulsos. Por eso **X e Y no pueden moverse a la vez**: en el PLC real la
-trayectoria cartesiana recta no es posible, solo movimientos por turnos. La página permite simular ambos casos.
+Informe Lab 2, Q0.0 da los pulsos de la base, Q0.1 es un **PTO compartido** para X e Y, y Q0.5/Q0.6 accionan
+los relés K1/K2, independientes, que llevan esos pulsos a uno o a los dos drivers. Por eso **X e Y sí pueden moverse
+a la vez**, cada uno con su DIR (Q0.3/Q0.4), pero mientras van juntos reciben **los mismos pulsos a la misma
+frecuencia**: avanzan la misma distancia a la misma velocidad. Un movimiento con $|\Delta N_X| \ne |\Delta N_Y|$
+se hace en dos tramos:
+
+$$ N_{\text{común}} = \min(|\Delta N_X|, |\Delta N_Y|)\ \text{(K1 y K2 cerrados)},\qquad N_{\text{resto}} = \big||\Delta N_X| - |\Delta N_Y|\big|\ \text{(solo el relé del eje más largo)} $$
+
+En la planta, entonces, la trayectoria cartesiana recta no es posible en general (pediría velocidades distintas
+en X e Y), pero sí el movimiento simultáneo. La página simula ambos casos y el CSV de pulsos ya trae los dos tramos.
 
 ## 6. Espacio de trabajo
 

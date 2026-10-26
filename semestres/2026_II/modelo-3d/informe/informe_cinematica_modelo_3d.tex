@@ -522,13 +522,19 @@ Informe Lab 2 lo resuelven así:
 \begin{itemize}
 \item \textbf{Q0.0}: PTO de la base (eje Z del manual).
 \item \textbf{Q0.1}: \textbf{PTO compartido} de X e Y.
-\item \textbf{Q0.5 y Q0.6}: bobinas de los relés K1 y K2, que dirigen Q0.1 al driver X o al driver Y.
+\item \textbf{Q0.5 y Q0.6}: bobinas de los relés K1 y K2, independientes, que llevan los pulsos de Q0.1 al driver X, al driver Y o a los dos.
 \item Q0.2, Q0.3 y Q0.4: DIR de la base, de X y de Y. Q0.7: garra.
 \end{itemize}
-En consecuencia, \textbf{los carros X e Y no pueden moverse a la vez}, y una trayectoria recta de la garra
-no es realizable en la planta. Solo se pueden hacer movimientos por turnos, por ejemplo primero subir con
-Y y después avanzar con X, mientras la base se mueve en paralelo. El simulador de la página ofrece las dos
-opciones. También persiste una discrepancia en las entradas: el manual asigna \textbf{I0.0 al sensor
+En consecuencia, \textbf{los carros X e Y sí pueden moverse a la vez}, cada uno con su DIR, pero mientras
+los dos relés están cerrados reciben \textbf{los mismos pulsos a la misma frecuencia}: avanzan la misma
+distancia a la misma velocidad. Un movimiento con $|\Delta N_X| \neq |\Delta N_Y|$ se programa en dos tramos:
+\begin{equation}
+N_{com} = \min(|\Delta N_X|, |\Delta N_Y|)\ \text{(K1 y K2 cerrados)},\qquad
+N_{resto} = \big||\Delta N_X| - |\Delta N_Y|\big|\ \text{(solo el relé del eje más largo)},
+\end{equation}
+mientras la base se mueve en paralelo con Q0.0. Una trayectoria recta de la garra pediría en general
+velocidades distintas en X e Y, así que no es realizable en la planta; el movimiento simultáneo sí. El
+simulador de la página ofrece los dos casos, y el CSV de pulsos de las secuencias ya separa los dos tramos. También persiste una discrepancia en las entradas: el manual asigna \textbf{I0.0 al sensor
 inductivo} e I0.1--I0.4 a los finales de carrera, mientras el README del repositorio pone los finales en
 I0.0--I0.3. Hay que confirmarlo en la planta.
 
@@ -621,8 +627,8 @@ La página (\url{https://brazo-4gdl-gemelo-digital.pages.dev/}) incorpora:
       I0.0--I0.4 y Q0.0--Q0.7, posición de la garra, $\det J$ y ángulo de transmisión.
 \item \textbf{Secuencias pick \& place}: se graban puntos, se reproducen, se guardan en el navegador y se
       exportan en JSON y en CSV de pulsos y dirección por eje para programar el PLC.
-\item \textbf{Indicadores} de límites, de colisión con la mesa y de movimiento simultáneo de X e Y, que el
-      PTO compartido no permite.
+\item \textbf{Indicadores} de límites, de colisión con la mesa y de X e Y moviéndose a distinta velocidad,
+      que el PTO compartido no permite.
 \item \textbf{Módulo aislado} \codigo{web/js/conexion-plc.js} con \codigo{enviarPosicion()},
       \codigo{leerEstado()} y \codigo{homing()}. Hoy actúa sobre la simulación; en modo middleware habla
       por HTTP/JSON con la capa de aplicación de la arquitectura de 3 capas (Node-RED o Python), que es la
@@ -749,9 +755,10 @@ Versionado en GitHub (ramas y merge) & Rama \codigo{feat/cinematica-modelo-3d}, 
 \item Con los supuestos actuales, la resolución es de 0.003 mm/pulso en los carros y 0.045 °/pulso en la
       base. Como $d\varphi/ds_Y \approx 0.47$ °/mm, un pulso del carro Y mueve el TCP unos 7.7 µm: la
       precisión real no la limitan los pulsos, sino las holguras y la pérdida de pasos.
-\item El PTO compartido de la CPU 224 (Q0.1 con los relés K1 y K2) impide mover X e Y a la vez. Toda
-      trayectoria programada en el PLC debe planificarse por turnos, y en una futura etapa de lazo cerrado
-      convendría evaluar un módulo de posicionamiento o una CPU con más salidas PTO.
+\item El PTO compartido de la CPU 224 (Q0.1 con los relés independientes K1 y K2) permite mover X e Y a la
+      vez, pero siempre a la misma velocidad: cada movimiento se programa como un tramo común y un tramo
+      de un solo eje. Para trayectorias rectas o lazo cerrado con velocidades independientes convendría
+      evaluar un módulo de posicionamiento o una CPU con más salidas PTO.
 \item Quedan por medir el paso del husillo, los micropasos, la reducción de la base y los pivotes $A$ y
       $C$. La tabla de 25 puntos permite validar el modelo con un flexómetro.
 \end{itemize}

@@ -86,7 +86,7 @@ Según el vector multifase medido con multímetro (Informe 1, II-2026).
 
 > En la verificación se encontró un desfase de 1 bit en `I0.0`-`I0.3` respecto a la tabla 2-1 del manual heredado. `Q0.7` (garra) es la única señal validada por completo contra el manual.
 
-> **Por confirmar (II-2026).** La CPU 224 solo genera trenes de pulsos por hardware en `Q0.0` y `Q0.1`. Según la tabla 2-1 del manual y el Informe Lab 2, `Q0.1` es un PTO **compartido** por X e Y, y `Q0.5` / `Q0.6` accionan los relés K1 / K2 que lo dirigen a cada driver: X e Y no pueden moverse a la vez. El manual asigna además `I0.0` al sensor inductivo e `I0.1`-`I0.4` a los finales de carrera.
+> **Por confirmar (II-2026).** La CPU 224 solo genera trenes de pulsos por hardware en `Q0.0` y `Q0.1`. Según la tabla 2-1 del manual y el Informe Lab 2, `Q0.1` es un PTO **compartido** por X e Y, y `Q0.5` / `Q0.6` accionan los relés K1 / K2, independientes, que llevan esos pulsos a cada driver. X e Y **sí pueden moverse a la vez** (cada uno con su DIR), pero mientras van juntos reciben los mismos pulsos a la misma frecuencia: avanzan a la misma velocidad y el de menor recorrido se detiene abriendo su relé. El manual asigna además `I0.0` al sensor inductivo e `I0.1`-`I0.4` a los finales de carrera.
 
 ## Cinemática y modelo 3D
 

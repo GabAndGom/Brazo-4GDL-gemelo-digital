@@ -31,6 +31,7 @@ const sim = {
   homing: false,
   plan: null,                          // { segmentos, i, t0, resolver }
   activos: { Z: false, X: false, Y: false },
+  vel: { Z: 0, X: 0, Y: 0 },
   dir: { Z: 0, X: 0, Y: 0 },
   aviso: '',
   traza: []
@@ -42,14 +43,22 @@ function duracion(q0, q1, factor) {
   return Math.max(0.12, Math.abs(q1.theta - q0.theta) / (1.5 * v), Math.abs(q1.sX - q0.sX) / v, Math.abs(q1.sY - q0.sY) / v);
 }
 
-// Segmentos articulares de q0 a q1. Con el PTO compartido (Q0.1) X e Y van por turnos:
-// si el brazo sube (sY baja) primero se mueve Y, si baja primero X. La base (Q0.0) va en paralelo.
+// Segmentos articulares de q0 a q1. Con el PTO compartido (Q0.1 a los dos drivers por los relés
+// K1 y K2, cada eje con su DIR) X e Y se mueven a la vez, pero reciben los mismos pulsos a la misma
+// frecuencia: avanzan juntos a la misma velocidad durante el tramo común y, cuando el de menor
+// recorrido llega, se abre su relé y el otro sigue solo. La base (Q0.0) va en paralelo.
 function segmentosArticulares(q0, q1, factor) {
-  if (!$('#m3d-pto').checked || Math.abs(q1.sX - q0.sX) < 1e-6 || Math.abs(q1.sY - q0.sY) < 1e-6) {
+  const dX = q1.sX - q0.sX, dY = q1.sY - q0.sY;
+  const comun = Math.min(Math.abs(dX), Math.abs(dY));
+  if (!$('#m3d-pto').checked || comun < 1e-6 || Math.abs(Math.abs(dX) - Math.abs(dY)) < 1e-6) {
     return [{ desde: q0, hasta: q1, dur: duracion(q0, q1, factor) }];
   }
-  const primeroY = q1.sY < q0.sY;
-  const medio = { theta: q1.theta, sX: primeroY ? q0.sX : q1.sX, sY: primeroY ? q1.sY : q0.sY };
+  const largo = Math.max(Math.abs(dX), Math.abs(dY));
+  const medio = {
+    theta: q0.theta + (q1.theta - q0.theta) * comun / largo,
+    sX: q0.sX + Math.sign(dX) * comun,
+    sY: q0.sY + Math.sign(dY) * comun
+  };
   return [{ desde: q0, hasta: medio, dur: duracion(q0, medio, factor) }, { desde: medio, hasta: q1, dur: duracion(medio, q1, factor) }];
 }
 
@@ -90,6 +99,7 @@ function paso(ahora) {
   const dt = Math.max(1e-3, (ahora - tPrev) / 1000); tPrev = ahora;
   for (const [ej, k] of [['Z', 'theta'], ['X', 'sX'], ['Y', 'sY']]) {
     const v = (sim.q[k] - (sim.qPrev ? sim.qPrev[k] : sim.q[k])) / dt;
+    sim.vel[ej] = v;
     sim.activos[ej] = Math.abs(v) > 1e-3;
     if (sim.activos[ej]) sim.dir[ej] = Math.sign(v);
   }
@@ -116,7 +126,7 @@ async function moverCartesiano(obj) {
   visor.marcarObjetivo(obj);
   if ($('#m3d-pto').checked) {
     await moverArticular(tr.qFin);
-    return { valida: true, nota: 'Con el PTO compartido X e Y se mueven por turnos: la trayectoria no es recta.' };
+    return { valida: true, nota: 'Con el PTO compartido X e Y avanzan juntos a la misma velocidad hasta que el de menor recorrido termina: la trayectoria no es recta.' };
   }
   const ruta = [Object.assign({}, sim.q)].concat(tr.qs);
   await ejecutar([{ ruta, dur: Math.max(0.3, duracion(sim.q, tr.qFin) * 1.15) }]);
@@ -229,7 +239,11 @@ function telemetria(ahora) {
   if (ent['I0.3'] || ent['I0.4']) chips.push(['alerta', 'Límite carro Y']);
   if (Math.abs(sim.q.theta - P.thetaMin) < 0.3 || Math.abs(sim.q.theta - P.thetaMax) < 0.3) chips.push(['alerta', 'Límite θ base']);
   if (K.colision(fk)) chips.push(['alerta', 'Colisión con la mesa']);
-  if (sim.activos.X && sim.activos.Y) chips.push(['alerta', 'X e Y a la vez: no posible con un solo PTO']);
+  // Con un solo PTO, X e Y pueden moverse a la vez pero solo a la misma velocidad
+  const vx = Math.abs(sim.vel.X), vy = Math.abs(sim.vel.Y);
+  if (sim.activos.X && sim.activos.Y && Math.abs(vx - vy) > 0.05 * Math.max(vx, vy)) {
+    chips.push(['alerta', 'X e Y a distinta velocidad: el PLC real (un solo PTO) no puede']);
+  }
   if (sim.plan) chips.push(['ok', 'En movimiento']);
   const html = chips.map(([c, t]) => `<span class="m3d-chip ${c}">${t}</span>`).join('');
   if ($('#m3d-chips').innerHTML !== html) $('#m3d-chips').innerHTML = html;
@@ -578,11 +592,14 @@ function descargar(nombre, tipo, texto) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// Tabla de pulsos/dirección por eje para programar el PLC (DIR = 1 en sentido positivo: SUPUESTO)
+// Tabla de pulsos/dirección por eje para programar el PLC (DIR = 1 en sentido positivo: SUPUESTO).
+// X e Y comparten el PTO de Q0.1: primero un tramo común con K1 y K2 cerrados (los dos ejes reciben
+// los mismos pulsos) y luego un tramo con solo el relé del eje de mayor recorrido.
 function csvPulsos() {
   const filas = [['paso', 'theta_deg', 'carro_x_mm', 'carro_y_mm', 'garra_Q0.7',
     'pulsos_abs_base', 'pulsos_abs_x', 'pulsos_abs_y',
-    'dpulsos_base_Q0.0', 'dir_base_Q0.2', 'dpulsos_x_Q0.1_K1', 'dir_x_Q0.3', 'dpulsos_y_Q0.1_K2', 'dir_y_Q0.4',
+    'dpulsos_base_Q0.0', 'dir_base_Q0.2', 'dpulsos_x', 'dir_x_Q0.3', 'dpulsos_y', 'dir_y_Q0.4',
+    'Q0.1_tramo_comun_K1+K2', 'Q0.1_tramo_solo_K1_x', 'Q0.1_tramo_solo_K2_y',
     'X_mm', 'Y_mm', 'Z_mm']];
   let prev = { nZ: 0, nX: 0, nY: 0 };
   secuencia.forEach((p, i) => {
@@ -590,6 +607,8 @@ function csvPulsos() {
     const d = { Z: n.nZ - prev.nZ, X: n.nX - prev.nX, Y: n.nY - prev.nY };
     filas.push([i + 1, fmt(p.theta, 2), fmt(p.sX, 2), fmt(p.sY, 2), p.garra ? 1 : 0, n.nZ, n.nX, n.nY,
       Math.abs(d.Z), d.Z >= 0 ? 1 : 0, Math.abs(d.X), d.X >= 0 ? 1 : 0, Math.abs(d.Y), d.Y >= 0 ? 1 : 0,
+      Math.min(Math.abs(d.X), Math.abs(d.Y)),
+      Math.max(0, Math.abs(d.X) - Math.abs(d.Y)), Math.max(0, Math.abs(d.Y) - Math.abs(d.X)),
       fmt(fk.X), fmt(fk.Y), fmt(fk.Z)]);
     prev = n;
   });
