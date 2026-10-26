@@ -8,7 +8,7 @@ Sistemas de Control II (ETN-902) · Aplicación de Técnicas de Control (ETN-103
 
 Versión con **gemelo digital**: cinemática, modelo 3D articulado y simulador web. Parte de [Brazo-de-4-grados-de-libertad](https://github.com/GabAndGom/Brazo-de-4-grados-de-libertad), con todo su historial.
 
-[![Página](https://img.shields.io/badge/Página-Ver%20documentación-f08a24?style=for-the-badge)](https://gabandgom.github.io/Brazo-4GDL-gemelo-digital/)
+[![Página](https://img.shields.io/badge/Página-Ver%20documentación-f08a24?style=for-the-badge)](https://brazo-4gdl-gemelo-digital.pages.dev/)
 [![PLC](https://img.shields.io/badge/PLC-S7--200%20CPU%20224-00646E?style=for-the-badge&logo=siemens)](#ficha-técnica-del-hardware)
 [![Gestión](https://img.shields.io/badge/Gestión-II%2F2026-2f7fc1?style=for-the-badge)](#avance-por-semestre)
 [![Normas](https://img.shields.io/badge/Normas-ISA%20S5.1%20·%20IEC%2060617-8b1e1e?style=for-the-badge)](global/normativas)
@@ -35,7 +35,7 @@ El **XK-JS1-1** es un brazo manipulador didáctico de 4 grados de libertad: desp
 
 El brazo **no tiene encoders**. El PLC estima la posición contando pulsos (`q_est = q0 + Np·Δq`), y solo recibe referencias discretas de los finales de carrera (X, Y) y del sensor inductivo (Z). Por eso el sistema trabaja en **lazo abierto con supervisión discreta**: la acción de control mueve el eje, pero la posición real no vuelve al controlador (`u(t) → y(t)`, pero `y(t) ↛ u(t)`).
 
-En la gestión II/2026 el brazo es una de las cuatro plantas del **laboratorio integrado** de ETN-902, ETN-1034 y ETN-1000. El trabajo sigue el ciclo de vida del desarrollo de sistemas con mejora continua **Kaizen**. Este repositorio reúne los informes, planos, programas, datasheets y la base de datos del proyecto, que también se pueden consultar en la **[página del proyecto](https://gabandgom.github.io/Brazo-4GDL-gemelo-digital/)**.
+En la gestión II/2026 el brazo es una de las cuatro plantas del **laboratorio integrado** de ETN-902, ETN-1034 y ETN-1000. El trabajo sigue el ciclo de vida del desarrollo de sistemas con mejora continua **Kaizen**. Este repositorio reúne los informes, planos, programas, datasheets y la base de datos del proyecto, que también se pueden consultar en la **[página del proyecto](https://brazo-4gdl-gemelo-digital.pages.dev/)**.
 
 ## Ficha técnica del hardware
 
@@ -116,7 +116,7 @@ Todo lo anterior depende de varios **SUPUESTOS** que hay que medir en la planta:
 - Ecuaciones resumidas: [cinematica_y_modelo_3d.md](semestres/2026_II/modelo-3d/cinematica_y_modelo_3d.md).
 - Medidas: [levantamiento](semestres/2026_II/modelo-3d/levantamiento/levantamiento_medidas.md).
 
-En la [página](https://gabandgom.github.io/Brazo-4GDL-gemelo-digital/#modelo3d) el modelo se controla desde el navegador:
+En la [página](https://brazo-4gdl-gemelo-digital.pages.dev/#modelo3d) el modelo se controla desde el navegador:
 
 - Control articular y cartesiano (cinemática inversa con trayectoria interpolada).
 - Homing simulado y telemetría de pulsos y E/S.
@@ -233,7 +233,7 @@ En el mantenimiento preventivo se resoldaron conexiones de los finales de carrer
 ├── web/                      Estilos, código e imágenes de la página
 │                             (js/cinematica.js: cinemática y parámetros del brazo)
 ├── index.html                Página principal
-└── .github/workflows/        Publicación en GitHub Pages
+└── .github/workflows/        Publicación alternativa en GitHub Pages
 ```
 
 ## Cómo subir archivos
@@ -248,11 +248,11 @@ La guía completa está en **[CONTRIBUTING.md](CONTRIBUTING.md)**. En resumen:
 
 ## Página web
 
-**https://gabandgom.github.io/Brazo-4GDL-gemelo-digital/**
+**https://brazo-4gdl-gemelo-digital.pages.dev/**
 
-Está alojada en **GitHub Pages** (gratis). En cada push a `main`, el workflow [`.github/workflows/pages.yml`](.github/workflows/pages.yml) ejecuta `node scripts/build-catalog.js` (que recorre `global/` y `semestres/` y genera el catálogo) y publica el sitio en uno o dos minutos. El estado de cada despliegue aparece en la pestaña **Actions** y junto al commit en GitHub. El sitio también puede publicarse en Cloudflare Pages con el mismo comando de build (`node scripts/build-catalog.js`, carpeta de salida `/`). La página muestra la ficha técnica con fotos, los documentos por subsistema, semestre y categoría, los programas, una galería y un explorador de carpetas. PDF, imágenes, Markdown y código se abren ahí mismo.
+Está alojada en **Cloudflare Pages** (gratis), en el proyecto `brazo-4gdl-gemelo-digital`. En cada push a `main`, Cloudflare clona el repositorio, ejecuta `node scripts/build-catalog.js` (que recorre `global/` y `semestres/` y genera el catálogo; carpeta de salida `/`) y publica el sitio en uno o dos minutos. El estado de cada despliegue aparece junto al commit en GitHub. El workflow [`.github/workflows/pages.yml`](.github/workflows/pages.yml) queda como alternativa para publicar en GitHub Pages. La página muestra la ficha técnica con fotos, los documentos por subsistema, semestre y categoría, los programas, una galería y un explorador de carpetas. PDF, imágenes, Markdown y código se abren ahí mismo.
 
-> GitHub Pages publica archivos de hasta 95 MB (Cloudflare, de hasta 25 MB): si se sube uno más grande, la página lo descarga directamente desde GitHub.
+> Cloudflare no publica archivos de más de 25 MB: si se sube uno, la página lo descarga directamente desde GitHub.
 
 Para verla en tu computadora:
 
