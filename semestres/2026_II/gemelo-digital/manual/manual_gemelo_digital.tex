@@ -160,15 +160,27 @@ También puede usarse la página publicada (\url{https://brazo-4gdl-gemelo-digit
 Este programa no lleva la cuenta de la posición y solo ejecuta sus secuencias fijas. Por eso la página es sobre todo un \textbf{monitor}.
 \begin{enumerate}
 \item Con el selector en \emph{manual}, mueva el brazo con los pulsadores del panel: el modelo lo sigue. La posición es una estimación y se corrige cada vez que se pisa un final de carrera o pasa el inductivo de la base.
-\item Para usar los botones de la página, ponga el selector en \emph{automático}, marque \emph{Habilitar el mando} y use:
+\item Para usar los botones de la página, marque \emph{Habilitar el mando} y use:
 \begin{itemize}
-\item \textbf{Iniciar}: equivale a I0.7. Sin referencia hace el homing (X atrás, base al inductivo, Y abajo). Con referencia corre la secuencia 1 y, la vez siguiente, la secuencia 2.
+\item \textbf{Homing} (pestaña Articular, selector en \textbf{automático}): busca las referencias (X atrás, base al inductivo, Y abajo). Si el brazo ya estaba referenciado, la app primero borra la referencia (emergencia y rearme) porque este programa solo hace homing sin referencia.
+\item \textbf{Cerrar / Abrir garra} (selector en \textbf{manual}).
+\item \textbf{Iniciar} (selector en \textbf{automático}): equivale a I0.7. Sin referencia hace el homing (X atrás, base al inductivo, Y abajo). Con referencia corre la secuencia 1 y, la vez siguiente, la secuencia 2.
 \item \textbf{Detener} (botón de la pestaña Articular): para la secuencia en automático (V104.1).
 \item \textbf{Paro de emergencia (PC)}: corta los dos trenes de pulsos en cualquier modo y queda enclavado (V104.2).
 \item \textbf{Rearmar}: quita el enclavamiento y la falla de homing (V100.3).
 \end{itemize}
 \item Cuando termina el homing la app pone los tres ejes en cero: desde ahí el modelo coincide con el brazo.
 \end{enumerate}
+\aviso{Con el selector en \emph{manual}, este programa usa la orden de inicio (I0.7 o la PC) solo para abrir o cerrar la garra: por eso el homing exige el selector en \emph{automático}. La app rechaza la orden y lo avisa.}
+
+\subsection{Calibrar la base}
+La reducción de la base no se conoce, así que al principio el ángulo del modelo es aproximado y se muestra el aviso \emph{Base sin calibrar}. Para calibrarla:
+\begin{enumerate}
+\item Haga el homing: la base queda en el sensor inductivo ($\theta = 0$).
+\item Gire la base con el panel (I1.0 o I1.1). También puede correr la secuencia 1 con \emph{Iniciar}, que gira la base exactamente 17000 pulsos.
+\item Mida el ángulo girado con un transportador. En la pestaña \emph{Conexión}, en \emph{Calibrar la base}, escríbalo: positivo si giró como con I1.0 y negativo si giró como con I1.1. Pulse \emph{Calibrar}.
+\end{enumerate}
+La app calcula los pulsos por grado y la reducción, y los guarda en \codigo{calibracion.json}. En X e Y no hace falta: cada vez que un carro va en jog de un final de carrera al opuesto, la app ajusta sola su factor.
 
 \subsection{Con el programa del gemelo (perfil \emph{gemelo})}
 \begin{enumerate}
@@ -258,7 +270,8 @@ VW320 / VW322 & PLC & paso del automático / del homing\\
 \codigo{Permission denied: /dev/ttyUSB0} & El usuario no está en \codigo{dialout} (sección 3).\\
 \emph{Sin conexión con el PLC} en la página & La app perdió el cable; reintenta cada 2 s sola. Mire la terminal.\\
 \emph{Selector en manual} & Gire el selector del panel a automático para mandar desde la PC.\\
-\emph{falta hacer homing} al mover & Use Homing (gemelo) o Iniciar (programa actual).\\
+\emph{falta hacer homing} al mover & Use Homing.\\
+El homing solo abre o cierra la garra & El selector del panel está en manual: póngalo en automático.\\
 \emph{destino fuera del recorrido} & El punto pedido sale de 0--170 mm en X/Y o del giro permitido.\\
 \emph{watchdog} & La página o la app dejaron de responder durante un movimiento; vuelva a hacer homing.\\
 El modelo no coincide con el brazo & Haga homing. Con el programa actual la posición es estimada: se corrige en los finales de carrera.\\

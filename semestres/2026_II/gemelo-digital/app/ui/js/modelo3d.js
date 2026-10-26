@@ -76,7 +76,7 @@ function cancelar() {
 // Avance de la simulación en cada cuadro
 let tPrev = performance.now();
 function paso(ahora) {
-  if (planta.activa) sim.plan = null;
+  if (planta.activa) { sim.plan = null; seguirMuestras(ahora); }
   if (sim.plan) {
     const pl = sim.plan;
     let seg = pl.segmentos[pl.i];
@@ -735,7 +735,34 @@ function prepararSecuencias() {
 
 // ================================================================== planta (brazo real)
 // La app del gemelo (Python) lee el PLC; aquí se sondea su estado y el modelo lo sigue.
-const planta = { activa: false, info: null, e: null, sondeo: null, mensaje: '' };
+const planta = { activa: false, info: null, e: null, sondeo: null, mensaje: '', muestras: [], retardo: 0.25 };
+
+// El PLC se lee unas 8 veces por segundo: el modelo se dibuja un poco en el pasado
+// (retardo = intervalo medio entre lecturas) interpolando entre las dos lecturas vecinas,
+// así se mueve continuo en vez de a saltos.
+function guardarMuestra(q) {
+  const m = planta.muestras, t = performance.now();
+  m.push({ t, q });
+  while (m.length > 12) m.shift();
+  if (m.length > 3) {
+    const medio = (m[m.length - 1].t - m[0].t) / (m.length - 1) / 1000;
+    planta.retardo = Math.min(0.5, Math.max(0.1, medio * 1.3));
+  }
+}
+function seguirMuestras(ahora) {
+  const m = planta.muestras;
+  if (!m.length) return;
+  const t = ahora - planta.retardo * 1000;
+  if (t <= m[0].t) return fijarQ(m[0].q);
+  for (let i = m.length - 1; i > 0; i--) {
+    if (m[i - 1].t <= t) {
+      const a = m[i - 1], b = m[i];
+      if (t >= b.t) return fijarQ(b.q);
+      const f = (t - a.t) / (b.t - a.t);
+      return fijarQ({ theta: a.q.theta + (b.q.theta - a.q.theta) * f, sX: a.q.sX + (b.q.sX - a.q.sX) * f, sY: a.q.sY + (b.q.sY - a.q.sY) * f });
+    }
+  }
+}
 const dormir = ms => new Promise(ok => setTimeout(ok, ms));
 
 async function activarPlanta(url) {
@@ -754,6 +781,8 @@ async function activarPlanta(url) {
 function desactivarPlanta() {
   planta.activa = false;
   planta.e = null;
+  planta.muestras = [];
+  $('#m3d-garra').disabled = false;
   clearTimeout(planta.sondeo);
   PLC.configurar({ modo: 'simulacion' });
   renderPlanta();
@@ -764,7 +793,7 @@ async function sondear() {
   try {
     const e = await PLC.leerEstado();
     planta.e = e;
-    if (e.theta_deg != null) fijarQ({ theta: e.theta_deg, sX: e.sX_mm, sY: e.sY_mm });
+    if (e.theta_deg != null) guardarMuestra({ theta: e.theta_deg, sX: e.sX_mm, sY: e.sY_mm });
     if (e.garra != null && e.garra !== sim.garra) fijarGarra(e.garra);
     sim.referenciado = !!e.referenciado;
     if (!!e.mando !== $('#m3d-mando').checked) $('#m3d-mando').checked = !!e.mando;
@@ -819,7 +848,7 @@ function mensajePlanta(texto, error) {
 
 // Con un programa del PLC que no acepta posiciones libres, los controles de posición solo muestran
 function bloquearMover(si) {
-  const ids = ['#m3d-theta', '#m3d-sx', '#m3d-sy', '#m3d-theta-num', '#m3d-sx-num', '#m3d-sy-num', '#m3d-garra',
+  const ids = ['#m3d-theta', '#m3d-sx', '#m3d-sy', '#m3d-theta-num', '#m3d-sx-num', '#m3d-sy-num',
     '#m3d-form-xyz button[type="submit"]', '#m3d-reproducir'];
   for (const id of ids) { const el = $(id); if (el) el.disabled = si; }
   const aviso = $('#m3d-aviso-mover');
@@ -837,6 +866,7 @@ function renderPlanta() {
   const ordenes = i.ordenes || [];
   for (const b of document.querySelectorAll('#m3d-planta-ordenes [data-orden]')) b.hidden = !ordenes.includes(b.dataset.orden);
   bloquearMover(!ordenes.includes('mover'));
+  $('#m3d-garra').disabled = !ordenes.includes('garra');
   $('#m3d-planta-vel').hidden = !ordenes.includes('velocidad');
 }
 

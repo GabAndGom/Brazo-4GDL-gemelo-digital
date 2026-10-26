@@ -268,7 +268,7 @@ class PerfilCargado(PerfilMonitor):
     nombre = 'cargado'
     descripcion = 'Programa de secuencias (versión del de Miguel): homing, secuencias 1 y 2, paro'
     zonas = [('V', 100, 100), ('V', 104, 104)]
-    ordenes = ['iniciar', 'detener', 'emergencia', 'rearmar']
+    ordenes = ['homing', 'iniciar', 'garra', 'detener', 'emergencia', 'rearmar']
 
     def __init__(self, cli, tr):
         super().__init__(cli, tr)
@@ -310,9 +310,36 @@ class PerfilCargado(PerfilMonitor):
         time.sleep(dur)
         self.cli.escribir_bit('V', byte, bit, False)
 
-    def orden(self, nombre, datos):
+    AVISO_MANUAL = ('el selector del panel está en MANUAL (I0.5 = 0): póngalo en AUTOMÁTICO. '
+                    'En manual el PLC usa la orden de inicio solo para abrir o cerrar la garra')
+
+    def orden(self, nombre, datos, estado=None):
+        e = estado or {}
+        auto = bool(e.get('entradas', {}).get('I0.5'))
+        plc = e.get('plc', {})
+        if nombre in ('iniciar', 'homing') and not auto:
+            raise ValueError(self.AVISO_MANUAL)
         if nombre == 'iniciar':        # como I0.7: homing si no hay referencia; si no, la secuencia siguiente
             self._pulso(104, 0)
+        elif nombre == 'homing':
+            if e.get('en_movimiento'):
+                raise ValueError('espere a que el brazo termine el movimiento en curso')
+            if e.get('referenciado'):
+                # El programa solo hace homing sin referencia: la emergencia (V104.2) la borra y
+                # Rearmar (V100.3) quita el enclavamiento; luego el inicio arranca el homing.
+                self._pulso(104, 2, 0.5)
+                time.sleep(0.3)
+                self._pulso(100, 3)
+                time.sleep(0.3)
+            if plc.get('falla_homing'):
+                self._pulso(104, 1)    # el paro en automático borra la falla de homing (M5.2)
+                time.sleep(0.3)
+            self._pulso(104, 0)
+        elif nombre == 'garra':        # en manual, el inicio (como I0.7) abre o cierra la garra
+            if auto:
+                raise ValueError('en automático la garra la mueve la secuencia; ponga el selector en manual')
+            if bool(datos.get('cerrada')) != bool(e.get('garra')):
+                self._pulso(104, 0)
         elif nombre == 'detener':      # V104.1: paro en modo automático
             self._pulso(104, 1)
         elif nombre == 'emergencia':   # V104.2: corta todo en cualquier modo, queda enclavado
@@ -401,7 +428,7 @@ class PerfilGemelo(Perfil):
         elif nombre == 'velocidad':
             hz = max(500, min(5000, float(datos.get('hz', 4000))))
             self.ciclo_xy = int(round(1e6 / hz))
-            self.ciclo_z = max(250, self.ciclo_xy)
+            self.ciclo_z = max(400, self.ciclo_xy)      # la base, más lenta: arranca sin rampa
         elif nombre == 'mover':
             if estado is None or not estado['referenciado']:
                 raise ValueError('falta hacer homing')
@@ -691,10 +718,10 @@ class Brazo:
             raise ValueError('no hay conexión con el PLC')
         paro = nombre in ('detener', 'emergencia')
         if not self.mando and not paro:
-            raise ValueError('el mando desde la PC está deshabilitado')
+            raise ValueError('el mando desde la PC está deshabilitado: marque "Habilitar el mando" en la pestaña Conexión')
         if nombre not in self.perfil.ordenes:
             raise ValueError(f'el programa del PLC no acepta la orden "{nombre}"')
         self._log(f'orden {nombre} {json.dumps(datos) if datos else ""}')
-        if isinstance(self.perfil, PerfilGemelo):
+        if isinstance(self.perfil, (PerfilGemelo, PerfilCargado)):
             return self.perfil.orden(nombre, datos, self.leer_estado())
         return self.perfil.orden(nombre, datos)
