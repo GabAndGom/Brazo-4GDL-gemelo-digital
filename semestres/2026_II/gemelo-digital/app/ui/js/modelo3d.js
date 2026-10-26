@@ -595,6 +595,15 @@ function prepararControles() {
     const b = e.target.closest('button[data-orden]');
     if (b) ordenPlanta(b.dataset.orden);
   });
+  $('#m3d-cal-btn').addEventListener('click', async () => {
+    const ang = Number($('#m3d-cal-ang').value);
+    if (!isFinite(ang) || !ang) return mensajePlanta('Escriba el ángulo medido de la base', true);
+    try {
+      const r = await PLC.calibrarBase(ang);
+      mensajePlanta(`Base calibrada: ${r.pulsosPorGrado.toFixed(2)} pulsos/° (reducción ≈ ${r.reduccion.toFixed(1)}:1). Se guardó en calibracion.json.`);
+      planta.info = await PLC.info(); renderPlanta();
+    } catch (err) { mensajePlanta(err.message, true); }
+  });
   const hz = $('#m3d-hz');
   const txtHz = () => { $('#m3d-hz-txt').textContent = `${hz.value} Hz · ${fmt(hz.value / (1 / T.mmPorPulso), 0)} mm/s`; };
   hz.addEventListener('input', txtHz);
@@ -824,6 +833,7 @@ function renderPlanta() {
   $('#m3d-planta-info').textContent = i.conectado
     ? `PLC ${i.simulado ? 'SIMULADO' : 'en ' + i.puerto + ', dirección PPI ' + i.direccion} · programa: ${i.descripcion}`
     : 'La app está corriendo pero todavía no hay conexión con el PLC' + (i.error ? ': ' + i.error : '');
+  $('#m3d-cal-base').hidden = !(i.perfil === 'cargado' || i.perfil === 'monitor' || i.perfil === 'gemelo');
   const ordenes = i.ordenes || [];
   for (const b of document.querySelectorAll('#m3d-planta-ordenes [data-orden]')) b.hidden = !ordenes.includes(b.dataset.orden);
   bloquearMover(!ordenes.includes('mover'));
@@ -837,6 +847,7 @@ function chipsPlanta() {
   if (!e.conectado) c.push(['alerta', 'Sin conexión con el PLC' + (e.error ? ': ' + e.error : '')]);
   else c.push(['ok', 'Brazo real' + (planta.info && planta.info.simulado ? ' (simulado)' : '') + ' · ' + (e.perfil || '')]);
   if (e.conectado && e.estimado) c.push(['alerta', 'Posición estimada']);
+  if (e.conectado && planta.info && planta.info.transmision && !planta.info.transmision.base_calibrada) c.push(['alerta', 'Base sin calibrar: el ángulo es aproximado']);
   if (e.conectado && !e.mando) c.push(['', 'Mando desde la PC deshabilitado']);
   if (e.conectado && e.modo_auto === false) c.push(['alerta', 'Selector en manual (I0.5): mando desde el panel']);
   if (e.plc && e.plc.error) c.push(['alerta', 'PLC: ' + e.plc.error]);

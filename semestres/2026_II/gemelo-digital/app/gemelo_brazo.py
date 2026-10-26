@@ -76,6 +76,8 @@ class Manejador(SimpleHTTPRequestHandler):
             if ruta == '/api/mando':
                 BRAZO.habilitar_mando(bool(datos.get('habilitado')))
                 return self._json(200, {'ok': True, 'mando': BRAZO.mando})
+            if ruta == '/api/calibrar_base':
+                return self._json(200, BRAZO.calibrar_base(datos.get('angulo')))
             if ruta.startswith('/api/orden/'):
                 r = BRAZO.orden(ruta.rsplit('/', 1)[1], datos)
                 return self._json(200, r or {'ok': True})

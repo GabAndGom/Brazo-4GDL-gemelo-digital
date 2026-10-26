@@ -76,6 +76,7 @@
     info: () => http('GET', '/api/info'),
     mando: habilitado => http('POST', '/api/mando', { habilitado }),
     orden: (nombre, datos) => http('POST', '/api/orden/' + nombre, datos || {}),
+    calibrarBase: angulo => http('POST', '/api/calibrar_base', { angulo }),
 
     /** Ordena ir a una posición articular {theta, sX, sY, garra?} [°, mm, mm] */
     async enviarPosicion(q) {

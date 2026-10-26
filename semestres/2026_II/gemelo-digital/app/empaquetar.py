@@ -27,7 +27,8 @@ COPIAS = {
     'web/img/favicon.svg': 'ui/icono.svg',
     'semestres/2026_II/modelo-3d/cinematica/parametros.json': 'parametros.json',
 }
-EXCLUIR = {'__pycache__', 'registro_gemelo.log'}
+DATOS_PLANTA = ['calibracion.json', 'registro_gemelo.log']    # se conservan al volver a exportar
+EXCLUIR = {'__pycache__', '_prueba_calibracion.json'} | set(DATOS_PLANTA)
 
 
 def actualizar_ui():
@@ -55,9 +56,18 @@ def actualizar_ui():
 
 def exportar(destino):
     destino = os.path.abspath(os.path.expanduser(destino))
+    guardados = {}
+    for n in DATOS_PLANTA:
+        p = os.path.join(destino, n)
+        if os.path.exists(p):
+            with open(p, 'rb') as f:
+                guardados[n] = f.read()
     if os.path.exists(destino):
         shutil.rmtree(destino)
     shutil.copytree(APP, destino, ignore=lambda d, nombres: [n for n in nombres if n in EXCLUIR])
+    for n, contenido in guardados.items():
+        with open(os.path.join(destino, n), 'wb') as f:
+            f.write(contenido)
     archivo = shutil.make_archive(destino, 'zip', os.path.dirname(destino), os.path.basename(destino))
     print('app exportada en', destino, 'y', archivo)
 

@@ -21,6 +21,7 @@ APP = os.path.dirname(os.path.abspath(__file__))
 UI = os.path.join(APP, 'ui')
 # Copia local (la deja empaquetar.py); dentro del repositorio se puede usar la original
 PARAMETROS = os.path.join(APP, 'parametros.json')
+CALIBRACION = os.path.join(APP, 'calibracion.json')   # lo que se midió en la planta (base, jog)
 if not os.path.exists(PARAMETROS):
     PARAMETROS = os.path.join(APP, '..', '..', 'modelo-3d', 'cinematica', 'parametros.json')
 
@@ -40,6 +41,23 @@ class Transmision:
         self.ppg = t['pulsosPorGrado']          # pulsos por grado (base, SUPUESTO)
         self.rec_x, self.rec_y = p['recorridoX'], p['recorridoY']
         self.theta_min, self.theta_max = p['thetaMin'], p['thetaMax']
+        self.ppg_supuesto = self.ppg
+        self.cal = {}
+        self.base_calibrada = False
+        try:
+            with open(CALIBRACION, encoding='utf-8') as f:
+                self.cal = json.load(f)
+        except (OSError, ValueError):
+            pass
+        if self.cal.get('pulsosPorGrado'):
+            self.ppg = self.cal['pulsosPorGrado']
+            self.base_calibrada = True
+
+    def guardar(self, **cambios):
+        self.cal.update(cambios)
+        self.cal['fecha'] = time.strftime('%Y-%m-%d %H:%M')
+        with open(CALIBRACION, 'w', encoding='utf-8') as f:
+            json.dump(self.cal, f, indent=2)
 
     def a_pulsos(self, theta, sx, sy):
         return round(theta * self.ppg), round(sx * self.ppm), round(sy * self.ppm)
@@ -71,66 +89,136 @@ class Perfil:
 class Estimador:
     """Estima la posición con los PTO del S7-200 cuando el programa no la cuenta.
 
-    En cada lectura: si un PTO está ocupado se integran f * dt pulsos (f = 1e6 / ciclo) en el
-    sentido de su DIR y en los ejes cuyo relé está cerrado (Q0.1 -> K1 X, K2 Y). Al terminar un
-    tramo largo se ajusta al número exacto de pulsos del tramo (SMD72 / SMD82). Los finales
-    de carrera y el inductivo de la base corrigen la estimación.
+    En cada lectura, si un PTO está ocupado se suman f * dt pulsos (f = 1e6 / ciclo) en el
+    sentido de su DIR y en los ejes que recibe: Q0.0 -> base; Q0.1 -> X si K1 (Q0.5) está
+    cerrado e Y si K2 (Q0.6) lo está.
+    - Tramos largos (secuencias, homing): no se pasa de los pulsos del tramo (SMD72 / SMD82)
+      y al terminar se ajusta al número exacto, salvo que un sensor lo haya cortado antes.
+    - Paquetes cortos del jog del panel (100 pulsos, uno tras otro): se integra sin tope,
+      porque entre dos lecturas pasan varios paquetes.
+    Los finales de carrera y el inductivo de la base corrigen la estimación al activarse.
     """
+    CORTO = 300
+    # Jog del panel: paquetes de 100 pulsos (25 ms a 4 kHz) y un ciclo de PLC de pausa entre
+    # paquetes -> el eje avanza a f * DUTY mientras el pulsador está apretado (SUPUESTO 0.93,
+    # se corrige en cada final de carrera)
+    DUTY = 0.93
+    PULSADORES = {'Z': (('I1.0', 'Q0.2'), ('I1.1', 'Q0.2')), 'X': (('I1.2', 'Q0.3'), ('I1.3', 'Q0.3')),
+                  'Y': (('I1.4', 'Q0.4'), ('I1.5', 'Q0.4'))}
+    RELE = {'X': 'Q0.5', 'Y': 'Q0.6'}
 
-    def __init__(self):
+    LIMITES = {'X': ('I0.1', 'I0.2'), 'Y': ('I0.3', 'I0.4')}   # (final del lado -, final del lado +)
+
+    def __init__(self, tr=None):
+        self.tr = tr
         self.n = {'Z': 0.0, 'X': 0.0, 'Y': 0.0}
         self.t = None
         self.tramo = {0: None, 1: None}
         self.prev_i = {}
+        self.jog_prev = {'Z': 0.0, 'X': 0.0, 'Y': 0.0}
         self.confiable = False
+        cal = tr.cal if tr else {}
+        self.duty = {e: cal.get('duty_' + e, self.DUTY) for e in 'ZXY'}
+        self.carrera = {'X': None, 'Y': None}     # {'desde': final, 'pulsos': integrado} para autocalibrar
+
+    def _jog(self, ent, sal, sm, dt):
+        """Modo manual: avance de cada eje según el pulsador apretado (con su DIR y su relé)."""
+        ciclos = {'Z': struct.unpack('>H', sm[2:4])[0], 'X': struct.unpack('>H', sm[12:14])[0]}
+        ciclos['Y'] = ciclos['X']
+        for eje, ((p_menos, q_dir), (p_mas, _)) in self.PULSADORES.items():
+            apretado = ent[p_menos] != ent[p_mas]            # uno solo de los dos
+            if eje in self.RELE:
+                apretado = apretado and sal[self.RELE[eje]]
+            v = 0.0
+            if apretado:
+                ciclo = ciclos[eje] or 250
+                v = (1e6 / ciclo) * self.duty[eje] * (-1 if sal[q_dir] else 1)
+                if eje in self.LIMITES:                       # el PLC no avanza contra un final pisado
+                    menos, mas = self.LIMITES[eje]
+                    if (v > 0 and ent[mas]) or (v < 0 and ent[menos]):
+                        v = 0.0
+            # regla del trapecio: el pulsador cambió en algún momento entre dos lecturas
+            d = (v + self.jog_prev[eje]) / 2 * dt
+            self.n[eje] += d
+            if self.carrera.get(eje):
+                self.carrera[eje]['pulsos'] += d
+            self.jog_prev[eje] = v
+
+    def _autocalibrar(self, eje, final, valor):
+        """Al llegar en jog de un final de carrera al opuesto, ajusta el factor del jog de ese eje."""
+        c = self.carrera.get(eje)
+        largo = (self.tr.rec_x if eje == 'X' else self.tr.rec_y) * self.tr.ppm if self.tr else None
+        if c and largo and c['desde'] != final and abs(c['pulsos']) > 0.5 * largo:
+            nuevo = min(1.1, max(0.6, self.duty[eje] * largo / abs(c['pulsos'])))
+            self.duty[eje] = nuevo
+            if self.tr:
+                self.tr.guardar(**{'duty_' + eje: round(nuevo, 4)})
+        self.carrera[eje] = {'desde': final, 'pulsos': 0.0}
+
+    def _cerrar(self, idx):
+        tr = self.tramo[idx]
+        if tr and tr['cuenta'] > self.CORTO and not tr.get('corregido') and tr['cuenta'] < 400000:
+            for e in tr['ejes']:
+                self.n[e] = tr['inicio'][e] + tr['signos'][e] * tr['cuenta']
+        self.tramo[idx] = None
 
     def actualizar(self, ent, sal, sm, xmax, ymax):
         ahora = time.time()
-        dt = 0 if self.t is None else min(0.5, ahora - self.t)
+        dt = 0.0 if self.t is None else min(0.6, ahora - self.t)
         self.t = ahora
-        ocupado0, ocupado1 = not (sm[0] & 0x80), not (sm[10] & 0x80)
-        ciclo0, ciclo1 = struct.unpack('>H', sm[2:4])[0], struct.unpack('>H', sm[12:14])[0]
-        cuenta0, cuenta1 = struct.unpack('>I', sm[6:10])[0], struct.unpack('>I', sm[16:20])[0]
-        s_z = -1 if sal['Q0.2'] else 1
-        s_x = -1 if sal['Q0.3'] else 1
-        s_y = -1 if sal['Q0.4'] else 1
-        ejes1 = [e for e, k in (('X', 'Q0.5'), ('Y', 'Q0.6')) if sal[k]]
-
-        for idx, ocupado, ciclo, cuenta, ejes, signos in (
-                (0, ocupado0, ciclo0, cuenta0, ['Z'], {'Z': s_z}),
-                (1, ocupado1, ciclo1, cuenta1, ejes1, {'X': s_x, 'Y': s_y})):
+        datos = {
+            0: (not (sm[0] & 0x80), struct.unpack('>H', sm[2:4])[0], struct.unpack('>I', sm[6:10])[0],
+                ['Z'], {'Z': -1 if sal['Q0.2'] else 1}),
+            1: (not (sm[10] & 0x80), struct.unpack('>H', sm[12:14])[0], struct.unpack('>I', sm[16:20])[0],
+                [e for e, k in (('X', 'Q0.5'), ('Y', 'Q0.6')) if sal[k]],
+                {'X': -1 if sal['Q0.3'] else 1, 'Y': -1 if sal['Q0.4'] else 1}),
+        }
+        manual = not ent['I0.5']
+        if not manual:
+            self.carrera = {'X': None, 'Y': None}
+        if manual:
+            self._jog(ent, sal, sm, dt)
+            self.tramo = {0: None, 1: None}
+        else:
+            self.jog_prev = {'Z': 0.0, 'X': 0.0, 'Y': 0.0}
+        for idx, (ocupado, ciclo, cuenta, ejes, signos) in (() if manual else datos.items()):
             tr = self.tramo[idx]
-            if ocupado:
-                f = 1e6 / ciclo if ciclo else 0
-                if tr is None:
-                    tr = self.tramo[idx] = {'inicio': {e: self.n[e] for e in self.n}, 'cuenta': cuenta,
-                                            'ejes': list(ejes), 'signos': dict(signos), 'hecho': 0.0}
-                    paso = f * dt / 2       # el tramo empezó, en promedio, a mitad del intervalo
-                else:
-                    paso = f * dt
-                paso = min(paso, max(0.0, tr['cuenta'] - tr['hecho']))
-                tr['hecho'] += paso
-                for e in ejes:
-                    self.n[e] += signos[e] * paso
-            elif tr is not None:
-                # Tramo terminado. Los paquetes cortos (jog) ya están integrados; en los largos
-                # se usa la cuenta exacta si nada lo cortó antes (un final de carrera lo corrige).
-                if tr['cuenta'] > 300 and tr['cuenta'] < 400000 and not tr.get('corregido'):
-                    for e in tr['ejes']:
-                        self.n[e] = tr['inicio'][e] + tr['signos'][e] * tr['cuenta']
-                self.tramo[idx] = None
+            firma = (cuenta, tuple(ejes), tuple(signos[e] for e in ejes))
+            if tr and (not ocupado or tr['firma'] != firma):
+                self._cerrar(idx)                     # terminó, o empezó otro tramo distinto
+                tr = None
+            if not ocupado or not ejes:
+                continue
+            f = 1e6 / ciclo if ciclo else 0.0
+            if tr is None:
+                tr = self.tramo[idx] = {'inicio': dict(self.n), 'cuenta': cuenta, 'ejes': ejes,
+                                        'signos': signos, 'hecho': 0.0, 'firma': firma}
+                paso = f * dt / 2                     # en promedio empezó a mitad del intervalo
+            else:
+                paso = f * dt
+            if cuenta > self.CORTO:
+                paso = min(paso, max(0.0, cuenta - tr['hecho']))
+            tr['hecho'] += paso
+            for e in ejes:
+                self.n[e] += signos[e] * paso
 
-        # Correcciones con los sensores (flanco de subida)
+        # Correcciones con los sensores (al activarse)
         for k, eje, valor in (('I0.1', 'X', 0), ('I0.2', 'X', xmax), ('I0.3', 'Y', 0), ('I0.4', 'Y', ymax),
                               ('I0.0', 'Z', 0)):
             if ent[k] and not self.prev_i.get(k):
+                if eje in self.LIMITES and not ent['I0.5']:
+                    self._autocalibrar(eje, k, valor)
+                elif eje in self.LIMITES:
+                    self.carrera[eje] = None             # en automático no se calibra el jog
                 self.n[eje] = valor
-                if self.tramo[1] and eje in ('X', 'Y'):
-                    self.tramo[1]['corregido'] = True
-                if self.tramo[0] and eje == 'Z':
-                    self.tramo[0]['corregido'] = True
+                for idx in (0, 1):
+                    if self.tramo[idx] and eje in self.tramo[idx]['ejes']:
+                        self.tramo[idx]['corregido'] = True
         self.prev_i = {k: ent[k] for k in ('I0.0', 'I0.1', 'I0.2', 'I0.3', 'I0.4')}
-        return ocupado0 or ocupado1
+        # Los carros no salen de su recorrido
+        self.n['X'] = min(xmax, max(0.0, self.n['X']))
+        self.n['Y'] = min(ymax, max(0.0, self.n['Y']))
+        return datos[0][0] or datos[1][0]
 
     def poner_cero(self):
         self.n = {'Z': 0.0, 'X': 0.0, 'Y': 0.0}
@@ -144,21 +232,27 @@ class PerfilMonitor(Perfil):
 
     def __init__(self, cli, tr):
         super().__init__(cli, tr)
-        self.est = Estimador()
+        self.est = Estimador(tr)
+
+    EXTRA = []                       # zonas V adicionales de cada perfil
 
     def _leer_es(self):
-        ib = self.cli.leer('I', 0, 2)
-        qb = self.cli.leer('Q', 0, 1)
-        sm = self.cli.leer('SM', 66, 20)
+        r = self.cli.leer_varios([('I', 0, 2), ('Q', 0, 1), ('SM', 66, 20)] + self.EXTRA)
+        ib, qb, sm = r[0], r[1], r[2]
+        self.extra = r[3:]
         ent = dict(bits(ib[0], 'I0'), **bits(ib[1], 'I1'))
         sal = bits(qb[0], 'Q0')
         mov = self.est.actualizar(ent, sal, sm, self.tr.rec_x * self.tr.ppm, self.tr.rec_y * self.tr.ppm)
+        # Q0.0 y Q0.1 son salidas de pulsos: la imagen de salidas no las marca, se usan los PTO
+        sal['Q0.0'] = not (sm[0] & 0x80)
+        sal['Q0.1'] = not (sm[10] & 0x80)
         return ent, sal, sm, mov
 
     def _estado(self, ent, sal, mov, extra):
         th, sx, sy = self.tr.de_pulsos(self.est.n['Z'], self.est.n['X'], self.est.n['Y'])
         e = {'theta_deg': th, 'sX_mm': sx, 'sY_mm': sy, 'garra': sal['Q0.7'], 'en_movimiento': mov,
-             'estimado': True, 'pulsos': {k: round(v) for k, v in self.est.n.items()},
+             'estimado': True, 'base_calibrada': self.tr.base_calibrada,
+             'factor_jog': {k: round(v, 3) for k, v in self.est.duty.items()}, 'pulsos': {k: round(v) for k, v in self.est.n.items()},
              'entradas': ent, 'salidas': sal, 'modo_auto': ent['I0.5']}
         e.update(extra)
         return e
@@ -182,11 +276,12 @@ class PerfilCargado(PerfilMonitor):
         self.hb = False
         self.t_hb = 0
 
+    EXTRA = [('V', 200, 1), ('V', 300, 3), ('V', 320, 4)]
+
     def leer(self):
         ent, sal, sm, mov = self._leer_es()
-        v = self.cli.leer('V', 200, 124)          # VB200..VB323
-        b200, b300, b301, b302 = v[0], v[100], v[101], v[102]
-        paso_auto, paso_homing = struct.unpack('>HH', v[120:124])
+        (b200,), (b300, b301, b302), v320 = self.extra
+        paso_auto, paso_homing = struct.unpack('>HH', v320)
         referenciado = bool(b200 & 0x80)           # V200.7 = M0.3
         if referenciado and not self.ref_prev:
             self.est.poner_cero()                  # el homing terminó: los tres ejes en 0
@@ -201,7 +296,7 @@ class PerfilCargado(PerfilMonitor):
             'plc': {'programa': 'secuencias (cargado)', 'listo': bool(b200 & 0x01), 'ocupado': bool(b200 & 0x02),
                     'falla_homing': bool(b200 & 0x08), 'en_curso': secuencia, 'siguiente': siguiente,
                     'paso_auto': paso_auto, 'paso_homing': paso_homing,
-                    'remoto': ent['I0.5'], 'VB104': self.cli.leer('V', 104, 1)[0]}})
+                    'remoto': ent['I0.5']}})
 
     def latido(self):
         # V104.7 debe cambiar antes de 5 s; si no, el PLC borra VB104 (las órdenes de la PC)
@@ -553,7 +648,8 @@ class Brazo:
                 'simulado': self.simulado, 'puerto': self.puerto, 'direccion': self.direccion,
                 'perfil': p.nombre if p else None, 'descripcion': getattr(p, 'descripcion', ''),
                 'ordenes': p.ordenes if p else [], 'mando': self.mando, 'error': self.error,
-                'transmision': {'pulsosPorMm': self.tr.ppm, 'pulsosPorGrado': self.tr.ppg}}
+                'transmision': {'pulsosPorMm': self.tr.ppm, 'pulsosPorGrado': self.tr.ppg,
+                                'base_calibrada': self.tr.base_calibrada}}
 
     def leer_estado(self):
         with self.lock:
@@ -562,6 +658,25 @@ class Brazo:
                   'perfil': self.perfil.nombre if self.perfil else None,
                   'edad_s': round(time.time() - self.t_lectura, 2) if self.t_lectura else None})
         return e
+
+    def calibrar_base(self, angulo):
+        """Con la base girada desde el inductivo (theta = 0) hasta un ángulo medido a mano."""
+        angulo = float(angulo)
+        if abs(angulo) < 10:
+            raise ValueError('gire la base al menos 10° desde el sensor inductivo para calibrar')
+        e = self.leer_estado()
+        if not e.get('conectado'):
+            raise ValueError('no hay conexión con el PLC')
+        n = e['pulsos']['Z']
+        if abs(n) < 50:
+            raise ValueError('la base no se movió desde el sensor inductivo (I0.0)')
+        ppg = n / angulo            # con signo: si la base gira al revés de lo supuesto, queda negativo
+        self.tr.ppg = ppg
+        self.tr.base_calibrada = True
+        self.tr.guardar(pulsosPorGrado=ppg)
+        self._log(f'base calibrada: {n} pulsos = {angulo}° -> {ppg:.3f} pulsos/° '
+                  f'(supuesto anterior {self.tr.ppg_supuesto:.3f}); reducción ≈ {abs(ppg) * 360 / 1000:.1f}:1')
+        return {'ok': True, 'pulsosPorGrado': ppg, 'reduccion': abs(ppg) * 360 / 1000}
 
     def habilitar_mando(self, si):
         if si and not self.conectado:

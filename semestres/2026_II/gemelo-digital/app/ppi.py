@@ -125,6 +125,20 @@ class ClientePPI:
                 raise ErrorPPI(f'lectura de {area}B{byte} rechazada (0x{datos[0]:02X})')
             return datos[4:4 + n]
 
+    def leer_varios(self, items):
+        """Lee varias zonas en una sola petición: items = [(area, byte, n), ...]. Devuelve [bytes, ...]."""
+        with self.lock:
+            param = bytes([0x04, len(items)]) + b''.join(self._item(a, 0x02, n, b * 8) for a, b, n in items)
+            datos = self._revisar(self._intercambio(self._cabecera(param)), 0x04)
+            res, i = [], 0
+            for k, (a, b, n) in enumerate(items):
+                if datos[i] != 0xFF:
+                    raise ErrorPPI(f'lectura de {a}B{b} rechazada (0x{datos[i]:02X})')
+                largo = ((datos[i + 2] << 8) | datos[i + 3]) // 8
+                res.append(datos[i + 4:i + 4 + largo])
+                i += 4 + largo + (largo % 2 if k < len(items) - 1 else 0)   # relleno a par
+            return res
+
     def _permitido(self, area, desde, hasta):
         return any(a == area and z0 <= desde and hasta <= z1 for a, z0, z1 in self.zonas)
 

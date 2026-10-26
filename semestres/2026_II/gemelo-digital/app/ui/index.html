@@ -153,6 +153,14 @@
                 <input type="range" id="m3d-hz" min="500" max="5000" step="250" value="4000">
                 <output id="m3d-hz-txt" for="m3d-hz">4000 Hz</output>
               </div>
+              <details class="m3d-calibrar" id="m3d-cal-base">
+                <summary>Calibrar la base (pulsos por grado)</summary>
+                <p class="m3d-ayuda">1) Haga homing o pase la base por el sensor inductivo (θ = 0). 2) Gírela con el panel hasta un ángulo que pueda medir (por ejemplo 90°). 3) Escriba el ángulo medido, positivo si giró como I1.0 y negativo si giró como I1.1, y pulse Calibrar.</p>
+                <div class="m3d-xyz">
+                  <label>Ángulo medido <input type="number" id="m3d-cal-ang" step="0.5" placeholder="90"> <span>°</span></label>
+                  <div class="m3d-botones"><button type="button" class="boton" id="m3d-cal-btn">Calibrar</button></div>
+                </div>
+              </details>
               <div class="m3d-mensaje" id="m3d-msg-planta" role="status"></div>
             </div>
             <pre class="m3d-respuesta" id="m3d-respuesta" aria-live="polite"></pre>
