@@ -15,7 +15,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT_DIR = path.join(ROOT, 'web', 'data');
-const REPO = 'GabAndGom/Brazo-de-4-grados-de-libertad';
+const REPO = 'GabAndGom/Brazo-4GDL-gemelo-digital';
 const RAMA = 'main';
 // Cloudflare Pages publica archivos de hasta 25 MB y GitHub Pages de hasta 100 MB.
 // Los más grandes se descargan directamente desde GitHub.
