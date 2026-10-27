@@ -112,10 +112,10 @@ python3 gemelo_brazo.py
 En la terminal debe aparecer:
 \begin{lstlisting}
 buscando el PLC en /dev/ttyUSB0...
-Gemelo digital en http://localhost:8050/#modelo3d  (Ctrl+C para salir)
+Gemelo digital en http://localhost:8050/  (cierre la ventana o Ctrl+C para salir)
 conectado: /dev/ttyUSB0, PPI 6, 19200 baudios, perfil "cargado"
 \end{lstlisting}
-El navegador se abre solo en la sección Modelo 3D. Si no, abra \url{http://localhost:8050/#modelo3d}.
+Se abre la ventana de la app. Con \codigo{--navegador}, se abre en el navegador: \url{http://localhost:8050/}.
 \item Para cerrar la app, \codigo{Ctrl+C} en la terminal. Si el brazo se estaba moviendo, la app manda un paro antes de salir.
 \end{enumerate}
 
@@ -127,7 +127,10 @@ El navegador se abre solo en la sección Modelo 3D. Si no, abra \url{http://loca
 \codigo{--direccion 6} & no buscar el PLC (más rápido al arrancar)\\
 \codigo{--simulado} & PLC simulado con el programa del gemelo: para practicar sin el brazo\\
 \codigo{--http 8060} & otro puerto para la página\\
-\codigo{--sin-navegador} & no abrir el navegador\\
+\codigo{--navegador} & abrir en el navegador en vez de la ventana\\
+\codigo{--sin-ventana} & solo el servidor, sin ventana\\
+\codigo{--red} & acceso con usuario y contraseña desde la red local (sección \ref{sec:red})\\
+\codigo{--clave-local} & pedir contraseña también en esta PC\\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -196,6 +199,41 @@ La app calcula los pulsos por grado y la reducción, y los guarda en \codigo{cal
 \item \textbf{Velocidad}: deslizador \emph{Pulsos} de la pestaña Conexión, entre 500 y 5000 Hz. A 4000 Hz los carros van a 20 mm/s. El programa no tiene rampas, así que conviene no pasar de 4000 Hz hasta probarlo con carga.
 \item \textbf{Detener}: corta el movimiento. La posición deja de ser exacta y el PLC pide un nuevo homing.
 \end{enumerate}
+
+\section{Acceso desde la red local con usuario y contraseña}\label{sec:red}
+Los celulares y otras PC de la misma red pueden ver el brazo y, con el rol adecuado, mandarlo.
+\begin{enumerate}
+\item \textbf{Crear usuarios} en la PC del laboratorio. La contraseña, de al menos 8 caracteres, se pide sin mostrarla y se guarda cifrada con PBKDF2:
+\begin{lstlisting}
+cd semestres/2026_II/gemelo-digital/app
+python3 usuarios.py agregar ana --rol operador
+python3 usuarios.py agregar visita --rol observador
+python3 usuarios.py listar
+\end{lstlisting}
+Además: \codigo{clave NOMBRE} cambia la contraseña, \codigo{rol NOMBRE ROL} cambia el rol y \codigo{quitar NOMBRE} borra el usuario. Los cambios valen al momento, sin reiniciar la app.
+\item \textbf{Abrir la app en modo red}: menú \emph{Gemelo digital del brazo (red local)} o \codigo{./iniciar\_gemelo.sh --red}. La terminal muestra la dirección, por ejemplo \codigo{https://192.168.1.15:8443/}.
+\item \textbf{En el celular}, conectado a la misma red, abra esa dirección. El certificado es propio del laboratorio: la primera vez el navegador avisa y hay que elegir continuar. Después ingrese con su usuario.
+\end{enumerate}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{2.6cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Rol} & \textbf{Qué puede hacer}\\
+\midrule
+observador & Ver el brazo en vivo (modelo 3D, posición, entradas y salidas) y usar la simulación. No puede mandar el brazo ni dar paro.\\
+operador & Todo lo anterior, más tomar el mando y mover el brazo. Un solo operador tiene el mando a la vez; los demás ven quién lo tiene y \textbf{pueden dar paro}. El mando se suelta al salir o tras 8 h sin uso.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Seguridad del acceso por red:
+\begin{itemize}
+\item La conexión va cifrada (HTTPS).
+\item Tras 5 contraseñas erradas, esa dirección espera 60 s.
+\item La sesión vence a las 8 h sin uso.
+\item Las órdenes solo se aceptan desde la misma página de la app, no desde otros sitios.
+\item Cada ingreso y cada orden quedan en \codigo{registro\_gemelo.log}, con usuario y dirección.
+\end{itemize}
+La ventana de la PC del laboratorio no pide contraseña (con \codigo{--clave-local} sí). Si un celular no llega a la página, el cortafuegos puede estar bloqueando el puerto: quien administra la PC debe permitirlo una vez con \codigo{sudo ufw allow 8443/tcp}.
+\aviso{El acceso funciona solo dentro de la red local. Para usarlo desde fuera haría falta un túnel o una VPN; Tailscale es gratuito. Siempre debe haber alguien junto a la seta de emergencia cuando un operador tiene el mando.}
 
 \section{Cargar el programa del gemelo en el PLC}
 \aviso{Cargar un programa reemplaza el que tiene el PLC. El programa actual quedó respaldado el 26/10/2026 en \codigo{ETN 1034/respaldo\_vm/programa\_plc\_cargado\_20261026.mwp} (también exportado como \codigo{proyecto1\_abierto.awl}). Para volver a él, se carga ese archivo de la misma forma.}

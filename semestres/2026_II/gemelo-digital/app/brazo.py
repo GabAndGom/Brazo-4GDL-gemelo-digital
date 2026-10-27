@@ -597,6 +597,7 @@ class Brazo:
         self.estado = None
         self.conectado = False
         self.mando = False
+        self.mando_de = None
         self.error = ''
         self.lecturas = 0
         self.t_lectura = 0
@@ -657,6 +658,7 @@ class Brazo:
                     self._log('comunicación perdida: ' + self.error)
                 self.conectado = False
                 self.mando = False
+                self.mando_de = None
                 if self.cli:
                     self.cli.cerrar()
                 time.sleep(2)
@@ -681,7 +683,7 @@ class Brazo:
     def leer_estado(self):
         with self.lock:
             e = dict(self.estado) if self.estado else {}
-        e.update({'conectado': self.conectado, 'mando': self.mando, 'error': self.error,
+        e.update({'conectado': self.conectado, 'mando': self.mando, 'mando_de': self.mando_de, 'error': self.error,
                   'perfil': self.perfil.nombre if self.perfil else None,
                   'edad_s': round(time.time() - self.t_lectura, 2) if self.t_lectura else None})
         return e
@@ -705,23 +707,38 @@ class Brazo:
                   f'(supuesto anterior {self.tr.ppg_supuesto:.3f}); reducción ≈ {abs(ppg) * 360 / 1000:.1f}:1')
         return {'ok': True, 'pulsosPorGrado': ppg, 'reduccion': abs(ppg) * 360 / 1000}
 
-    def habilitar_mando(self, si):
-        if si and not self.conectado:
-            raise ValueError('no hay conexión con el PLC')
-        if si and not self.perfil.ordenes:
-            raise ValueError('el programa del PLC no acepta órdenes desde la PC')
-        self.mando = bool(si)
-        self._log('mando desde la PC ' + ('HABILITADO' if si else 'deshabilitado'))
+    def habilitar_mando(self, si, quien='local'):
+        """Un solo operador tiene el mando a la vez; lo suelta él (o la PC del laboratorio)."""
+        with self.lock:
+            if si:
+                if not self.conectado:
+                    raise ValueError('no hay conexión con el PLC')
+                if not self.perfil.ordenes:
+                    raise ValueError('el programa del PLC no acepta órdenes desde la PC')
+                if self.mando and self.mando_de not in (None, quien):
+                    raise ValueError(f'el mando lo tiene {self.mando_de}: pídale que lo suelte')
+                self.mando, self.mando_de = True, quien
+            else:
+                if self.mando and self.mando_de not in (None, quien) and quien != 'local':
+                    raise ValueError(f'el mando lo tiene {self.mando_de}')
+                self.mando, self.mando_de = False, None
+        self._log(f'mando desde la PC {"HABILITADO" if si else "deshabilitado"} ({quien})')
 
-    def orden(self, nombre, datos):
+    def soltar_mando_de(self, quien):
+        if self.mando and self.mando_de == quien:
+            self.habilitar_mando(False, quien)
+
+    def orden(self, nombre, datos, quien='local'):
         if not self.conectado:
             raise ValueError('no hay conexión con el PLC')
         paro = nombre in ('detener', 'emergencia')
-        if not self.mando and not paro:
+        if not paro and not self.mando:
             raise ValueError('el mando desde la PC está deshabilitado: marque "Habilitar el mando" en la pestaña Conexión')
+        if not paro and self.mando_de != quien:
+            raise ValueError(f'el mando lo tiene {self.mando_de}; usted solo puede dar paro')
         if nombre not in self.perfil.ordenes:
             raise ValueError(f'el programa del PLC no acepta la orden "{nombre}"')
-        self._log(f'orden {nombre} {json.dumps(datos) if datos else ""}')
+        self._log(f'orden {nombre} {json.dumps(datos) if datos else ""} ({quien})')
         if isinstance(self.perfil, (PerfilGemelo, PerfilCargado)):
             return self.perfil.orden(nombre, datos, self.leer_estado())
         return self.perfil.orden(nombre, datos)

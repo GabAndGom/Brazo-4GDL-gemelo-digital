@@ -13,6 +13,12 @@ Funciona sin internet y sin instalar nada (Python 3 y WebKitGTK ya vienen en Lin
 Antes de abrirla: cable USB-PPI enchufado al puerto 0 del PLC y, si la VM de Windows XP está abierta,
 el USB **desmarcado** en su menú Dispositivos → USB.
 
+## Desde celulares de la red local
+
+`python3 usuarios.py agregar NOMBRE --rol operador` (u `observador`) y luego el acceso
+**Gemelo digital del brazo (red local)**: la terminal muestra la dirección `https://IP:8443/` para los
+celulares. Observador: solo ve. Operador: manda (uno a la vez; los demás pueden dar paro).
+
 ## Uso
 
 - La barra superior dice si hay PLC, qué programa tiene y si el mando está habilitado.
@@ -32,6 +38,7 @@ Cada orden queda en `registro_gemelo.log`. El manual completo es `manual_gemelo_
 | `gemelo_brazo.py` | Programa principal: servidor local, ventana y API |
 | `brazo.py`, `ppi.py` | Comunicación con el PLC (PPI), perfiles de programa, estimador y PLC simulado |
 | `ventana.py` | Ventana GTK + WebKit |
+| `acceso.py`, `usuarios.py` | Usuarios, contraseñas y sesiones del acceso por red |
 | `ui/` | Interfaz: visor 3D (three.js 0.160.0 incluido), estilos y modelo `brazo_xk-js1-1.glb` |
 | `parametros.json` | Cotas y transmisión del brazo (copia de la cinemática del repositorio) |
 | `empaquetar.py` | Solo dentro del repositorio: vuelve a copiar la interfaz y exporta esta carpeta |

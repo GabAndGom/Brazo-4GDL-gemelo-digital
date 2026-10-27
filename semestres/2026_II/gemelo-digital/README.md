@@ -40,6 +40,31 @@ En la PC del laboratorio ya quedó en `ETN 1034/gemelo_brazo_app` con sus acceso
 
 No hace falta instalar nada: la app usa solo la biblioteca estándar de Python 3.
 
+## Acceso desde celulares y otras PC de la red local (con contraseña)
+
+1. Cree los usuarios en la PC del laboratorio (la contraseña se pide sin mostrarla):
+
+   ```bash
+   cd semestres/2026_II/gemelo-digital/app
+   python3 usuarios.py agregar ana --rol operador
+   python3 usuarios.py agregar visita --rol observador
+   ```
+
+   - **observador**: ve el brazo en vivo (posición, E/S) y la simulación; no puede mandarlo.
+   - **operador**: además lo manda. Un solo operador tiene el mando a la vez; los demás ven quién lo tiene
+     y pueden dar **paro**. Al salir o tras 8 h sin uso, el mando se suelta solo.
+2. Abra la app en modo red: menú **Gemelo digital del brazo (red local)** o `./iniciar_gemelo.sh --red`.
+   La terminal muestra la dirección, por ejemplo `https://192.168.1.15:8443/`.
+3. En el celular (misma red Wi-Fi) abra esa dirección. La primera vez el navegador avisa que el certificado
+   no es de una autoridad: es el certificado propio del laboratorio; elija continuar. Ingrese con su usuario.
+
+Si el celular no llega a la página, el cortafuegos de la PC puede estar bloqueando el puerto: hay que
+permitirlo una vez con `sudo ufw allow 8443/tcp` (lo hace quien administra la PC).
+
+La ventana de la PC del laboratorio sigue sin contraseña (quien está ahí está en la planta); con
+`--clave-local` también la pide. Usuarios, contraseñas (cifradas con PBKDF2) y certificado quedan en
+`usuarios.json` y `tls_*.pem` dentro de la carpeta de la app: no se suben al repositorio.
+
 ## Qué se puede hacer según el programa del PLC
 
 | Programa en el PLC | Ver el brazo en vivo | Mandar desde la página |
@@ -49,7 +74,7 @@ No hace falta instalar nada: la app usa solo la biblioteca estándar de Python 3
 | Otro programa | Sí (solo entradas, salidas y posición estimada) | No |
 
 Para mover a voluntad hay que cargar `plc/brazo_gemelo.mwp` en el PLC (instrucciones en el manual,
-sección 6). El programa anterior quedó respaldado en `ETN 1034/respaldo_vm/programa_plc_cargado_20261026.mwp`.
+sección "Cargar el programa del gemelo en el PLC"). El programa anterior quedó respaldado en `ETN 1034/respaldo_vm/programa_plc_cargado_20261026.mwp`.
 
 ## Seguridad
 

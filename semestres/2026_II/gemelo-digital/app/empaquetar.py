@@ -27,7 +27,8 @@ COPIAS = {
     'web/img/favicon.svg': 'ui/icono.svg',
     'semestres/2026_II/modelo-3d/cinematica/parametros.json': 'parametros.json',
 }
-DATOS_PLANTA = ['calibracion.json', 'registro_gemelo.log']    # se conservan al volver a exportar
+# Se conservan al volver a exportar (y nunca se copian desde el repositorio)
+DATOS_PLANTA = ['calibracion.json', 'registro_gemelo.log', 'usuarios.json', 'tls_certificado.pem', 'tls_clave.pem']
 EXCLUIR = {'__pycache__', '_prueba_calibracion.json'} | set(DATOS_PLANTA)
 
 

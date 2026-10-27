@@ -800,7 +800,9 @@ async function sondear() {
     if (e.theta_deg != null) guardarMuestra({ theta: e.theta_deg, sX: e.sX_mm, sY: e.sY_mm });
     if (e.garra != null && e.garra !== sim.garra) fijarGarra(e.garra);
     sim.referenciado = !!e.referenciado;
-    if (!!e.mando !== $('#m3d-mando').checked) $('#m3d-mando').checked = !!e.mando;
+    const yo = window.GEMELO_USUARIO ? window.GEMELO_USUARIO.usuario : 'local';
+    const propio = !!e.mando && (!e.mando_de || e.mando_de === yo);
+    if (propio !== $('#m3d-mando').checked) $('#m3d-mando').checked = propio;
     if (e.perfil && planta.info && e.perfil !== planta.info.perfil) { planta.info = await PLC.info(); renderPlanta(); }
     if (!planta.info.conectado && e.conectado) { planta.info = await PLC.info(); renderPlanta(); }
   } catch (err) {
@@ -894,6 +896,7 @@ function chipsPlanta() {
   if (e.conectado && planta.info && planta.info.transmision && !planta.info.transmision.base_calibrada) c.push(['alerta', 'Base sin calibrar: el ángulo es aproximado']);
   if (!CONTROL_REAL) c.push(['', 'Solo lectura']);
   else if (e.conectado && !e.mando) c.push(['', 'Mando desde la PC deshabilitado']);
+  else if (e.conectado && e.mando_de && window.GEMELO_USUARIO && e.mando_de !== window.GEMELO_USUARIO.usuario) c.push(['alerta', 'Mando en uso por ' + e.mando_de + ': usted solo puede dar paro']);
   if (e.conectado && e.modo_auto === false) c.push(['alerta', 'Selector en manual (I0.5): mando desde el panel']);
   if (e.plc && e.plc.error) c.push(['alerta', 'PLC: ' + e.plc.error]);
   if (e.plc && e.plc.falla_homing) c.push(['alerta', 'Falla de homing: use Rearmar']);

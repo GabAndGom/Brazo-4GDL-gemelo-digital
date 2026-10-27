@@ -21,6 +21,7 @@
       <small>PLC S7-200 por USB-PPI · UMSA II-2026</small>
     </div>
     <span class="app-conexion" id="app-conexion">Conectando…</span>
+    <span class="app-usuario" id="app-usuario" hidden></span>
   </header>
   <main id="app" class="app-principal">
 {{MODELO3D}}
@@ -32,13 +33,23 @@
     // Estado de la conexión en la barra superior
     (function () {
       const el = document.getElementById('app-conexion');
+      const yo = window.GEMELO_USUARIO || { usuario: 'local', rol: 'operador', local: true };
+      const us = document.getElementById('app-usuario');
+      if (!yo.local) {
+        us.hidden = false;
+        us.innerHTML = '';
+        us.append(yo.usuario + ' · ' + yo.rol + ' ');
+        const a = document.createElement('a'); a.href = 'salir'; a.textContent = 'Salir'; us.append(a);
+      }
       async function ver() {
         try {
           const r = await fetch('api/estado', { cache: 'no-store' });
+          if (r.status === 401) { location.href = 'login'; return; }
           const e = await r.json();
+          const mando = !e.mando ? 'sin mando' : e.mando_de === yo.usuario ? 'USTED TIENE EL MANDO' : 'mando: ' + e.mando_de;
           el.className = 'app-conexion ' + (e.conectado ? 'ok' : 'mal');
           el.textContent = e.conectado
-            ? 'PLC conectado · ' + e.perfil + (e.mando ? ' · MANDO HABILITADO' : ' · solo lectura')
+            ? 'PLC conectado · ' + e.perfil + ' · ' + mando
             : 'Sin PLC' + (e.error ? ': ' + e.error : '');
         } catch (err) {
           el.className = 'app-conexion mal';
