@@ -38,10 +38,10 @@ class Manejador(SimpleHTTPRequestHandler):
         sys.stderr.write('%s %s\n' % (self.address_string(), formato % args))
 
     def end_headers(self):
-        # La página publicada (https) también puede conectarse a esta app en localhost
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.send_header('Access-Control-Allow-Private-Network', 'true')
+        # Otras páginas (por ejemplo la publicada) pueden LEER el estado; mandar no (ver do_POST)
+        if self.command in ('GET', 'OPTIONS'):
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Private-Network', 'true')
         if self.path.startswith('/api/'):
             self.send_header('Cache-Control', 'no-store')
         super().end_headers()
@@ -56,8 +56,16 @@ class Manejador(SimpleHTTPRequestHandler):
 
     def do_OPTIONS(self):
         self.send_response(204)
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Methods', 'GET')
         self.end_headers()
+
+    def _origen_propio(self):
+        """Las órdenes solo se aceptan desde la propia ventana de la app (mismo origen)."""
+        origen = self.headers.get('Origin')
+        if origen is None:
+            return True                   # herramientas locales (curl) sin cabecera Origin
+        puerto = self.server.server_address[1]
+        return origen in (f'http://localhost:{puerto}', f'http://127.0.0.1:{puerto}')
 
     def do_GET(self):
         if self.path == '/api/info':
@@ -69,6 +77,8 @@ class Manejador(SimpleHTTPRequestHandler):
         self._json(404, {'ok': False, 'error': 'ruta desconocida'})
 
     def do_POST(self):
+        if not self._origen_propio():
+            return self._json(403, {'ok': False, 'error': 'solo lectura: las órdenes se dan desde la app del gemelo'})
         try:
             n = int(self.headers.get('Content-Length') or 0)
             datos = json.loads(self.rfile.read(n) or b'{}') if n else {}

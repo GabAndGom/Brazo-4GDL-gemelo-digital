@@ -735,6 +735,10 @@ function prepararSecuencias() {
 
 // ================================================================== planta (brazo real)
 // La app del gemelo (Python) lee el PLC; aquí se sondea su estado y el modelo lo sigue.
+// Mandar el brazo REAL solo se permite desde la app del gemelo (su plantilla pone
+// window.GEMELO_CONTROL = true). Desde la página publicada el brazo real solo se observa;
+// la simulación sigue teniendo todos los controles.
+const CONTROL_REAL = window.GEMELO_CONTROL === true;
 const planta = { activa: false, info: null, e: null, sondeo: null, mensaje: '', muestras: [], retardo: 0.25 };
 
 // El PLC se lee unas 8 veces por segundo: el modelo se dibuja un poco en el pasado
@@ -823,6 +827,10 @@ async function esperarFin(maxS = 120) {
 }
 
 async function ordenPlanta(nombre, datos) {
+  if (!CONTROL_REAL) {
+    mensajePlanta('Vista de solo lectura: el brazo real se manda desde la app del gemelo en la PC del laboratorio', true);
+    return { error: 'solo lectura' };
+  }
   try {
     const r = await PLC.orden(nombre, datos);
     mensajePlanta('Orden enviada: ' + nombre);
@@ -835,7 +843,7 @@ async function ordenPlanta(nombre, datos) {
 
 async function garra(cerrada) {
   if (!planta.activa) return fijarGarra(cerrada);
-  if (!planta.info.ordenes.includes('garra')) return mensajePlanta('El programa del PLC no deja mover la garra desde la PC', true);
+  if (!CONTROL_REAL || !planta.info.ordenes.includes('garra')) return mensajePlanta('El programa del PLC no deja mover la garra desde la PC', true);
   await ordenPlanta('garra', { cerrada });
   await dormir(600);
 }
@@ -857,13 +865,19 @@ function bloquearMover(si) {
 
 function renderPlanta() {
   $('#m3d-planta').hidden = !planta.activa;
-  if (!planta.activa) { bloquearMover(false); return; }
+  if (!planta.activa) {
+    bloquearMover(false);
+    for (const id of ['#m3d-homing', '#m3d-detener']) $(id).disabled = false;
+    return;
+  }
   const i = planta.info || {};
   $('#m3d-planta-info').textContent = i.conectado
     ? `PLC ${i.simulado ? 'SIMULADO' : 'en ' + i.puerto + ', dirección PPI ' + i.direccion} · programa: ${i.descripcion}`
     : 'La app está corriendo pero todavía no hay conexión con el PLC' + (i.error ? ': ' + i.error : '');
-  $('#m3d-cal-base').hidden = !(i.perfil === 'cargado' || i.perfil === 'monitor' || i.perfil === 'gemelo');
-  const ordenes = i.ordenes || [];
+  const ordenes = CONTROL_REAL ? (i.ordenes || []) : [];
+  for (const el of ['#m3d-mando-fila', '#m3d-planta-ordenes', '#m3d-cal-base']) $(el).hidden = !CONTROL_REAL;
+  $('#m3d-solo-lectura').hidden = CONTROL_REAL;
+  for (const id of ['#m3d-homing', '#m3d-detener']) $(id).disabled = !CONTROL_REAL;
   for (const b of document.querySelectorAll('#m3d-planta-ordenes [data-orden]')) b.hidden = !ordenes.includes(b.dataset.orden);
   bloquearMover(!ordenes.includes('mover'));
   $('#m3d-garra').disabled = !ordenes.includes('garra');
@@ -878,7 +892,8 @@ function chipsPlanta() {
   else c.push(['ok', 'Brazo real' + (planta.info && planta.info.simulado ? ' (simulado)' : '') + ' · ' + (e.perfil || '')]);
   if (e.conectado && e.estimado) c.push(['alerta', 'Posición estimada']);
   if (e.conectado && planta.info && planta.info.transmision && !planta.info.transmision.base_calibrada) c.push(['alerta', 'Base sin calibrar: el ángulo es aproximado']);
-  if (e.conectado && !e.mando) c.push(['', 'Mando desde la PC deshabilitado']);
+  if (!CONTROL_REAL) c.push(['', 'Solo lectura']);
+  else if (e.conectado && !e.mando) c.push(['', 'Mando desde la PC deshabilitado']);
   if (e.conectado && e.modo_auto === false) c.push(['alerta', 'Selector en manual (I0.5): mando desde el panel']);
   if (e.plc && e.plc.error) c.push(['alerta', 'PLC: ' + e.plc.error]);
   if (e.plc && e.plc.falla_homing) c.push(['alerta', 'Falla de homing: use Rearmar']);

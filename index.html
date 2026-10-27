@@ -220,7 +220,8 @@
             </div>
             <div class="m3d-planta" id="m3d-planta" hidden>
               <div class="m3d-mensaje" id="m3d-planta-info" role="status"></div>
-              <label class="m3d-check"><input type="checkbox" id="m3d-mando"> Habilitar el mando del brazo real desde esta página (con alguien junto a la parada de emergencia)</label>
+              <p class="m3d-ayuda" id="m3d-solo-lectura" hidden><strong>Solo lectura.</strong> Esta página muestra el brazo real pero no puede moverlo. Para mandarlo use la app del gemelo en la PC conectada al PLC; aquí puede volver al modo Simulación para probar movimientos.</p>
+              <label class="m3d-check" id="m3d-mando-fila"><input type="checkbox" id="m3d-mando"> Habilitar el mando del brazo real desde esta página (con alguien junto a la parada de emergencia)</label>
               <div class="m3d-botones" id="m3d-planta-ordenes">
                 <button type="button" class="boton" data-orden="iniciar">Iniciar (homing o secuencia siguiente)</button>
                 <button type="button" class="boton" data-orden="rearmar">Rearmar</button>
