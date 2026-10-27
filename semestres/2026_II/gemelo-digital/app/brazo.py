@@ -591,6 +591,8 @@ class Brazo:
 
     def __init__(self, puerto='/dev/ttyUSB0', direccion=None, simulado=False, registro=None):
         self.puerto, self.direccion, self.simulado = puerto, direccion, simulado
+        self.direccion_fija = direccion is not None      # --direccion: no se vuelve a buscar
+        self.baudios = 19200
         self.tr = Transmision()
         self.cli = None
         self.perfil = None
@@ -617,12 +619,13 @@ class Brazo:
             return
         if self.direccion is None:
             self._log(f'buscando el PLC en {self.puerto}…')
-            r = buscar_plc(self.puerto, direcciones=[6, 2, 7] + [d for d in range(1, 32) if d not in (2, 6, 7)])
+            # primero las combinaciones habituales (proyecto anterior: 6 a 19,2; proyecto nuevo: 2 a 9,6)
+            r = buscar_plc(self.puerto, direcciones=[2, 6, 7], baudios=(9600, 19200)) or \
+                buscar_plc(self.puerto, direcciones=[d for d in range(1, 32) if d not in (2, 6, 7)])
             if not r:
                 raise ErrorPPI(f'no responde ningún PLC en {self.puerto}')
-            self.direccion, baudios = r
-        else:
-            baudios = 19200
+            self.direccion, self.baudios = r
+        baudios = self.baudios
         cli = ClientePPI(self.puerto, plc=self.direccion, baudios=baudios)
         cli.abrir()
         # Detección del programa
@@ -661,6 +664,8 @@ class Brazo:
                 self.mando_de = None
                 if self.cli:
                     self.cli.cerrar()
+                if not self.direccion_fija:
+                    self.direccion = None        # el PLC pudo cambiar de dirección o velocidad: buscarlo de nuevo
                 time.sleep(2)
 
     def _log(self, texto):

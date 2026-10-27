@@ -28,6 +28,7 @@ class ClientePPI:
         self.fd = None
         self.lock = threading.Lock()
         self._fcb = False
+        self._t_ultimo = 0.0
         self._ref = 0
 
     # ------------------------------------------------------------------ puerto
@@ -62,7 +63,15 @@ class ClientePPI:
                 break
             if datos[:1] == b'\x68' and len(datos) >= 4 and len(datos) >= datos[1] + 6:
                 break
+        self._t_ultimo = time.time()
         return datos
+
+    def _pausa(self):
+        # el PLC ignora una trama que llega pegada a la anterior (a 9,6 kbit/s se perdían 0,4 s
+        # por sondeo o la petición entera): se deja un silencio de ~150 bits antes de transmitir
+        falta = self._t_ultimo + 150 / self.baudios - time.time()
+        if falta > 0:
+            time.sleep(falta)
 
     def _sd2(self, fc, pdu):
         cuerpo = bytes([self.plc, self.pc, fc]) + pdu
@@ -77,12 +86,14 @@ class ClientePPI:
         if self.fd is None:
             self.abrir()
         termios.tcflush(self.fd, termios.TCIFLUSH)
+        self._pausa()
         os.write(self.fd, self._sd2(0x7C if self._fcb else 0x6C, pdu))
         self._fcb = not self._fcb
         r = self._leer(0.4)
         if not r.startswith(b'\xe5'):
             raise ErrorPPI('el PLC no acusó la petición' + (f' ({r.hex(" ")})' if r else ''))
         for intento in range(8):
+            self._pausa()
             os.write(self.fd, self._sd1(0x5C if intento % 2 == 0 else 0x7C))
             r = self._leer(0.4)
             if r.startswith(b'\x68') and len(r) >= 9:
