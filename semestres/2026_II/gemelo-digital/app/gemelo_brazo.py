@@ -202,6 +202,7 @@ class Manejador(SimpleHTTPRequestHandler):
         if not self._mismo_origen():
             return self._json(403, {'ok': False, 'error': 'solo lectura: las órdenes se dan desde la app del gemelo'})
         if s['rol'] != 'operador' and (ruta in SOLO_OPERADOR or ruta.startswith('/api/orden/')):
+            BRAZO._log(f'RECHAZADO {ruta} de {s["usuario"]} ({s["rol"]}): solo puede ver')
             return self._json(403, {'ok': False, 'error': 'su usuario es observador: solo puede ver el brazo'})
         try:
             datos = json.loads(cuerpo or b'{}')
@@ -216,6 +217,7 @@ class Manejador(SimpleHTTPRequestHandler):
                 return self._json(200, r or {'ok': True})
             self._json(404, {'ok': False, 'error': 'ruta desconocida'})
         except (ValueError, KeyError) as ex:
+            BRAZO._log(f'RECHAZADO {ruta} de {s["usuario"]}: {ex}')
             self._json(400, {'ok': False, 'error': str(ex)})
         except Exception as ex:                       # error de comunicación u otro
             self._json(500, {'ok': False, 'error': str(ex)})
