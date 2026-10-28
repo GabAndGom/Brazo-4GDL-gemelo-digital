@@ -142,6 +142,29 @@ async function moverCartesiano(obj) {
   return { valida: true, nota: tr.cartesiana ? 'Trayectoria recta en el espacio cartesiano.' : 'Algún punto intermedio era inalcanzable: se interpoló en el espacio articular.' };
 }
 
+// Punto alcanzable más cercano a un objetivo cartesiano (con el θ del objetivo): la zona que barren
+// los carros es estrecha, así que un X, Y, Z escrito a mano suele quedar fuera
+function puntoAlcanzable(obj) {
+  const p = K.parametros;
+  const iv = K.inversa(obj, { thetaActual: sim.q.theta });
+  let theta = iv.soluciones && iv.soluciones.length ? iv.soluciones[0].q.theta : Math.atan2(obj.Y, obj.X) * 180 / Math.PI;
+  theta = Math.min(p.thetaMax, Math.max(p.thetaMin, theta));
+  let mejor = null;
+  const probar = (sX, sY) => {
+    if (sX < 0 || sY < 0 || sX > p.recorridoX || sY > p.recorridoY) return;
+    const q = { theta, sX, sY }, fk = K.directa(q);
+    if (fk.valida === false || K.colision(fk)) return;
+    const d = Math.hypot(fk.X - obj.X, fk.Y - obj.Y, fk.Z - obj.Z);
+    if (!mejor || d < mejor.d) mejor = { q, d, X: fk.X, Y: fk.Y, Z: fk.Z };
+  };
+  for (let sX = 0; sX <= p.recorridoX; sX += 2) for (let sY = 0; sY <= p.recorridoY; sY += 2) probar(sX, sY);
+  if (mejor) {
+    const c = mejor.q;
+    for (let dx = -2; dx <= 2; dx += 0.25) for (let dy = -2; dy <= 2; dy += 0.25) probar(c.sX + dx, c.sY + dy);
+  }
+  return mejor;
+}
+
 function fijarGarra(cerrada) {
   sim.garra = !!cerrada;
   const b = $('#m3d-garra');
@@ -570,7 +593,22 @@ function prepararControles() {
     const msg = $('#m3d-msg-xyz');
     msg.className = 'm3d-mensaje'; msg.textContent = 'Moviendo…';
     const r = await moverCartesiano(obj);
-    if (!r.valida) { msg.className = 'm3d-mensaje error'; msg.textContent = r.motivo; msg.setAttribute('role', 'alert'); return; }
+    if (!r.valida) {
+      msg.className = 'm3d-mensaje error'; msg.setAttribute('role', 'alert');
+      msg.textContent = r.motivo;
+      const c = /Inalcanzable/.test(r.motivo) && puntoAlcanzable(obj);
+      if (c) {
+        msg.textContent += ` El punto alcanzable más cercano es X ${fmt(c.X, 0)}, Y ${fmt(c.Y, 0)}, Z ${fmt(c.Z, 0)} mm (a ${fmt(c.d, 0)} mm). `;
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'boton boton-chico'; b.textContent = 'Usar ese punto';
+        b.addEventListener('click', () => {
+          $('#m3d-x').value = fmt(c.X, 0); $('#m3d-y').value = fmt(c.Y, 0); $('#m3d-z').value = fmt(c.Z, 0);
+          msg.textContent = ''; msg.className = 'm3d-mensaje';
+        });
+        msg.appendChild(b);
+      }
+      return;
+    }
     msg.setAttribute('role', 'status');
     msg.className = 'm3d-mensaje ok';
     const fk = K.directa(sim.q);

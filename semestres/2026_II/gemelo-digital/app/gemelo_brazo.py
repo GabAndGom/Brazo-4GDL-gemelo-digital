@@ -106,6 +106,8 @@ class Manejador(SimpleHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Private-Network', 'true')
         if self.path.startswith('/api/') or self.path in ('/', '/index.html', '/login'):
             self.send_header('Cache-Control', 'no-store')
+        elif self.path.startswith(('/js/', '/css/')):
+            self.send_header('Cache-Control', 'no-cache')   # que una versión nueva de la app llegue sin limpiar el navegador
         self.send_header('X-Frame-Options', 'DENY')
         super().end_headers()
 
