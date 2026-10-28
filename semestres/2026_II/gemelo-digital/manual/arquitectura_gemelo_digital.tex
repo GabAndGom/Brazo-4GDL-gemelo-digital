@@ -1,0 +1,780 @@
+% Arquitectura y desarrollo del gemelo digital del brazo XK-JS1-1 (II-2026)
+% Compilar desde esta carpeta:  pdflatex arquitectura_gemelo_digital.tex (dos veces)
+\documentclass[a4paper,11pt]{article}
+\usepackage{geometry}
+\geometry{letterpaper, margin=2.2cm}
+\usepackage[spanish, es-nodecimaldot, mexico]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage[table]{xcolor}
+\definecolor{naranja}{RGB}{194,98,12}
+\definecolor{rojo}{RGB}{192,57,43}
+\definecolor{verde}{RGB}{30,120,70}
+\definecolor{azulg}{RGB}{70,90,120}
+\definecolor{gris}{RGB}{242,242,242}
+\definecolor{grisos}{RGB}{90,90,90}
+\usepackage{booktabs,longtable,array,tabularx}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\captionsetup{font=small, labelfont=bf}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit,shapes.geometric,shapes.multipart,calc,decorations.pathreplacing,backgrounds}
+\usepackage{enumitem}
+\setlist{itemsep=2pt}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\small, frame=single, backgroundcolor=\color{gris}, breaklines=true,
+  columns=fullflexible, keepspaces=true, extendedchars=true,
+  literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1 {θ}{{$\theta$}}1}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=naranja, urlcolor=naranja}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small Gemelo digital del brazo XK-JS1-1}
+\rhead{\small Arquitectura y desarrollo}
+\cfoot{\small \thepage}
+\newcommand{\codigo}[1]{\texttt{#1}}
+\newcommand{\nota}[1]{\par\smallskip\noindent\colorbox{gris}{\parbox{\dimexpr\linewidth-2\fboxsep}{#1}}\par\smallskip}
+\newcommand{\limite}[1]{\par\smallskip\noindent\colorbox{rojo!8}{\parbox{\dimexpr\linewidth-2\fboxsep}{\textbf{\color{rojo}Limitaciones.} #1}}\par\smallskip}
+
+% estilos comunes de los diagramas
+\tikzset{
+  caja/.style={draw, rounded corners=2pt, fill=gris, align=center, font=\small, minimum height=10mm, inner sep=4pt},
+  cajab/.style={caja, fill=white},
+  cajan/.style={caja, fill=naranja!14, draw=naranja!70!black},
+  flecha/.style={-{Stealth[length=2.2mm]}, thick},
+  dflecha/.style={{Stealth[length=2.2mm]}-{Stealth[length=2.2mm]}, thick},
+  etiq/.style={font=\scriptsize, align=center},
+  zona/.style={draw=black!35, dashed, rounded corners, inner sep=3mm},
+  byte/.style={draw, minimum width=8.5mm, minimum height=7mm, font=\ttfamily\scriptsize, inner sep=0pt, anchor=west},
+}
+% fila de bytes: \bytes{x,y}{lista de (texto, color)}
+\newcommand{\bytebox}[3]{\node[byte, fill=#3] at (#1) {#2};}
+
+\title{\textbf{Gemelo digital del brazo XK-JS1-1}\\[4pt]\large Arquitectura, desarrollo y funcionamiento}
+\author{ETN-902 / ETN-1034 / ETN-1000 · UMSA · II-2026}
+\date{28 de octubre de 2026}
+
+\begin{document}
+\maketitle
+\thispagestyle{fancy}
+
+\begin{abstract}
+Este documento explica \emph{cómo está construido} el gemelo digital del brazo XK-JS1-1 y \emph{por qué} se hizo así. Complementa al \emph{Manual de conexión y uso}, que explica cómo usarlo. Se describen las etapas del desarrollo, la arquitectura de software, las páginas web y sus puertas de acceso, el protocolo PPI con el que la PC habla con el PLC S7-200, el programa nuevo del PLC y el funcionamiento detallado de los tres modos de mando: articular, cartesiano y secuencias.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% =====================================================================
+\section{De dónde partimos}
+
+La planta original es un brazo de 4 grados de libertad (base giratoria, carro X, carro Y y garra) con tres motores paso a paso, drivers JMC 2M542-N y un PLC S7-200 (CPU 224 CN). El PLC tenía un programa de \textbf{secuencias fijas}: un homing y dos rutinas grabadas.
+
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{4.6cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Planta original} & \textbf{Qué le faltaba}\\
+\midrule
+El PLC manda pulsos, pero no guarda la posición & Nadie sabía dónde estaba el brazo: no había número de posición, solo finales de carrera\\
+Rutinas fijas programadas en Micro/WIN & Para llevar la garra a otro punto había que reprogramar el PLC y calcular los pulsos a mano\\
+Panel con pulsadores y selector & No había forma de ver ni de mandar el brazo desde una PC, y menos desde otro lugar\\
+Sin modelo matemático & No se conocía qué puntos alcanza la garra ni cómo se relacionan los carros con la posición de la garra\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+El objetivo fue construir un \textbf{gemelo digital}: un modelo del brazo en la computadora que se mueve igual que el brazo real, lo muestra en vivo y permite mandarlo a cualquier punto, desde la PC del laboratorio o desde otros equipos de la red.
+
+% =====================================================================
+\section{Cómo se desarrolló}
+
+El trabajo avanzó por capas: cada etapa se apoya en la anterior.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=3.5mm,
+  etapa/.style={draw, rounded corners=2pt, fill=gris, text width=3.6cm, align=left, font=\scriptsize, inner sep=4pt, minimum height=13mm},
+  num/.style={circle, fill=naranja, text=white, font=\bfseries\scriptsize, inner sep=1.5pt, minimum size=5mm}]
+\node[etapa] (e1) {\textbf{Levantamiento}\\medidas, fotos, manual del fabricante; lo no medido se marca SUPUESTO};
+\node[etapa, right=of e1] (e2) {\textbf{Modelo cinemático}\\directa, inversa, jacobiano y espacio de trabajo};
+\node[etapa, right=of e2] (e3) {\textbf{Modelo 3D}\\piezas del brazo armadas con las mismas cotas};
+\node[etapa, below=8mm of e1] (e4) {\textbf{Página web}\\visor 3D y simulación de los tres modos};
+\node[etapa, right=of e4] (e5) {\textbf{Comunicación PPI}\\leer y escribir el PLC desde Python};
+\node[etapa, right=of e5] (e6) {\textbf{Estimador}\\posición a partir de los pulsos del programa original};
+\node[etapa, below=8mm of e4] (e7) {\textbf{Programa nuevo del PLC}\\cuenta la posición y acepta órdenes};
+\node[etapa, right=of e7] (e8) {\textbf{App de escritorio}\\servidor + ventana en la PC del laboratorio};
+\node[etapa, right=of e8] (e9) {\textbf{Acceso por red}\\usuarios, roles y HTTPS};
+\foreach \i in {1,...,9} \node[num] at (e\i.north west) {\i};
+\draw[flecha] (e1) -- (e2); \draw[flecha] (e2) -- (e3);
+\draw[flecha] (e3.south) -- ++(0,-2mm) -| (e4.north);
+\draw[flecha] (e4) -- (e5); \draw[flecha] (e5) -- (e6);
+\draw[flecha] (e6.south) -- ++(0,-2mm) -| (e7.north);
+\draw[flecha] (e7) -- (e8); \draw[flecha] (e8) -- (e9);
+\end{tikzpicture}
+\caption{Etapas del desarrollo.}
+\end{figure}
+
+\begin{enumerate}
+\item \textbf{Levantamiento.} Se midieron las piezas (bocetos, fotos del brazo y del tablero) y se tomaron datos del manual del fabricante. Cada cota quedó marcada como \emph{leída}, \emph{estimada} o \emph{SUPUESTO}, para saber qué hay que verificar en la planta. Del tablero se leyó la configuración de los drivers: 1000 pulsos por vuelta, que con un husillo de 5 mm dan \textbf{0,005 mm por pulso}.
+\item \textbf{Modelo cinemático} (\codigo{web/js/cinematica.js}). El brazo es un mecanismo de bielas: el carro X desplaza todo el bastidor y el carro Y mueve un bloque que, a través de una biela, hace girar el brazo. Con geometría plana se escribieron la \emph{cinemática directa} (de carros a garra), la \emph{inversa} (de garra a carros), el jacobiano y el espacio de trabajo. Es la única fuente de parámetros: la usan la página, el modelo 3D y las gráficas.
+\item \textbf{Modelo 3D.} Las piezas se modelaron y se armaron con las mismas cotas del modelo cinemático, de modo que el dibujo y el cálculo coinciden.
+\item \textbf{Página web.} Un visor 3D (biblioteca three.js) dibuja el brazo con la pose que calcula la cinemática. Permite simular los tres modos de mando sin hardware.
+\item \textbf{Comunicación PPI} (\codigo{app/ppi.py}). Se programó desde cero, en Python y sin bibliotecas externas, un cliente del protocolo PPI para leer y escribir la memoria del PLC por el cable USB-PPI (sección \ref{sec:ppi}).
+\item \textbf{Estimador.} Como el programa original no guarda la posición, la app la \emph{estima}: lee qué salidas de pulsos están activas y cuánto tiempo, y la corrige cada vez que se pisa un final de carrera.
+\item \textbf{Programa nuevo del PLC} (\codigo{plc/brazo\_gemelo.awl}). Cuenta los pulsos de cada eje (posición exacta), recibe órdenes por un buzón en la memoria V, respeta los finales de carrera y se detiene solo si la PC deja de responder (sección \ref{sec:programa}).
+\item \textbf{App de escritorio} (\codigo{app/gemelo\_brazo.py}). Une todo: habla con el PLC, sirve la página y abre una ventana propia.
+\item \textbf{Acceso por red.} Se agregaron usuarios con contraseña, roles (observador y operador), conexión cifrada y un único mando a la vez.
+\end{enumerate}
+
+% =====================================================================
+\section{Arquitectura general}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=6mm and 6mm]
+% capa planta
+\node[caja, text width=2.6cm] (motores) {motores y drivers\\finales de carrera\\panel};
+\node[cajan, text width=2.6cm, right=12mm of motores] (plc) {\textbf{PLC S7-200}\\\codigo{brazo\_gemelo}};
+\draw[dflecha] (motores) -- node[above, etiq]{E/S} (plc);
+% capa app
+\node[cajab, text width=2.4cm, right=14mm of plc, yshift=12mm] (ppi) {\codigo{ppi.py}\\protocolo PPI};
+\node[cajab, text width=2.4cm, below=5mm of ppi] (brazo) {\codigo{brazo.py}\\perfiles, estimador,\\mando};
+\node[cajab, text width=2.4cm, below=5mm of brazo] (acceso) {\codigo{acceso.py}\\usuarios, sesiones};
+\node[cajab, text width=2.6cm, right=8mm of brazo] (servidor) {\codigo{gemelo\_brazo.py}\\servidor web\\API \codigo{/api/...}};
+\node[zona, fit=(ppi)(brazo)(acceso)(servidor), label={[font=\small\bfseries]above:app Python (PC del laboratorio)}] (app) {};
+\draw[dflecha] (plc.east) -- node[below right, etiq, pos=0.3]{USB-PPI} (ppi.west);
+\draw[dflecha] (ppi) -- (brazo);
+\draw[dflecha] (brazo) -- (servidor);
+\draw[dflecha] (acceso) -| (servidor);
+% capa navegador
+\node[caja, text width=3cm, right=14mm of servidor, yshift=10mm] (ui) {página del gemelo\\\codigo{modelo3d.js}\\\codigo{cinematica.js}\\visor three.js};
+\node[cajab, text width=3cm, below=5mm of ui] (nav) {ventana de la app\\navegador del celular\\navegador de otra PC};
+\draw[dflecha] (servidor.east) -- node[below right, etiq, pos=0.35]{HTTP/JSON} (ui.west);
+\draw[flecha] (ui) -- (nav);
+\end{tikzpicture}
+\caption{Piezas del sistema y cómo se comunican.}
+\end{figure}
+
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{4.2cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Archivo} & \textbf{Qué hace}\\
+\midrule
+\codigo{web/js/cinematica.js} & Modelo matemático: parámetros, directa, inversa, jacobiano, conversión a pulsos, trayectorias.\\
+\codigo{web/js/modelo3d.js} & Visor 3D, pestañas de mando, simulación y seguimiento del brazo real.\\
+\codigo{web/js/conexion-plc.js} & Habla con la app: modo simulación o brazo real, lectura del estado, órdenes.\\
+\codigo{app/ppi.py} & Cliente del protocolo PPI: lecturas y escrituras en la memoria del PLC.\\
+\codigo{app/brazo.py} & Reconoce el programa del PLC (perfiles), lee el estado en un bucle, traduce órdenes a escrituras, estima la posición y lleva quién tiene el mando.\\
+\codigo{app/gemelo\_brazo.py} & Servidor web: sirve la página, la API, el ingreso y el acceso por red.\\
+\codigo{app/acceso.py}, \codigo{usuarios.py} & Contraseñas cifradas, sesiones, bloqueo por intentos; herramienta para crear usuarios.\\
+\codigo{app/ventana.py} & Ventana propia (GTK + WebKit) que muestra la página local.\\
+\codigo{plc/brazo\_gemelo.awl} & Programa nuevo del PLC.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Un ciclo de lectura}
+La app tiene un \textbf{bucle} que pregunta al PLC por su estado tan rápido como permite el cable (unas 6 veces por segundo a 9,6~kbit/s). El resultado queda en memoria. Cada navegador, por su lado, pide ese estado a la app (\codigo{GET /api/estado}) y el visor \emph{interpola} entre dos lecturas, con un pequeño retardo (0,1 a 0,5 s), para que el movimiento se vea suave y no a saltos.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\foreach \x/\t in {0/PLC, 4/{app (bucle)}, 8/navegador, 12/visor 3D} {
+  \node[caja, minimum width=2.4cm] at (\x,0) {\t};
+  \draw[black!40, dashed] (\x,-0.5) -- (\x,-5.2);
+}
+\draw[flecha] (4,-1) -- node[above, etiq]{petición PPI (lectura)} (0,-1);
+\draw[flecha] (0,-1.7) -- node[above, etiq]{posición, E/S, estado} (4,-1.7);
+\node[etiq, left] at (3.9,-2.1) {guarda el estado};
+\draw[flecha] (8,-2.6) -- node[above, etiq]{\codigo{GET /api/estado}} (4,-2.6);
+\draw[flecha] (4,-3.2) -- node[above, etiq]{JSON} (8,-3.2);
+\draw[flecha] (8,-3.9) -- node[above, etiq]{muestra con hora} (12,-3.9);
+\node[etiq, left, text width=3.6cm, align=right] at (11.9,-4.6) {dibuja la pose interpolada entre las dos últimas muestras};
+\draw[decorate, decoration={brace, amplitude=4pt, mirror}] (-0.3,-0.9) -- (-0.3,-1.8) node[midway, left=4pt, etiq]{$\approx$150 ms};
+\end{tikzpicture}
+\caption{Del PLC al dibujo: el bucle de la app y el sondeo del navegador corren por separado.}
+\end{figure}
+
+\subsection{Una orden}
+Cuando alguien pulsa \emph{Mover}, la orden atraviesa varios filtros antes de llegar al PLC. Si alguno falla, la orden se rechaza, se le explica el motivo al usuario y queda anotada en el registro.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=3mm,
+  filtro/.style={draw, rounded corners=2pt, fill=white, text width=2.05cm, align=center, font=\scriptsize, minimum height=13mm, inner sep=2pt}]
+\node[cajan, font=\scriptsize, text width=1.6cm] (boton) {botón\\\emph{Mover}};
+\node[filtro, right=of boton] (f1) {¿sesión válida?\\(acceso remoto)};
+\node[filtro, right=of f1] (f2) {¿viene de la propia página?};
+\node[filtro, right=of f2] (f3) {¿rol operador?};
+\node[filtro, right=of f3] (f4) {¿tiene el mando?\\¿selector en auto?};
+\node[filtro, right=of f4] (f5) {¿dentro del recorrido?\\¿hay homing?};
+\node[cajan, font=\scriptsize, text width=1.6cm, right=of f5] (plcn) {escritura\\\codigo{VB1100...}};
+\foreach \a/\b in {boton/f1,f1/f2,f2/f3,f3/f4,f4/f5,f5/plcn} \draw[flecha] (\a) -- (\b);
+\foreach \f in {f1,f2,f3,f4,f5} \draw[flecha, rojo] (\f.south) -- ++(0,-6mm) node[below, font=\scriptsize, text=rojo]{rechazo};
+\end{tikzpicture}
+\caption{Filtros por los que pasa una orden. El último filtro se repite dentro del PLC, que tiene sus propios límites.}
+\end{figure}
+
+% =====================================================================
+\section{Las páginas web}
+
+\subsection{Cuáles son}
+En realidad hay \textbf{una sola página del gemelo} (los mismos archivos HTML y JavaScript), servida por tres \emph{puertas} distintas, más una página de ingreso.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\node[cajan, text width=3cm, minimum height=16mm] (app) at (0,0.7) {\textbf{app del gemelo}\\PC del laboratorio\\(un solo programa)};
+\node[caja, text width=4.5cm] (p8050) at (7.7,1.9) {\textbf{Puerta local}\\\codigo{http://localhost:8050}};
+\node[caja, text width=4.5cm] (p8443) at (7.7,-0.5) {\textbf{Puerta de red}\\\codigo{https://IP-de-la-PC:8443}};
+\node[cajab, text width=2.9cm] (vent) at (12.5,1.9) {ventana de la app\\(solo en esa PC)};
+\node[cajab, text width=2.9cm] (login) at (12.5,-0.5) {ingreso \codigo{/login}\\(celulares, otras PC)};
+\draw[dflecha] ([yshift=3mm]app.east) -- ++(0.5,0) |- node[pos=0.68, above, etiq]{escucha en \codigo{127.0.0.1}} (p8050.west);
+\draw[dflecha] ([yshift=-3mm]app.east) -- ++(0.5,0) |- node[pos=0.68, below, etiq]{escucha en todas las interfaces} (p8443.west);
+\draw[flecha] (p8050) -- (vent);
+\draw[flecha] (p8443) -- (login);
+\node[cajab, text width=3cm, draw=black!40] (pub) at (0,-2.6) {\textbf{Página pública}\\\codigo{...pages.dev}};
+\draw[flecha, dashed] (pub) -- node[left, etiq]{solo lee} (app);
+\node[etiq, text width=8.2cm, align=left, anchor=west] at (2.0,-2.6) {servida por Cloudflare desde GitHub, en internet. Simula el brazo; abierta en la PC del laboratorio puede además \emph{ver} el brazo real leyendo la puerta local, pero nunca mandarlo.};
+\end{tikzpicture}
+\caption{Una misma página, tres puertas.}
+\end{figure}
+
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{2.5cm} >{\raggedright}p{2.6cm} >{\raggedright}p{2.1cm} >{\raggedright}p{2.1cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Puerta} & \textbf{Quién la sirve} & \textbf{Contraseña} & \textbf{Cifrado} & \textbf{Puede mandar el brazo}\\
+\midrule
+Local \codigo{:8050} & app, PC del laboratorio & no & no hace falta & sí\\
+Red \codigo{:8443} & app, PC del laboratorio & sí, con rol & HTTPS & solo operadores con el mando\\
+Pública & Cloudflare (internet) & no & HTTPS & no: simula y, en la PC del laboratorio, puede ver\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{¿Por qué una puerta local y otra de red si todo está en la misma red?}
+
+La diferencia no es la página sino \textbf{quién puede llegar a ella}. Un servidor elige en qué dirección escucha:
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\node[draw, rounded corners, minimum width=6.4cm, minimum height=4.1cm, fill=gris!50] (pc) {};
+\node[anchor=north west, font=\small\bfseries] at (pc.north west) {PC del laboratorio};
+\node[cajab, minimum width=2.2cm] (a) at ($(pc.center)+(-1.5,0.6)$) {\codigo{:8050}};
+\node[etiq] at ($(a.south)+(0,-0.3)$) {escucha en \codigo{127.0.0.1}};
+\node[cajan, minimum width=2.2cm] (b) at ($(pc.center)+(1.5,0.6)$) {\codigo{:8443}};
+\node[etiq] at ($(b.south)+(0,-0.3)$) {escucha en \codigo{0.0.0.0}};
+\node[cajab, font=\scriptsize] (v) at ($(pc.center)+(-1.5,-1.4)$) {ventana de la app};
+\draw[dflecha] (v) -- (a);
+\node[caja, right=2.6cm of pc, text width=2.4cm] (cel) {celular\\en el Wi-Fi};
+\draw[flecha] (cel.west) -- ++(-1.4,0) |- (b.east);
+\draw[flecha, rojo] (cel.north west) .. controls +(-1.5,1.3) and +(0.5,1.6) .. (a.north);
+\node[rojo, font=\bfseries] at ($(a.north)+(1.1,1.0)$) {$\times$};
+\node[etiq, rojo, text width=3.2cm] at ($(cel.north)+(0,1.1)$) {el sistema operativo rechaza la conexión: \codigo{127.0.0.1} no existe fuera de la PC};
+\end{tikzpicture}
+\caption{La puerta local es inalcanzable desde la red, aunque los equipos estén en el mismo Wi-Fi.}
+\end{figure}
+
+\begin{itemize}
+\item \textbf{La puerta local solo existe dentro de la PC.} La dirección \codigo{127.0.0.1} (\emph{localhost}) no sale a la red: un celular no puede conectarse a ella aunque esté en el mismo Wi-Fi. Por eso no necesita contraseña: quien la usa está sentado frente a la PC del laboratorio, junto al brazo y a la seta de emergencia. Además funciona aunque no haya router ni red.
+\item \textbf{La puerta de red está abierta a todo el Wi-Fi.} Cualquiera conectado a la red puede intentar entrar. Por eso lleva:
+\begin{itemize}
+\item \textbf{HTTPS}: en un Wi-Fi las contraseñas y las órdenes viajan por el aire; sin cifrado, otro equipo de la red podría leerlas o falsificarlas;
+\item \textbf{usuario, contraseña y rol}, con bloqueo tras 5 intentos fallidos;
+\item \textbf{un solo mando a la vez}, para que dos operadores no manden el brazo al mismo tiempo;
+\item \textbf{comprobación de origen}: solo se aceptan órdenes enviadas desde la propia página, no desde otro sitio web abierto en el celular.
+\end{itemize}
+\item \textbf{¿Por qué no usar la puerta de red también en la PC del laboratorio?} Se podría, pero:
+\begin{itemize}
+\item el certificado es propio del laboratorio y el navegador lo marca como «no seguro»; la ventana de la app tendría que aceptarlo;
+\item habría que ingresar con usuario cada vez, incluso estando junto al brazo;
+\item si la red falla o cambia la IP, el mando local seguiría dependiendo de ella.
+\end{itemize}
+Separar las puertas mantiene el mando local \textbf{simple y siempre disponible}, y concentra todas las protecciones donde hacen falta: en la puerta que da a la red.
+\item \textbf{La página pública} vive en internet (Cloudflare) y no tiene acceso a la red del laboratorio. Los navegadores sí le permiten \emph{leer} \codigo{http://localhost} cuando se abre en la propia PC del laboratorio, y la app solo le responde lecturas: por eso puede mostrar el brazo real, pero nunca mandarlo.
+\end{itemize}
+
+\subsection{Cómo funciona el ingreso}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\foreach \x/\t in {0/celular, 7/{app (puerta de red)}} {
+  \node[caja, minimum width=3cm] at (\x,0) {\t};
+  \draw[black!40, dashed] (\x,-0.5) -- (\x,-6.0);
+}
+\draw[flecha] (0,-1.0) -- node[above, etiq]{\codigo{GET /} (sin sesión)} (7,-1.0);
+\draw[flecha] (7,-1.6) -- node[above, etiq]{redirige a \codigo{/login}} (0,-1.6);
+\draw[flecha] (0,-2.4) -- node[above, etiq]{\codigo{POST /login} usuario y contraseña (cifrado)} (7,-2.4);
+\node[etiq, right, text width=4cm] at (7.1,-2.6) {compara con la clave cifrada (PBKDF2); crea una sesión de 8 h};
+\draw[flecha] (7,-3.2) -- node[above, etiq]{cookie de sesión} (0,-3.2);
+\draw[flecha] (0,-4.0) -- node[above, etiq]{\codigo{GET /api/estado} + cookie} (7,-4.0);
+\draw[flecha] (0,-4.8) -- node[above, etiq]{\codigo{POST /api/orden/mover} + cookie + origen} (7,-4.8);
+\node[etiq, right, text width=4cm] at (7.1,-5.0) {filtros de la figura 4; anota en el registro};
+\draw[flecha] (7,-5.6) -- node[above, etiq]{aceptada o rechazada (motivo)} (0,-5.6);
+\end{tikzpicture}
+\caption{Ingreso y uso de la puerta de red.}
+\end{figure}
+
+Las contraseñas nunca se guardan tal cual: se guarda el resultado de aplicarles 200\,000 veces una función de resumen con un valor aleatorio propio de cada usuario (PBKDF2). Así, aunque alguien copie \codigo{usuarios.json}, no puede leer las contraseñas.
+
+\limite{La puerta de red llega solo a la red local; para usarla desde internet haría falta una VPN o un túnel. El certificado es autofirmado, por eso el aviso del navegador la primera vez. La PC del laboratorio debe estar encendida y con la app abierta: es la única que habla con el PLC.}
+
+% =====================================================================
+\section{El protocolo PPI}\label{sec:ppi}
+
+\subsection{Qué es}
+PPI (\emph{Point-to-Point Interface}) es el protocolo de Siemens con el que el software Micro/WIN programa y monitorea los S7-200. Es un protocolo \textbf{maestro--esclavo} sobre RS-485, derivado de PROFIBUS: el maestro (la PC, dirección 0) pregunta y el esclavo (el PLC, hoy dirección 2) responde. Dentro de las tramas PPI viajan los mensajes \emph{S7}, que son los que dicen «lee tal zona de memoria» o «escribe tal valor».
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\node[draw, fill=gris, minimum width=12cm, minimum height=26mm] (c1) {};
+\node[anchor=north west, font=\scriptsize\bfseries] at (c1.north west) {RS-485: señal eléctrica diferencial por dos hilos};
+\node[draw, fill=white, minimum width=10.6cm, minimum height=17mm] (c2) at ($(c1.center)+(0,-2mm)$) {};
+\node[anchor=north west, font=\scriptsize\bfseries] at (c2.north west) {PPI: trama con direcciones, control y suma de verificación};
+\node[draw, fill=naranja!14, minimum width=9cm, minimum height=8mm] (c3) at ($(c2.center)+(0,-2.5mm)$) {\scriptsize \textbf{S7}: «leer 40 bytes desde VB1120» / «escribir VB1100...»};
+\end{tikzpicture}
+\caption{Capas del protocolo: un mensaje S7 dentro de una trama PPI que viaja por RS-485.}
+\end{figure}
+
+\subsection{Capa física: RS-485 y el cable USB-PPI}
+
+El puerto del S7-200 es un conector DB9 hembra con una línea RS-485. RS-485 transmite cada bit como la \emph{diferencia} de tensión entre dos hilos (A y B): el ruido que afecta a los dos por igual se cancela, lo que la hace robusta en un tablero con motores. Es \textbf{semidúplex}: por el mismo par se transmite en un sentido o en el otro, nunca a la vez, así que hablan por turnos.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+% DB9
+\begin{scope}[shift={(0,0)}]
+\draw[thick, rounded corners=6pt, fill=gris] (0,0) -- (4.2,0) -- (3.8,-1.6) -- (0.4,-1.6) -- cycle;
+\foreach \i in {1,...,5} { \pgfmathsetmacro\xx{0.5+0.8*(\i-1)} \fill (\xx,-0.45) circle (0.13); \node[font=\tiny, above] at (\xx,-0.3) {\i}; }
+\foreach \i in {6,...,9} { \pgfmathsetmacro\xx{0.9+0.8*(\i-6)} \fill (\xx,-1.15) circle (0.13); \node[font=\tiny, below] at (\xx,-1.3) {\i}; }
+\node[font=\scriptsize\bfseries] at (2.1,0.45) {puerto 0 del PLC (DB9)};
+\end{scope}
+\node[etiq, align=left, anchor=west] at (4.6,-0.15) {pin 3: B (+), datos};
+\node[etiq, align=left, anchor=west] at (4.6,-0.55) {pin 8: A ($-$), datos};
+\node[etiq, align=left, anchor=west] at (4.6,-0.95) {pin 5: tierra (GND)};
+\node[etiq, align=left, anchor=west] at (4.6,-1.35) {pin 2: 24 V (alimenta el cable)};
+% cable
+\node[caja, text width=2.6cm, font=\scriptsize] (conv) at (9.6,-0.3) {cable USB-PPI\\chip CH340 (USB$\leftrightarrow$serie)\\+ transceptor RS-485};
+\node[cajab, font=\scriptsize] (pcn) at (12.6,-0.3) {PC\\\codigo{/dev/ttyUSB0}};
+\draw[dflecha] (7.0,-0.3) -- (conv.west);
+\draw[dflecha] (conv) -- node[above, etiq]{USB} (pcn);
+% señal diferencial
+\begin{scope}[shift={(0,-3.4)}]
+\draw[->] (0,0) -- (8.8,0) node[right, etiq]{t};
+\node[etiq, left] at (0,0.7) {B};
+\node[etiq, left] at (0,-0.7) {A};
+\draw[thick, naranja] (0,0.8) -- (1,0.8) -- (1,0.3) -- (2.6,0.3) -- (2.6,0.8) -- (4.2,0.8) -- (4.2,0.3) -- (5,0.3) -- (5,0.8) -- (8.5,0.8);
+\draw[thick, azulg] (0,-0.8) -- (1,-0.8) -- (1,-0.3) -- (2.6,-0.3) -- (2.6,-0.8) -- (4.2,-0.8) -- (4.2,-0.3) -- (5,-0.3) -- (5,-0.8) -- (8.5,-0.8);
+\node[etiq, text width=4.5cm, align=left, anchor=west] at (9.1,0) {el receptor solo mira B $-$ A: si es positivo lee 1, si es negativo lee 0};
+\end{scope}
+\end{tikzpicture}
+\caption{Conector del PLC, cable USB-PPI y señal diferencial RS-485 (esquemática).}
+\end{figure}
+
+Para Linux, el cable es un \textbf{puerto serie} más (\codigo{/dev/ttyUSB0}): el programa escribe y lee bytes, y el cable se encarga de convertirlos a RS-485 y de cambiar de transmitir a recibir. Por eso un convertidor USB--RS485 genérico, con cambio de dirección automático, debería poder reemplazarlo.
+
+\subsection{Cada byte: 11 bits}
+PPI usa un formato serie de \textbf{8 bits de datos, paridad par y 1 bit de parada}: cada byte ocupa 11 bits en la línea.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1.05cm,y=1cm]
+\foreach \i/\t/\c in {0/inicio/gris, 1/b0/white, 2/b1/white, 3/b2/white, 4/b3/white, 5/b4/white, 6/b5/white, 7/b6/white, 8/b7/white, 9/paridad/naranja!20, 10/parada/gris} {
+  \draw[fill=\c] (\i,0) rectangle ++(1,0.8);
+  \node[font=\scriptsize] at (\i+0.5,0.4) {\t};
+}
+\draw[decorate, decoration={brace, amplitude=5pt}] (1,0.9) -- (9,0.9) node[midway, above=5pt, etiq]{8 bits de datos (el menos significativo primero)};
+\draw[decorate, decoration={brace, amplitude=5pt, mirror}] (0,-0.1) -- (11,-0.1) node[midway, below=5pt, etiq]{11 bits $\Rightarrow$ a 9600 bit/s, un byte tarda $11/9600 \approx 1{,}15$ ms};
+\end{tikzpicture}
+\caption{Formato de cada carácter (8E1). La paridad par permite detectar un bit alterado.}
+\end{figure}
+
+El S7-200 admite 9,6, 19,2 y 187,5~kbit/s. El cable USB-PPI del laboratorio trabaja a 9,6 o 19,2. El programa original dejaba el PLC a 19,2~kbit/s (dirección 6); el bloque de sistema del programa nuevo lo dejó a \textbf{9,6~kbit/s} (dirección 2). La app prueba las combinaciones habituales y encuentra sola la que corresponde.
+
+\subsection{Las tramas}
+PPI usa tres tipos de trama. Todas las direcciones y la suma de verificación van dentro:
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+% SD2
+\node[anchor=west, font=\small\bfseries] at (0,0.75) {SD2: trama de longitud variable (lleva datos)};
+\foreach \i/\t/\c in {0/68/naranja!20, 1/LE/white, 2/LEr/white, 3/68/naranja!20, 4/DA/azulg!15, 5/SA/azulg!15, 6/FC/azulg!15} {\node[byte, fill=\c] at (\i*0.95,0) {\t};}
+\node[byte, fill=white, minimum width=36mm] at (6.65,0) {datos (mensaje S7)};
+\node[byte, fill=verde!15] at (10.5,0) {FCS};
+\node[byte, fill=naranja!20] at (11.45,0) {16};
+% SD1
+\node[anchor=west, font=\small\bfseries] at (0,-0.95) {SD1: trama corta sin datos (por ejemplo, el sondeo)};
+\foreach \i/\t/\c in {0/10/naranja!20, 1/DA/azulg!15, 2/SA/azulg!15, 3/FC/azulg!15, 4/FCS/verde!15, 5/16/naranja!20} {\node[byte, fill=\c] at (\i*0.95,-1.7) {\t};}
+% SC
+\node[anchor=west, font=\small\bfseries] at (0,-2.65) {SC: acuse corto (un solo byte)};
+\node[byte, fill=naranja!20] at (0,-3.4) {E5};
+\end{tikzpicture}
+\caption{Formatos de trama.}
+\end{figure}
+
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\ttfamily}p{1.6cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{\rmfamily Campo} & \textbf{Significado}\\
+\midrule
+68 / 10 & delimitador de inicio (SD2 o SD1)\\
+LE, LEr & longitud de DA + SA + FC + datos, repetida para detectar errores\\
+DA, SA & dirección de destino y de origen (PC = 0, PLC = 2)\\
+FC & código de función: \codigo{6C}/\codigo{7C} «petición con respuesta» (el bit FCB alterna para distinguir una trama nueva de una repetida); \codigo{5C}/\codigo{7C} sondeo «¿tienes mi respuesta?»; \codigo{08} respuesta con datos\\
+FCS & suma de verificación: suma de DA, SA, FC y los datos, módulo 256\\
+16 & delimitador de fin\\
+E5 & acuse corto: «recibí tu trama» (o «todavía no tengo la respuesta»)\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Un intercambio completo}
+El PLC no contesta con los datos de inmediato: primero acusa recibo y prepara la respuesta mientras sigue con su ciclo. La PC vuelve a preguntar (sondeo) hasta recibirla.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\node[caja, minimum width=2.6cm] at (0,0) {PC (maestro, 0)};
+\node[caja, minimum width=2.6cm] at (8,0) {PLC (esclavo, 2)};
+\draw[black!40, dashed] (0,-0.5) -- (0,-6.3);
+\draw[black!40, dashed] (8,-0.5) -- (8,-6.3);
+\draw[flecha] (0,-1.0) -- node[above, etiq]{1. SD2 petición S7 (33 bytes, $\approx$38 ms)} (8,-1.3);
+\draw[flecha] (8,-1.9) -- node[above, etiq]{2. \codigo{E5} acuse} (0,-2.1);
+\node[etiq, left, text width=2.6cm, align=right] at (-0.2,-2.6) {silencio $\geq$ 150 bits ($\approx$16 ms)};
+\draw[flecha] (0,-3.1) -- node[above, etiq]{3. SD1 sondeo (6 bytes)} (8,-3.3);
+\draw[flecha] (8,-3.9) -- node[above, etiq]{4. SD2 respuesta con los datos (67 bytes, $\approx$77 ms)} (0,-4.6);
+\node[etiq, right, text width=3.2cm] at (8.2,-1.6) {el PLC atiende la petición entre ciclos de su programa};
+\draw[decorate, decoration={brace, amplitude=5pt, mirror}] (-2.9,-0.9) -- (-2.9,-4.7) node[midway, left=6pt, etiq]{$\approx$155 ms\\en total};
+\node[etiq, text width=12cm, align=left, anchor=west] at (-2.9,-5.6) {Si en el paso 3 el PLC aún no tiene la respuesta, contesta \codigo{E5} otra vez y la PC repite el sondeo (hasta 8 veces).};
+\end{tikzpicture}
+\caption{Lectura de 40 bytes a 9,6~kbit/s, con los tiempos medidos en la planta.}
+\end{figure}
+
+\subsection{El mensaje S7 por dentro: un ejemplo real}
+Esta es, byte a byte, la petición que la app envía unas seis veces por segundo para leer el estado del programa nuevo (40 bytes desde \codigo{VB1120}):
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=0.93cm,y=1cm]
+\def\fila#1#2{\foreach \t [count=\i from 0] in {#2} {\node[byte, minimum width=8mm] at (\i*0.93,#1) {\t};}}
+\fila{0}{68,1b,1b,68,02,00,6c}
+\fila{-1.4}{32,01,00,00,00,01,00,0e,00,00}
+\fila{-2.8}{04,01}
+\fila{-4.2}{12,0a,10,02,00,28,00,01,84,00,23,00}
+\fila{-5.6}{b3,16}
+\node[etiq, anchor=west, text width=8cm, align=left] at (7.0,0) {\textbf{cabecera PPI}: inicio, longitud 27 (\codigo{1b}), PLC 2, PC 0, petición (\codigo{6c})};
+\node[etiq, anchor=west, text width=6cm, align=left] at (9.6,-1.4) {\textbf{cabecera S7}: \codigo{32} protocolo S7, \codigo{01} petición, referencia 1, 14 bytes de parámetros, 0 de datos};
+\node[etiq, anchor=west, text width=8cm, align=left] at (2.2,-2.8) {\textbf{función}: \codigo{04} leer, \codigo{01} una sola zona};
+\node[etiq, anchor=west, text width=4.2cm, align=left] at (11.4,-4.2) {\textbf{zona}: tamaño byte (\codigo{02}), 40 bytes (\codigo{0028}), área V (\codigo{84}), dirección en bits $1120 \times 8 = 8960$ = \codigo{002300}};
+\node[etiq, anchor=west, text width=8cm, align=left] at (2.2,-5.6) {\textbf{cierre}: suma de verificación y fin};
+\end{tikzpicture}
+\caption{Petición «leer 40 bytes desde VB1120» (33 bytes en total).}
+\end{figure}
+
+La respuesta (67 bytes) tiene la misma estructura: cabecera PPI con las direcciones invertidas, cabecera S7 de tipo \codigo{03} (respuesta, con código de error 0), la función \codigo{04 01}, el código \codigo{FF} («lectura correcta») y los 40 bytes pedidos: estado, banderas, error, posición de cada eje, entradas, salidas y la firma \codigo{47} con la que la app reconoce el programa.
+
+Para escribir (por ejemplo una orden en \codigo{VB1100}) se usa la función \codigo{05} con los datos al final. La app \textbf{solo} permite escribir en zonas fijas (\codigo{VB1100--VB1119} con el programa nuevo): cualquier otra dirección se rechaza antes de salir por el cable.
+
+\subsection{Lo que se aprendió en la planta}
+\begin{itemize}
+\item \textbf{El PLC necesita un silencio entre tramas.} Al pasar a 9,6~kbit/s, la app se desconectaba una y otra vez: el PLC ignoraba la trama que llegaba pegada a la anterior. El primer sondeo, enviado justo después del acuse, se perdía y la app esperaba 0,4~s antes de reintentar. Con un silencio de unos 150 bits antes de transmitir, las lecturas pasaron de $\approx$570~ms a $\approx$155~ms y dejaron de fallar.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=0.018cm,y=1cm]
+\node[anchor=east, font=\scriptsize] at (-10,0.3) {antes};
+\fill[naranja!60] (0,0) rectangle (43,0.6);   \node[font=\tiny] at (21,0.3) {pet.};
+\fill[rojo!25] (44,0) rectangle (446,0.6);   \node[font=\scriptsize] at (245,0.3) {sondeo ignorado: espera 0,4 s};
+\fill[azulg!40] (456,0) rectangle (479,0.6);
+\fill[verde!45] (479,0) rectangle (568,0.6); \node[font=\tiny] at (523,0.3) {resp.};
+\node[anchor=west, font=\scriptsize] at (575,0.3) {568 ms};
+\node[anchor=east, font=\scriptsize] at (-10,-0.6) {después};
+\fill[naranja!60] (0,-0.9) rectangle (43,-0.3);
+\fill[gris] (43,-0.9) rectangle (60,-0.3);
+\fill[azulg!40] (60,-0.9) rectangle (67,-0.3);
+\fill[verde!45] (67,-0.9) rectangle (155,-0.3); \node[font=\tiny] at (111,-0.6) {resp.};
+\node[anchor=west, font=\scriptsize] at (162,-0.6) {155 ms};
+\draw[->] (0,-1.15) -- (620,-1.15) node[right, font=\scriptsize]{ms};
+\foreach \t in {0,100,...,600} {\draw (\t,-1.1) -- (\t,-1.2) node[below, font=\tiny]{\t};}
+\end{tikzpicture}
+\caption{Tiempo de una lectura antes y después de agregar el silencio entre tramas (mediciones reales).}
+\end{figure}
+
+\begin{itemize}
+\item \textbf{Un solo maestro a la vez.} El cable lo usa la app o Micro/WIN, nunca los dos. Por eso, para cargar un programa, hay que cerrar la app y pasar el USB a la máquina virtual.
+\item \textbf{Búsqueda automática.} Si cambia la dirección o la velocidad del PLC (por ejemplo, al cargar un bloque de sistema), la app prueba primero las combinaciones conocidas (2 y 6, a 9,6 y 19,2) y luego las 31 direcciones posibles.
+\end{itemize}
+
+\limite{A 9,6~kbit/s caben unas 6 lecturas por segundo: suficiente para ver el brazo, no para un control rápido en lazo cerrado desde la PC. Por eso los movimientos los ejecuta el PLC, y la PC solo le da el destino y observa. Pasar a 19,2~kbit/s duplicaría la frecuencia de lectura.}
+
+% =====================================================================
+\section{El programa nuevo del PLC}\label{sec:programa}
+
+El programa original no servía para un gemelo: no guardaba la posición y solo sabía hacer sus secuencias. El programa \codigo{brazo\_gemelo} se escribió con tres ideas:
+
+\begin{enumerate}
+\item \textbf{El PLC cuenta la posición.} Cada tren de pulsos que genera se suma con su signo a un contador por eje. Así la posición es exacta (al pulso) mientras no se pierdan pasos, y la PC solo la lee.
+\item \textbf{Un buzón de órdenes.} La PC escribe la orden en una zona fija de memoria y cambia un número de secuencia; el PLC la ejecuta una sola vez por cada número nuevo y responde con un eco. Así una orden nunca se ejecuta dos veces por una escritura repetida.
+\item \textbf{El PLC protege la máquina.} Rechaza destinos fuera del recorrido, corta el movimiento en los finales de carrera y se detiene si la PC deja de dar señales de vida durante 2~s (watchdog).
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\node[caja, minimum width=2.6cm] at (0,0) {PC};
+\node[caja, minimum width=2.6cm] at (8,0) {PLC};
+\draw[black!40, dashed] (0,-0.5) -- (0,-5.6);
+\draw[black!40, dashed] (8,-0.5) -- (8,-5.6);
+\draw[flecha] (0,-1) -- node[above, etiq]{escribe pulsos (VD1104/08/12), orden 2 = mover (VB1100), secuencia $n$ (VB1101)} (8,-1);
+\node[etiq, right, text width=3.6cm] at (8.2,-1.5) {ve una secuencia nueva: valida y arranca los trenes de pulsos};
+\draw[flecha] (8,-2.1) -- node[above, etiq]{eco $n$ (VB1121), estado 2 = moviendo} (0,-2.1);
+\draw[flecha] (0,-2.9) -- node[above, etiq]{latido cada lectura (VW1102)} (8,-2.9);
+\draw[flecha] (8,-3.6) -- node[above, etiq]{posición contada (VD1124/28/32), E/S} (0,-3.6);
+\draw[flecha] (8,-4.4) -- node[above, etiq]{estado 0 = reposo, error 0} (0,-4.4);
+\node[etiq, left, text width=3cm, align=right] at (-0.2,-4.4) {la PC sabe que terminó};
+\node[etiq, text width=12cm] at (4,-5.2) {Si el latido no cambia en 2~s durante un movimiento, el PLC lo detiene y marca \emph{watchdog}.};
+\end{tikzpicture}
+\caption{Protocolo del buzón entre la app y el programa \codigo{brazo\_gemelo}.}
+\end{figure}
+
+\subsection{Un solo tren de pulsos para X e Y}
+La planta tiene una limitación de cableado: el PLC solo tiene dos salidas de pulsos rápidos (Q0.0 y Q0.1). Q0.0 va a la base y \textbf{Q0.1 va a los dos carros}, repartida por dos relés: K1 (Q0.5) conecta el carro X y K2 (Q0.6) el carro Y. Cada carro tiene su propia salida de dirección.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\node[cajan] (q1) at (0,0) {Q0.1\\pulsos};
+\node[caja, font=\scriptsize] (k1) at (3,0.8) {relé K1 (Q0.5)};
+\node[caja, font=\scriptsize] (k2) at (3,-0.8) {relé K2 (Q0.6)};
+\node[cajab, font=\scriptsize] (dx) at (6.2,0.8) {driver X\\DIR Q0.3};
+\node[cajab, font=\scriptsize] (dy) at (6.2,-0.8) {driver Y\\DIR Q0.4};
+\draw[flecha] (q1) -- (k1); \draw[flecha] (q1) -- (k2);
+\draw[flecha] (k1) -- (dx); \draw[flecha] (k2) -- (dy);
+% gráfica
+\begin{scope}[shift={(9,-1.3)}]
+\draw[->] (0,0) -- (5.2,0) node[right, etiq]{t};
+\draw[->] (0,0) -- (0,2.8) node[above, etiq]{mm};
+\draw[very thick, naranja] (0,0) -- (3,1.5) -- (5,2.5) node[right, etiq]{X: 100};
+\draw[very thick, azulg] (0,0) -- (3,1.5) -- (5,1.5) node[right, etiq]{Y: 60};
+\draw[dashed] (3,0) -- (3,2.6);
+\node[etiq] at (1.5,-0.3) {K1 + K2};
+\node[etiq] at (4,-0.3) {solo K1};
+\end{scope}
+\end{tikzpicture}
+\caption{Q0.1 compartido: X e Y avanzan juntos a la misma velocidad durante el tramo común; luego se abre el relé del eje que llegó y el otro sigue solo.}
+\end{figure}
+
+El programa reparte cada movimiento en un \textbf{tramo común} (los dos relés cerrados) y un \textbf{resto} (solo el eje más largo). La base va por su propio tren y se mueve a la vez.
+
+% =====================================================================
+\section{Los modos de mando}
+
+La página ofrece tres formas de mandar el brazo. Las tres terminan en lo mismo: un destino para los tres ejes ($\theta$, carro X, carro Y) que se convierte en pulsos. Lo que cambia es \emph{cómo se elige ese destino}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=5mm and 8mm]
+\node[cajab, text width=2.6cm] (art) {\textbf{Articular}\\$\theta$, X, Y directos};
+\node[cajab, text width=2.6cm, below=of art] (car) {\textbf{Cartesiano}\\X, Y, Z de la garra};
+\node[cajab, text width=2.6cm, below=of car] (seq) {\textbf{Secuencias}\\lista de puntos};
+\node[caja, text width=2.4cm, right=of car] (ik) {cinemática\\inversa};
+\node[cajan, text width=2.6cm, right=of ik] (q) {destino articular\\$q = (\theta, s_X, s_Y)$};
+\node[caja, text width=2.4cm, right=of q] (pul) {pulsos por eje\\$n = q \cdot k$};
+\node[caja, text width=2.2cm, right=of pul, yshift=8mm] (sim) {simulación\\(visor)};
+\node[caja, text width=2.2cm, right=of pul, yshift=-8mm] (plc) {PLC\\(brazo real)};
+\draw[flecha] (art.east) -- ++(4mm,0) |- (q.north west);
+\draw[flecha] (car) -- (ik); \draw[flecha] (ik) -- (q);
+\draw[flecha] (seq.east) -- ++(4mm,0) |- (q.south west);
+\draw[flecha] (q) -- (pul); \draw[flecha] (pul) -- (sim); \draw[flecha] (pul) -- (plc);
+\end{tikzpicture}
+\caption{Los tres modos convergen en un destino articular.}
+\end{figure}
+
+La conversión a pulsos usa la transmisión: en X e Y, $k = 200$ pulsos/mm (1000 pulsos por vuelta / husillo de 5 mm); en la base, $k = 190{,}3$ pulsos/grado (valor calibrado en la planta).
+
+% ---------------------------------------------------------------------
+\subsection{Modo articular}
+
+\paragraph{Propósito.} Mover cada eje por separado, como con los pulsadores del panel pero escribiendo el valor exacto. Es el modo más directo y el más seguro para probar la máquina: se sabe exactamente qué motor se mueve y cuánto.
+
+\paragraph{Cómo funciona.}
+\begin{enumerate}
+\item El usuario fija $\theta$ (grados), $s_X$ y $s_Y$ (mm) con los deslizadores o los números.
+\item La página limita cada valor a su recorrido: $0 \le s_X, s_Y \le 170$~mm y $-175^\circ \le \theta \le 175^\circ$.
+\item Con la \textbf{cinemática directa} calcula dónde quedará la garra (para mostrar X, Y, Z y dibujar el brazo).
+\item \emph{En simulación:} el visor interpola de la pose actual a la nueva con un perfil suave. Si está marcada la casilla del PTO compartido, imita el tramo común de X e Y.
+\item \emph{Con el brazo real:} la página envía \codigo{mover} con el destino; la app calcula los pulsos \emph{relativos} a la posición contada por el PLC ($\Delta n = n_{destino} - n_{actual}$) y los escribe en el buzón. La página espera a que el PLC informe \emph{reposo}.
+\end{enumerate}
+
+\paragraph{A partir de qué se logró.} De la relación lineal entre pulsos y desplazamiento de cada eje (paso del husillo, micropasos del driver, reducción de la base) y del programa nuevo del PLC, que cuenta los pulsos. La cinemática directa sale de la geometría del mecanismo:
+\[
+r = u_A + d_g + L_9\cos\varphi, \qquad z = h_A + L_9 \sin\varphi - h_g, \qquad X = r\cos\theta,\; Y = r\sin\theta,\; Z = z
+\]
+donde $u_A$ depende de $s_X$ (el carro X desplaza todo el brazo) y el ángulo $\varphi$ del brazo depende de $s_Y$ a través del lazo de bielas A--B--C (se resuelve como la intersección de dos circunferencias).
+
+\limite{\begin{itemize}[leftmargin=5mm, topsep=0pt]
+\item X e Y no pueden moverse a velocidades distintas: comparten Q0.1, así que en diagonal la garra no sigue una recta.
+\item No hay rampas de aceleración: por encima de 4--5~kHz los motores pueden perder pasos, y el PLC no lo detectaría (lazo abierto).
+\item El sentido de giro de la base es un SUPUESTO por confirmar.
+\end{itemize}}
+
+% ---------------------------------------------------------------------
+\subsection{Modo cartesiano}
+
+\paragraph{Propósito.} Pedir \emph{dónde} debe estar la garra (X, Y, Z en mm) sin pensar en los carros. Es lo que se necesita para tareas reales: tomar una pieza en un punto y dejarla en otro.
+
+\paragraph{Cómo funciona: la cinemática inversa.}
+Dado el punto $(X, Y, Z)$, la página calcula los carros en cuatro pasos:
+\begin{enumerate}
+\item \textbf{Giro de la base}: $\theta = \operatorname{atan2}(Y, X)$, y la distancia horizontal al eje $r = \sqrt{X^2 + Y^2}$.
+\item \textbf{Ángulo del brazo} a partir de la altura: $\sin\varphi = \dfrac{Z + h_g - h_A}{L_9}$. Si el cociente pasa de 1, la altura es inalcanzable.
+\item \textbf{Carro X} a partir del alcance: $s_X = r - d_g - L_9\cos\varphi - u_0$.
+\item \textbf{Carro Y}: con $\psi = \varphi + \beta$ se conoce la posición del pasador B; el bloque del carro Y debe estar donde la biela de longitud $L_{12}$ une B con C. Es la intersección de una circunferencia con una recta, y se elige la solución que corresponde al montaje real.
+\end{enumerate}
+Luego se comprueba que los carros queden dentro de su recorrido y que la pinza no choque con la mesa.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1.05cm,y=1.05cm]
+% esquema del mecanismo
+\coordinate (A) at (0,0); \coordinate (B) at (1.6,-1.0); \coordinate (C) at (4.3,-0.2);
+\coordinate (E) at (6.2,2.3); \coordinate (T) at (7.6,2.0);
+\draw[fill=gris] (-2.4,-2.6) rectangle (3.6,-1.9); \node[font=\scriptsize] at (0.6,-2.25) {carro X: desplaza todo el bastidor};
+\draw[fill=naranja!20] (3.0,-1.0) rectangle (5.3,0.3); \node[font=\scriptsize, align=center] at (4.15,-1.4) {bloque del carro Y};
+\draw[ultra thick, grisos] (A) -- (B) node[midway, left, font=\scriptsize]{$a$};
+\draw[ultra thick, naranja] (B) -- (C) node[midway, below, font=\scriptsize]{$L_{12}$};
+\draw[ultra thick, black] (A) -- (E) node[midway, above left, font=\scriptsize]{brazo $L_9$};
+\draw[ultra thick, black] (E) -- (T);
+\fill[naranja] (T) circle (0.12); \node[font=\scriptsize, right] at (T) {garra (TCP)};
+\foreach \p in {A,B,C,E} {\fill[white] (\p) circle (0.11); \draw (\p) circle (0.11); \node[font=\scriptsize, above] at ($(\p)+(0,0.12)$) {\p};}
+\draw[->] (A) ++(1.2,0) arc (0:35:1.2); \node[font=\scriptsize] at (1.6,0.45) {$\varphi$};
+\draw[<->] (3.0,0.7) -- (5.3,0.7) node[midway, above, font=\scriptsize]{$s_Y$};
+\draw[<->] (-2.4,-2.9) -- (3.6,-2.9) node[midway, below, font=\scriptsize]{$s_X$};
+\end{tikzpicture}
+\caption{Esquema del mecanismo (no a escala). El carro Y empuja el bloque; la biela $L_{12}$ hace girar el balancín A--B, que es parte del brazo; el ángulo $\varphi$ del brazo fija la altura de la garra.}
+\end{figure}
+
+\paragraph{La trayectoria.}
+En simulación, la página no salta al destino: divide la recta entre la garra y el objetivo en unos 20 o más puntos, con un perfil suave $w(t) = t^2(3-2t)$ (arranca y frena despacio), y calcula la inversa en cada uno. Si algún punto intermedio no es alcanzable, renuncia a la recta e interpola directamente los ejes. Con el brazo real se envía solo el destino final.
+
+\paragraph{El espacio de trabajo.}
+Como $s_X$ y $s_Y$ van de 0 a 170~mm, la garra solo puede estar dentro de la imagen de ese cuadrado, que en el plano vertical $(r, z)$ es una \textbf{franja curva}:
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=0.019cm,y=0.019cm]
+\draw[->] (380,0) -- (720,0) node[right, etiq]{$r$ [mm]};
+\draw[->] (380,0) -- (380,480) node[above, etiq]{$z$ [mm]};
+\foreach \r in {400,500,600,700} {\draw (\r,0) -- (\r,-6) node[below, font=\tiny]{\r};}
+\foreach \z in {100,200,300,400} {\draw (380,\z) -- (374,\z) node[left, font=\tiny]{\z};}
+\fill[naranja!15, draw=naranja!80!black, thick] plot coordinates {(460,54) (481,54) (502,54) (523,54) (545,54) (566,54) (587,54) (608,54) (630,54) (641,74) (651,93) (659,113) (665,132) (670,152) (674,171) (676,190) (677,209) (677,227) (676,245) (673,262) (670,279) (667,295) (662,310) (656,325) (650,340) (644,353) (636,367) (629,379) (620,392) (611,403) (602,415) (592,425) (581,436) (560,436) (539,436) (518,436) (496,436) (475,436) (454,436) (433,436) (411,436) (422,425) (432,415) (441,403) (450,392) (459,379) (466,367) (474,353) (480,340) (486,325) (492,310) (497,295) (500,279) (503,262) (506,245) (507,227) (507,209) (506,190) (504,171) (500,152) (495,132) (489,113) (481,93) (471,74) (460,54)} -- cycle;
+\fill[black] (460,54) circle (5); \node[font=\scriptsize, anchor=north east] at (458,50) {homing ($s_X = s_Y = 0$)};
+\draw[rojo, thick, ->] (460,58) -- (460,170); \node[font=\scriptsize, rojo, anchor=east, align=right] at (440,150) {subir en vertical:\\fuera de la franja};
+\node[font=\scriptsize] at (548,25) {$s_Y = 0$ (abajo)};
+\node[font=\scriptsize] at (500,455) {$s_Y = 170$};
+\node[font=\scriptsize, anchor=west] at (680,250) {$s_X = 170$};
+\node[font=\scriptsize, anchor=west, align=left] at (515,240) {zona\\alcanzable};
+\fill[black] (585,279) circle (4); \node[font=\scriptsize, anchor=west] at (590,285) {centro (85, 85)};
+\end{tikzpicture}
+\caption{Corte vertical del espacio de trabajo (calculado con el modelo). Desde el homing, subir o bajar en vertical sale de la franja.}
+\end{figure}
+
+Por eso muchos puntos escritos a mano resultan «inalcanzables», sobre todo cerca del homing. La página ahora busca y propone el \textbf{punto alcanzable más cercano}: recorre los valores posibles de $s_X$ y $s_Y$ (con el $\theta$ del objetivo), calcula la directa de cada uno y se queda con el que tiene menor distancia al objetivo.
+
+\paragraph{A partir de qué se logró.} Del modelo geométrico del mecanismo (levantamiento de medidas y fotos), resolviendo las ecuaciones de lazo cerrado de las bielas. El \textbf{jacobiano} se calculó también para detectar posturas singulares, donde un movimiento pequeño de un carro casi no mueve la garra.
+
+\limite{\begin{itemize}[leftmargin=5mm, topsep=0pt]
+\item Con el brazo real la trayectoria \textbf{no es recta}: el PLC recibe solo el destino y, por el tren de pulsos compartido, mueve X e Y a la misma velocidad.
+\item El espacio de trabajo es una franja estrecha: muchos puntos no son alcanzables y conviene moverse de a poco.
+\item La exactitud depende de las cotas: varias son estimadas o SUPUESTOS (por ejemplo, la posición de algunos pasadores). Un error de pocos milímetros en una biela desplaza la garra.
+\item El sistema es de lazo abierto: si un motor pierde pasos, el gemelo no lo sabe hasta el siguiente homing.
+\end{itemize}}
+
+% ---------------------------------------------------------------------
+\subsection{Modo secuencias}
+
+\paragraph{Propósito.} Enseñar al brazo una tarea por puntos (por ejemplo: ir sobre la pieza, bajar, cerrar la garra, subir, llevarla, abrir) y repetirla. Es la versión moderna de las rutinas fijas del programa original, pero sin reprogramar el PLC.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=5mm and 9mm]
+\node[cajab, text width=2.6cm] (mover) {mover el brazo (articular o cartesiano)};
+\node[cajan, text width=2.2cm, right=of mover] (grabar) {\emph{Grabar punto}\\$(\theta, s_X, s_Y,$ garra$)$};
+\node[caja, text width=2.4cm, right=of grabar] (lista) {lista de puntos\\(guardada en el navegador)};
+\node[caja, text width=2.4cm, right=of lista] (rep) {\emph{Reproducir}};
+\node[cajab, text width=2.6cm, below=8mm of rep] (paso) {para cada punto: mover, esperar \emph{reposo}, garra, pausa 0,35~s};
+\node[cajab, text width=2.6cm, below=8mm of lista] (exp) {exportar JSON o CSV de pulsos};
+\draw[flecha] (mover) -- (grabar); \draw[flecha] (grabar) -- (lista); \draw[flecha] (lista) -- (rep);
+\draw[flecha] (rep) -- (paso); \draw[flecha] (lista) -- (exp);
+\draw[flecha] (grabar.north) -- ++(0,5mm) -| node[pos=0.25, above, etiq]{se repite} (mover.north);
+\draw[flecha] (paso.west) -- ++(-4mm,0) |- ([yshift=-2mm]rep.west);
+\end{tikzpicture}
+\caption{Grabar y reproducir una secuencia.}
+\end{figure}
+
+\paragraph{Cómo funciona.}
+\begin{itemize}
+\item \textbf{Grabar} guarda la pose actual de los ejes y el estado de la garra. La lista se conserva en el almacenamiento del navegador.
+\item \textbf{Reproducir} recorre la lista: manda cada punto como un movimiento articular, \emph{espera a que el PLC informe que terminó} (consultando el estado), acciona la garra si cambió y sigue con el siguiente. \emph{Detener} corta la secuencia.
+\item \textbf{Exportar CSV de pulsos} genera una tabla con los pulsos absolutos y relativos de cada eje, las direcciones y el reparto del tren compartido (tramo común con K1 y K2, y tramo con un solo relé). Sirve para programar la secuencia directamente en el PLC, sin PC.
+\end{itemize}
+
+\paragraph{A partir de qué se logró.} Del modo articular (cada punto es un destino articular), de la conversión a pulsos de la cinemática y del estado \emph{reposo/moviendo} que informa el programa nuevo del PLC, que permite saber cuándo terminó cada punto.
+
+\limite{\begin{itemize}[leftmargin=5mm, topsep=0pt]
+\item Los puntos se guardan en \emph{ese} navegador: otro equipo no los ve, salvo que se exporten y se importen.
+\item Entre puntos el brazo se mueve en articular: no hay control de la trayectoria intermedia ni velocidad por punto.
+\item La secuencia la conduce la página: si se cierra la página o se pierde la red, la secuencia se detiene (el watchdog del PLC frena el movimiento en curso).
+\item No hay condiciones (por ejemplo, «esperar un sensor»): es una lista fija.
+\end{itemize}}
+
+% =====================================================================
+\section{Seguridad por capas}
+
+Ninguna protección se apoya en una sola pieza. Si una capa falla, la siguiente sigue actuando.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\foreach \i/\t/\c in {0/{seta de emergencia y finales de carrera (cableado)}/rojo!25,
+                      1/{PLC: límites de recorrido, finales, watchdog de 2 s}/naranja!25,
+                      2/{app: solo escribe en zonas fijas de la memoria V}/naranja!12,
+                      3/{app: mando único, selector en automático, homing previo}/gris,
+                      4/{puerta de red: HTTPS, usuario, rol, origen de la orden}/white} {
+  \node[draw, fill=\c, minimum width=13cm-\i*1.2cm, minimum height=8mm, font=\small] at (0,\i*0.9) {\t};
+}
+\node[font=\scriptsize, align=center] at (0,5.1) {más externa};
+\draw[->] (7.2,4.0) -- (7.2,0) node[midway, right, etiq, text width=1.8cm]{más cerca\\de la máquina};
+\end{tikzpicture}
+\caption{Capas de seguridad, de la más cercana al brazo a la más externa.}
+\end{figure}
+
+% =====================================================================
+\section{Limitaciones generales y siguientes pasos}
+
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{5.2cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Limitación} & \textbf{Cómo se podría resolver}\\
+\midrule
+Lazo abierto: los pasos perdidos no se detectan & Encoders en los ejes y comparación continua entre posición pedida y medida\\
+Sin rampas de aceleración & Perfiles de velocidad en el PLC (PTO con varios segmentos)\\
+X e Y comparten el tren de pulsos & Una salida de pulsos por eje (otro PLC o un módulo de posicionamiento)\\
+Cotas estimadas o SUPUESTAS & Medirlas en la planta y ajustar \codigo{cinematica.js}\\
+Acceso solo en la red local & VPN gratuita (por ejemplo Tailscale) o túnel\\
+Comunicación a 9,6~kbit/s & Volver a 19,2~kbit/s en el bloque de sistema\\
+Dependencia del cable USB-PPI & Probar un convertidor USB--RS485 genérico\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\end{document}
