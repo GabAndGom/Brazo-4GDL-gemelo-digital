@@ -920,6 +920,13 @@ function renderPlanta() {
   for (const id of ['#m3d-homing', '#m3d-detener']) $(id).disabled = !CONTROL_REAL;
   for (const b of document.querySelectorAll('#m3d-planta-ordenes [data-orden]')) b.hidden = !ordenes.includes(b.dataset.orden);
   bloquearMover(!ordenes.includes('mover'));
+  const aviso = $('#m3d-aviso-mover');
+  if (aviso) {
+    if (!aviso.dataset.programa) aviso.dataset.programa = aviso.textContent;
+    aviso.textContent = CONTROL_REAL ? aviso.dataset.programa
+      : (window.GEMELO_USUARIO ? 'Su usuario es observador: ve el brazo real en vivo pero no puede moverlo.'
+        : 'Esta página solo muestra el brazo real. Para probar movimientos vuelva al modo Simulación en la pestaña Conexión.');
+  }
   $('#m3d-garra').disabled = !ordenes.includes('garra');
   $('#m3d-planta-vel').hidden = !ordenes.includes('velocidad');
 }
