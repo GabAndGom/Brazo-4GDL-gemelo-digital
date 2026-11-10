@@ -129,11 +129,13 @@ def ip_local():
 def _activar_red():
     if APLICACION['red']:
         return
-    srv = ThreadingHTTPServer(('0.0.0.0', Config.puerto_red), Manejador)
+    srv = Servidor(('0.0.0.0', Config.puerto_red), Manejador)
     srv.es_red = True
     srv.tls = Config.cifrado
     if srv.tls:
-        srv.socket = certificado().wrap_socket(srv.socket, server_side=True)
+        # El saludo TLS se hace en el hilo de cada conexión (Manejador.setup), no al aceptarla:
+        # si no, una conexión que no envía nada (precarga del navegador) bloquea a todas las demás
+        srv.socket = certificado().wrap_socket(srv.socket, server_side=True, do_handshake_on_connect=False)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     APLICACION['red'] = srv
     APLICACION['url_red'] = f"{'https' if srv.tls else 'http'}://{ip_local()}:{Config.puerto_red}/"
@@ -236,9 +238,27 @@ def administrar_usuarios(d):
 
 
 # ====================================================================== servidor
+class Servidor(ThreadingHTTPServer):
+    daemon_threads = True
+
+    def handle_error(self, request, client_address):
+        # conexiones cortadas, certificados rechazados por el navegador o clientes que no hablan
+        if isinstance(sys.exc_info()[1], (ssl.SSLError, ConnectionError, TimeoutError, socket.timeout, OSError)):
+            return
+        super().handle_error(request, client_address)
+
+
 class Manejador(SimpleHTTPRequestHandler):
+    timeout = 30                        # una conexión inactiva se cierra sola
+
     def __init__(self, *a, **k):
         super().__init__(*a, directory=UI, **k)
+
+    def setup(self):
+        if isinstance(self.request, ssl.SSLSocket):
+            self.request.settimeout(10)
+            self.request.do_handshake()
+        super().setup()
 
     def log_message(self, formato, *args):
         if self.path.startswith('/api/') and self.command == 'GET':
@@ -499,7 +519,7 @@ def main():
     if a.clave_local and not ACCESO.hay_usuarios():
         raise SystemExit('Con --clave-local hace falta al menos un usuario operador (usuarios.py agregar ...).')
 
-    principal = ThreadingHTTPServer(('127.0.0.1', a.http), Manejador)
+    principal = Servidor(('127.0.0.1', a.http), Manejador)
     inicio = 'menu'
     if modo != 'menu':
         try:
