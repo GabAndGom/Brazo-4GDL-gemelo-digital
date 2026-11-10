@@ -1,0 +1,17 @@
+{
+  "id": "/",
+  "name": "Brazo 4 GDL · Laboratorio de Control UMSA",
+  "short_name": "Brazo 4 GDL",
+  "description": "Documentación, planos, programas y gemelo digital del brazo XK-JS1-1.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0e1013",
+  "theme_color": "#1b1916",
+  "icons": [
+    { "src": "web/img/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "web/img/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "web/img/icono-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

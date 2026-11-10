@@ -1,41 +1,71 @@
-/* Ventana de la app del gemelo digital: misma estética que la página, a pantalla completa */
-.app-barra {
-  position: sticky; top: 0; z-index: 5;
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 18px; background: var(--tinta); color: var(--tinta-texto);
-  border-bottom: 3px solid var(--acento);
+/* Ventana de la app del gemelo digital.
+ * La sección "Modelo 3D" usa los estilos de la página (estilos.css); aquí se reasignan sus variables
+ * al sistema de diseño de la app (sistema.css) y se ajustan los componentes a sus reglas:
+ * controles de 40-44 px, radios de 8/12 px, espaciado de 8 px, estados con texto y color. */
+html.app:root {
+  --fondo: var(--c-fondo); --superficie: var(--c-superficie); --superficie-2: var(--c-superficie-2);
+  --borde: var(--c-borde); --borde-fuerte: var(--c-borde-fuerte); --texto: var(--c-texto); --texto-suave: var(--c-texto-2);
+  --acento: var(--c-acento); --acento-fuerte: var(--c-acento-hover); --acento-texto: var(--c-acento-texto);
+  --acento-suave: var(--c-acento-suave); --enlace: var(--c-acento); --exito: var(--c-exito);
+  --cuadricula: transparent; --radio: var(--r-control); --fuente: var(--f-texto); --mono: var(--f-mono);
+  --sombra: var(--sombra-1); --sombra-alta: var(--sombra-2);
+  font-size: var(--t-m);
 }
-.app-barra strong { display: block; color: #fff; font-size: 15px; }
-.app-barra small { font-size: 12px; }
-.app-conexion {
-  margin-left: auto; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-family: var(--mono);
-  border: 1px solid currentColor; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55vw;
-}
-.app-conexion.ok { color: #6fd39c; }
-.app-menu {
-  margin-left: auto; padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; white-space: nowrap;
-  color: #fff; background: var(--acento); text-decoration: none;
-}
-.app-menu:hover { filter: brightness(1.12); }
-.app-menu:not([hidden]) + .app-conexion { margin-left: 0; }
-.app-usuario { font-size: 12px; white-space: nowrap; }
-.app-usuario a { color: #fff; text-decoration: underline; margin-left: 4px; }
-@media (max-width: 640px) {
-  .app-barra { flex-wrap: wrap; row-gap: 6px; padding: 8px 12px; }
-  .app-barra small { display: none; }
-  .app-barra strong { font-size: 13px; }
-  .app-usuario { margin-left: auto; }
-  .app-conexion { order: 3; flex-basis: 100%; max-width: 100%; margin-left: 0; text-align: center; }
-  .app-principal { padding: 0 10px 20px; }
-}
-.app-conexion.mal { color: #ff9a8f; }
 
-.app-principal { padding: 0 18px 24px; max-width: 1600px; margin: 0 auto; }
-.app-principal .seccion { padding-top: 14px; }
-.app-principal .encabezado { display: none; }          /* el título ya está en la barra */
-.app-principal .m3d { grid-template-columns: minmax(0, 1.7fr) minmax(340px, 1fr); }
-.app-principal .m3d-lienzo { height: calc(100vh - 190px); min-height: 420px; }
-@media (max-width: 900px) {
-  .app-principal .m3d { grid-template-columns: 1fr; }
-  .app-principal .m3d-lienzo { height: 60vh; }
+/* barra */
+.app .sd-derecha .sd-pastilla { max-width: 42vw; overflow: hidden; text-overflow: ellipsis; }
+.app-boton-barra { color: var(--c-barra-texto) !important; }
+.app-boton-barra:hover { background: rgba(255, 255, 255, .08) !important; }
+.app-usuario { display: inline-flex; align-items: center; gap: var(--e-1); font-size: var(--t-s); color: var(--c-barra-texto-2); white-space: nowrap; }
+@media (max-width: 760px) {
+  .app .sd-barra { flex-wrap: wrap; padding: var(--e-2) var(--e-4); }
+  .app .sd-marca small { display: none; }
+  .app .sd-derecha { width: 100%; justify-content: flex-start; }
+  .app .sd-derecha .sd-pastilla { max-width: 100%; }
 }
+
+/* disposición */
+.app-principal { padding: var(--e-5); max-width: 1680px; margin: 0 auto; }
+.app-principal .seccion { padding-top: 0; }
+.app-principal .encabezado { display: none; }          /* el título ya está en la barra */
+.app-principal .m3d { grid-template-columns: minmax(0, 1.7fr) minmax(360px, 1fr); gap: var(--e-5); }
+.app-principal .m3d-lienzo { height: calc(100vh - 210px); min-height: 440px; border-radius: var(--r-tarjeta) var(--r-tarjeta) 0 0; }
+@media (max-width: 960px) {
+  .app-principal { padding: var(--e-4); }
+  .app-principal .m3d { grid-template-columns: 1fr; }
+  .app-principal .m3d-lienzo { height: 58vh; min-height: 320px; }
+}
+
+/* superficies */
+.app .m3d-visor, .app .m3d-panel, .app .m3d-tarjeta { border-radius: var(--r-tarjeta); border-color: var(--c-borde); box-shadow: var(--sombra-1); }
+.app .m3d-panel { padding: var(--e-5); }
+.app .m3d-telemetria { gap: var(--e-4); margin-top: var(--e-5); }
+.app .m3d-tarjeta { padding: var(--e-4); }
+
+/* pestañas: control segmentado en una sola línea */
+.app .pestanas { display: flex; flex-wrap: nowrap; background: var(--c-superficie-2); border: 0; border-radius: 10px; padding: var(--e-1); gap: var(--e-1); }
+.app .pestana { flex: 1 1 0; min-width: 0; min-height: 40px; border-radius: var(--r-control); padding: 0 var(--e-2); font-weight: 600; font-size: var(--t-s); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app .pestana[aria-selected="true"] { box-shadow: var(--sombra-1); color: var(--c-texto); }
+
+/* botones y campos */
+.app .boton { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: var(--e-2);
+  padding: 0 var(--e-4); border-radius: var(--r-control); font-weight: 600; font-size: var(--t-s); }
+.app .boton-chico { min-height: 36px; padding: 0 var(--e-3); font-size: var(--t-xs); }
+.app .boton:focus-visible, .app .pestana:focus-visible, .app input:focus-visible, .app select:focus-visible { outline: none; box-shadow: var(--foco); }
+.app .boton.boton-peligro { color: var(--c-peligro); border-color: color-mix(in srgb, var(--c-peligro) 45%, transparent); }
+.app .boton.boton-peligro:hover { background: var(--c-peligro); color: #fff; }
+.app input[type="number"], .app input[type="text"], .app select {
+  min-height: 40px; border-radius: var(--r-control); border: 1px solid var(--c-borde-fuerte);
+  background: var(--c-superficie); color: var(--c-texto); font: 400 var(--t-s) var(--f-mono); padding: 0 var(--e-3);
+}
+.app input[type="range"] { accent-color: var(--c-acento); min-height: 28px; }
+.app input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--c-acento); }
+.app .m3d-ayuda { font-size: var(--t-s); color: var(--c-texto-2); line-height: 1.5; }
+
+/* indicadores */
+.app .m3d-chips { gap: var(--e-2); padding: var(--e-3) var(--e-4) var(--e-4); }
+.app .m3d-chip { font: 600 var(--t-xs)/1 var(--f-texto); padding: 7px var(--e-3); border-radius: var(--r-pastilla); border: 0;
+  background: var(--c-superficie-2); color: var(--c-texto-2); }
+.app .m3d-chip.ok { background: var(--c-exito-suave); color: var(--c-exito); }
+.app .m3d-chip.alerta { background: var(--c-aviso-suave); color: var(--c-aviso); }
+.app .m3d-mensaje.error { color: var(--c-peligro); }

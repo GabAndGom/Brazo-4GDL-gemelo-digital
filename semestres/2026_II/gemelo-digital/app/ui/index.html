@@ -1,11 +1,15 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" class="app">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gemelo digital · Brazo XK-JS1-1</title>
+  <meta name="theme-color" content="#111318">
   <link rel="icon" href="icono.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icono-192.png">
   <link rel="stylesheet" href="css/estilos.css">
+  <link rel="stylesheet" href="css/sistema.css">
   <link rel="stylesheet" href="css/app.css">
   <!-- three.js 0.160.0 incluido en lib/three: la app funciona sin internet -->
   <script type="importmap">
@@ -13,16 +17,19 @@
   </script>
   <script>window.RUTA_GLB_BRAZO = 'modelo/brazo_xk-js1-1.glb'; window.GEMELO_CONTROL = true;</script>
 </head>
-<body>
-  <header class="app-barra">
-    <img src="icono.svg" alt="" width="28" height="28">
-    <div>
-      <strong>Gemelo digital · Brazo XK-JS1-1</strong>
-      <small>PLC S7-200 por USB-PPI · UMSA II-2026</small>
-    </div>
-    <a class="app-menu" id="app-menu" href="menu" hidden>☰ Menú</a>
-    <span class="app-conexion" id="app-conexion">Conectando…</span>
-    <span class="app-usuario" id="app-usuario" hidden></span>
+<body class="sd">
+  <header class="sd-barra">
+    <a class="sd-marca" href="./"><img src="icono.svg" alt=""><span><strong>Gemelo digital · Brazo XK-JS1-1</strong><small>PLC S7-200 · UMSA · II/2026</small></span></a>
+    <span class="sd-derecha">
+      <span class="sd-pastilla" id="app-conexion">Conectando…</span>
+      <span class="sd-pastilla" id="app-mando" hidden></span>
+      <button class="sd-boton chico fantasma app-boton-barra" id="instalar" hidden>Instalar app</button>
+      <span class="app-usuario" id="app-usuario" hidden></span>
+      <a class="sd-boton chico primario" id="app-menu" href="menu" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <span id="app-menu-texto">Menú</span>
+      </a>
+    </span>
   </header>
   <main id="app" class="app-principal">
     <section id="modelo3d" class="seccion">
@@ -92,7 +99,7 @@
               <input type="range" id="m3d-velocidad" min="10" max="100" step="5" value="40">
               <output id="m3d-velocidad-txt" for="m3d-velocidad">40 mm/s</output>
             </div>
-            <label class="m3d-check"><input type="checkbox" id="m3d-pto"> Simular el PTO compartido (Q0.1 con los relés K1 y K2): X e Y avanzan juntos a la misma velocidad y el de menor recorrido se detiene antes</label>
+            <label class="m3d-check"><input type="checkbox" id="m3d-pto" checked> Imitar el tren de pulsos compartido de la planta (relés K1 y K2): X e Y avanzan juntos y el de menor recorrido se detiene antes</label>
           </div>
 
           <div class="m3d-pagina" id="m3d-cartesiano" role="tabpanel" aria-labelledby="tab-cartesiano" hidden>
@@ -175,37 +182,42 @@
   <script src="js/conexion-plc.js"></script>
   <script type="module" src="js/modelo3d.js"></script>
   <script>
-    // Estado de la conexión en la barra superior
+    // Barra superior: conexión, mando, usuario, menú e instalación
     (function () {
-      const el = document.getElementById('app-conexion');
+      const $ = id => document.getElementById(id);
       const yo = window.GEMELO_USUARIO || { usuario: 'local', rol: 'operador', local: true };
-      const us = document.getElementById('app-usuario');
-      const menu = document.getElementById('app-menu');
-      if (yo.menu) { menu.hidden = false; if (yo.modo) menu.textContent = '☰ Menú · ' + yo.modo; }
+      if (yo.menu) { $('app-menu').hidden = false; if (yo.modo) $('app-menu-texto').textContent = 'Menú · ' + yo.modo; }
       if (!yo.local) {
+        const us = $('app-usuario');
         us.hidden = false;
-        us.innerHTML = '';
         us.append(yo.usuario + ' · ' + yo.rol + ' ');
-        const a = document.createElement('a'); a.href = 'salir'; a.textContent = 'Salir'; us.append(a);
+        const a = document.createElement('a'); a.href = 'salir'; a.className = 'sd-boton chico fantasma app-boton-barra'; a.textContent = 'Salir'; us.append(a);
       }
       async function ver() {
+        const con = $('app-conexion'), man = $('app-mando');
         try {
           const r = await fetch('api/estado', { cache: 'no-store' });
           if (r.status === 401) { location.href = 'login'; return; }
           if (r.status === 503 && yo.menu) { location.href = 'menu'; return; }
           const e = await r.json();
-          const mando = !e.mando ? 'sin mando' : e.mando_de === yo.usuario ? 'USTED TIENE EL MANDO' : 'mando: ' + e.mando_de;
-          el.className = 'app-conexion ' + (e.conectado ? 'ok' : 'mal');
-          el.textContent = e.conectado
-            ? 'PLC conectado · ' + e.perfil + ' · ' + mando
-            : 'Sin PLC' + (e.error ? ': ' + e.error : '');
+          con.className = 'sd-pastilla ' + (e.conectado ? 'ok' : 'mal');
+          con.textContent = e.conectado ? 'PLC conectado · ' + e.perfil : 'Sin PLC' + (e.error ? ': ' + e.error : '');
+          con.title = e.error || '';
+          man.hidden = !e.conectado;
+          man.className = 'sd-pastilla ' + (e.mando && e.mando_de === yo.usuario ? 'ok' : e.mando ? 'aviso' : '');
+          man.textContent = !e.mando ? 'Sin mando' : e.mando_de === yo.usuario ? 'Usted tiene el mando' : 'Mando: ' + e.mando_de;
         } catch (err) {
-          el.className = 'app-conexion mal';
-          el.textContent = 'La app no responde';
+          con.className = 'sd-pastilla mal';
+          con.textContent = 'La app no responde';
+          man.hidden = true;
         }
         setTimeout(ver, 1000);
       }
       ver();
+      let aviso = null;
+      window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); aviso = e; $('instalar').hidden = false; });
+      $('instalar').addEventListener('click', async () => { if (!aviso) return; aviso.prompt(); await aviso.userChoice; aviso = null; $('instalar').hidden = true; });
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
     })();
   </script>
 </body>

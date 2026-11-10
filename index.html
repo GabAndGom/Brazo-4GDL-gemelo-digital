@@ -6,6 +6,9 @@
   <title>Brazo 4 GDL · Laboratorio de Control UMSA</title>
   <meta name="description" content="Documentación del brazo robótico didáctico XK-JS1-1 de 4 grados de libertad: planos, programas de PLC, informes y datasheets.">
   <link rel="icon" href="web/img/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="web/img/icono-192.png">
+  <meta name="theme-color" content="#1b1916">
   <script>
     try { var t = localStorage.getItem('tema'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
   </script>
@@ -166,7 +169,7 @@
               <input type="range" id="m3d-velocidad" min="10" max="100" step="5" value="40">
               <output id="m3d-velocidad-txt" for="m3d-velocidad">40 mm/s</output>
             </div>
-            <label class="m3d-check"><input type="checkbox" id="m3d-pto"> Simular el PTO compartido (Q0.1 con los relés K1 y K2): X e Y avanzan juntos a la misma velocidad y el de menor recorrido se detiene antes</label>
+            <label class="m3d-check"><input type="checkbox" id="m3d-pto" checked> Imitar el tren de pulsos compartido de la planta (relés K1 y K2): X e Y avanzan juntos y el de menor recorrido se detiene antes</label>
           </div>
 
           <div class="m3d-pagina" id="m3d-cartesiano" role="tabpanel" aria-labelledby="tab-cartesiano" hidden>
@@ -355,6 +358,10 @@
         <p>ETN-902 Sistemas de Control II · ETN-1034 Aplicación de Técnicas de Control · ETN-1000 Bases de Datos</p>
       </div>
       <div class="pie-meta" id="pie-meta"></div>
+      <div class="pie-qr">
+        <img src="web/img/qr_pagina.svg" width="112" height="112" alt="Código QR con el enlace de esta página">
+        <span>Escanee para abrir en el celular<br><button type="button" class="boton boton-chico" id="instalar-pagina" hidden>Instalar como app</button></span>
+      </div>
     </div>
   </footer>
 
@@ -373,5 +380,14 @@
   <script src="web/js/cinematica.js"></script>
   <script src="web/js/conexion-plc.js"></script>
   <script type="module" src="web/js/modelo3d.js"></script>
+  <script>
+    // Instalación como aplicación (PWA)
+    (function () {
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+      var aviso = null, b = document.getElementById('instalar-pagina');
+      window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); aviso = e; b.hidden = false; });
+      b.addEventListener('click', function () { if (aviso) { aviso.prompt(); aviso = null; b.hidden = true; } });
+    })();
+  </script>
 </body>
 </html>

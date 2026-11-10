@@ -589,3 +589,8 @@ button, input, select { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
+
+/* QR del pie: enlace de la página para abrirla en el celular */
+.pie-qr { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--texto-suave); }
+.pie-qr img { background: #fff; padding: 4px; border-radius: 6px; border: 1px solid var(--borde); }
+.pie-qr [hidden] { display: none !important; }

@@ -905,6 +905,10 @@ function bloquearMover(si) {
 
 function renderPlanta() {
   $('#m3d-planta').hidden = !planta.activa;
+  // Con el PLC (real o simulado por la app) el tren compartido de X e Y ya lo reproduce el PLC:
+  // la casilla solo tiene sentido en la simulación de la página
+  const pto = $('#m3d-pto');
+  if (pto) pto.closest('label').hidden = planta.activa;
   if (!planta.activa) {
     bloquearMover(false);
     for (const id of ['#m3d-homing', '#m3d-detener']) $(id).disabled = false;

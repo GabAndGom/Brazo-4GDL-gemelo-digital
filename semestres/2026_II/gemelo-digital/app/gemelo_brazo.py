@@ -44,6 +44,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from brazo import APP, UI, Brazo  # noqa: E402
 import acceso  # noqa: E402
 import certificado_tls  # noqa: E402
+import qr  # noqa: E402
 import serie  # noqa: E402
 import ventana  # noqa: E402
 
@@ -52,7 +53,9 @@ ACCESO = acceso.Acceso()
 CLAVE_LOCAL = False                 # --clave-local: pedir contraseña también en esta PC
 COOKIE = 'gemelo_sesion'
 SOLO_OPERADOR = ('/api/mando', '/api/calibrar_base')
-PUBLICOS = ('/login', '/icono.svg')
+PUBLICOS = ('/login', '/icono.svg', '/manifest.webmanifest', '/sw.js', '/icono-192.png', '/icono-512.png',
+            '/icono-maskable.png')
+URL_PAGINA = 'https://brazo-4gdl-gemelo-digital.pages.dev/'
 MODOS = {'simulacion': 'Simulación', 'local': 'Operación local', 'red': 'Operación por red local'}
 REGISTRO = os.path.join(APP, 'registro_gemelo.log')
 NOMBRE_VALIDO = re.compile(r'^[A-Za-z0-9_.\-]{1,32}$')
@@ -70,22 +73,22 @@ CAMBIO = threading.Lock()
 
 PAGINA_LOGIN = """<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>Gemelo digital · Ingreso</title>
-<link rel="icon" href="icono.svg"><style>
-:root{color-scheme:light dark;--acento:#c2620c}
-body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;
-background:#1b1916;color:#eee}
-form{background:#26231f;padding:28px 26px;border-radius:8px;border-top:4px solid var(--acento);width:min(340px,90vw);
-display:grid;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
-h1{font-size:18px;margin:0}small{color:#aaa}label{display:grid;gap:4px;font-size:13px}
-input{font:inherit;padding:9px 10px;border-radius:5px;border:1px solid #555;background:#141210;color:#eee}
-button{font:inherit;padding:10px;border:0;border-radius:5px;background:var(--acento);color:#fff;font-weight:600;cursor:pointer}
-.error{color:#ff9a8f;font-size:13px;min-height:1em}
-</style></head><body><form method="post" action="login">
-<h1>Gemelo digital · Brazo XK-JS1-1</h1><small>Ingrese con su usuario del laboratorio</small>
-<label>Usuario <input name="usuario" autocomplete="username" required autofocus></label>
-<label>Contraseña <input name="clave" type="password" autocomplete="current-password" required></label>
-<div class="error">{error}</div><button>Entrar</button>
-<small>Observador: solo ve el brazo. Operador: lo manda (siempre con alguien en la planta).</small>
+<meta name="theme-color" content="#111318"><link rel="icon" href="icono.svg"><link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/sistema.css"><style>
+body{display:grid;place-items:center;padding:var(--e-4)}
+.ingreso{width:min(400px,100%);display:grid;gap:var(--e-4)}
+.ingreso header{display:flex;align-items:center;gap:var(--e-3)}
+.ingreso header img{width:40px;height:40px}
+.ingreso h1{font-size:var(--t-l);margin:0}
+.error{color:var(--c-peligro);font-size:var(--t-s);min-height:1.3em;margin:0}
+.ayuda{font-size:var(--t-xs);color:var(--c-texto-2);margin:0}
+</style></head><body class="sd"><form method="post" action="login" class="sd-tarjeta ingreso">
+<header><img src="icono.svg" alt=""><div><h1>Gemelo digital</h1><span class="secundario pequeno">Brazo XK-JS1-1 · Laboratorio de Control</span></div></header>
+<label class="sd-campo">Usuario<input name="usuario" autocomplete="username" required autofocus></label>
+<label class="sd-campo">Contraseña<input name="clave" type="password" autocomplete="current-password" required></label>
+<p class="error" role="alert">{error}</p>
+<button class="sd-boton primario">Ingresar</button>
+<p class="ayuda">Observador: ve el brazo en vivo. Operador: además lo manda, siempre con alguien junto a la seta de emergencia.</p>
 </form></body></html>"""
 
 
@@ -195,6 +198,7 @@ def estado_aplicacion():
     usuarios = acceso.cargar()
     return {'modo': APLICACION['modo'], 'nombre_modo': MODOS.get(APLICACION['modo']),
             'red_simulado': APLICACION['red_simulado'], 'url_red': APLICACION['url_red'], 'ip': ip_local(),
+            'url_pagina': URL_PAGINA,
             'puerto_red': Config.puerto_red, 'plc': plc, 'puertos': serie.puertos(), 'sistema': sys.platform,
             'usuarios': [{'nombre': n, 'rol': d['rol']} for n, d in sorted(usuarios.items())],
             'conectados': sorted({u for u, _ in ACCESO.activas()})}
@@ -283,7 +287,7 @@ class Manejador(SimpleHTTPRequestHandler):
         if self.local and self.command in ('GET', 'OPTIONS') and self.path.startswith(('/api/estado', '/api/info')):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Access-Control-Allow-Private-Network', 'true')
-        if self.path.startswith('/api/') or self.path in ('/', '/index.html', '/login', '/menu'):
+        if self.path.startswith(('/api/', '/qr.svg', '/sw.js')) or self.path in ('/', '/index.html', '/login', '/menu'):
             self.send_header('Cache-Control', 'no-store')
         elif self.path.startswith(('/js/', '/css/')):
             self.send_header('Cache-Control', 'no-cache')   # que una versión nueva de la app llegue sin limpiar el navegador
@@ -354,6 +358,19 @@ class Manejador(SimpleHTTPRequestHandler):
                 return self._ir('./' if s else 'login')
             with open(os.path.join(APP, 'menu.html'), encoding='utf-8') as f:
                 return self._html(200, f.read())
+        if ruta == '/qr.svg':
+            if not self._puede_menu():
+                return self._json(403, {'ok': False, 'error': 'solo desde la PC del laboratorio'})
+            cual = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get('d', ['pagina'])[0]
+            texto = APLICACION['url_red'] if cual == 'red' else URL_PAGINA
+            if not texto:
+                return self._json(404, {'ok': False, 'error': 'el acceso por red no está activo'})
+            cuerpo = qr.svg(texto).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'image/svg+xml')
+            self.send_header('Content-Length', str(len(cuerpo)))
+            self.end_headers()
+            return self.wfile.write(cuerpo)
         if ruta == '/api/app':
             if not self._puede_menu():
                 return self._json(403, {'ok': False, 'error': 'solo desde la PC del laboratorio'})

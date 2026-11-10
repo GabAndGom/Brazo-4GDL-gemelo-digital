@@ -30,7 +30,7 @@ jobs:
       - name: Preparar sitio
         run: |
           mkdir -p _site
-          cp -r index.html README.md web global semestres _site/
+          cp -r index.html README.md manifest.webmanifest sw.js web global semestres _site/
           touch _site/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:

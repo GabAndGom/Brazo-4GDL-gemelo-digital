@@ -1,0 +1,152 @@
+/* Sistema de diseño de la app del gemelo digital
+ *
+ * Reglas que sigue (ver manual técnico):
+ *  - Contraste WCAG 2.2 AA: texto >= 4.5:1 y componentes >= 3:1, en tema claro y oscuro.
+ *  - Objetivos táctiles de 44 px (Apple HIG 44 pt, WCAG 2.5.5); nunca menos de 24 px (WCAG 2.5.8).
+ *  - Espaciado en múltiplos de 4/8 px y una escala tipográfica fija.
+ *  - Un solo color de acento para la acción principal; colores de estado con texto o ícono (no solo color).
+ *  - Foco visible en todos los controles; respeta "reducir movimiento".
+ */
+:root {
+  /* color */
+  --c-fondo: #f5f6f8;
+  --c-superficie: #ffffff;
+  --c-superficie-2: #eef0f3;
+  --c-borde: #dde1e7;
+  --c-borde-fuerte: #c3c9d2;
+  --c-texto: #14171c;
+  --c-texto-2: #525b69;
+  --c-acento: #c2410c;
+  --c-acento-hover: #9a3412;
+  --c-acento-texto: #ffffff;
+  --c-acento-suave: #fff1e8;
+  --c-exito: #15803d;
+  --c-exito-suave: #e9f7ee;
+  --c-aviso: #a15c07;
+  --c-aviso-suave: #fdf4e3;
+  --c-peligro: #b91c1c;
+  --c-peligro-suave: #fdecec;
+  --c-barra: #111318;
+  --c-barra-texto: #e8eaee;
+  --c-barra-texto-2: #a2aab8;
+  /* espaciado (4/8) */
+  --e-1: 4px; --e-2: 8px; --e-3: 12px; --e-4: 16px; --e-5: 24px; --e-6: 32px; --e-7: 48px;
+  /* tipografía */
+  --f-texto: system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, 'Helvetica Neue', Arial, sans-serif;
+  --f-mono: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', 'DejaVu Sans Mono', Menlo, Consolas, monospace;
+  --t-xs: 12px; --t-s: 14px; --t-m: 16px; --t-l: 20px; --t-xl: 24px; --t-xxl: 30px;
+  /* forma */
+  --r-control: 8px; --r-tarjeta: 12px; --r-pastilla: 999px;
+  --sombra-1: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .08);
+  --sombra-2: 0 4px 8px -2px rgba(16, 24, 40, .08), 0 12px 24px -4px rgba(16, 24, 40, .10);
+  --foco: 0 0 0 3px color-mix(in srgb, var(--c-acento) 45%, transparent);
+  --alto-control: 44px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-fondo: #0d0f13;
+    --c-superficie: #161a21;
+    --c-superficie-2: #1d222b;
+    --c-borde: #2a303b;
+    --c-borde-fuerte: #3a4150;
+    --c-texto: #e9ebef;
+    --c-texto-2: #a5adbb;
+    --c-acento: #fb923c;
+    --c-acento-hover: #fdba74;
+    --c-acento-texto: #1a0c03;
+    --c-acento-suave: #2a1a0e;
+    --c-exito: #4ade80;
+    --c-exito-suave: #12261a;
+    --c-aviso: #fbbf24;
+    --c-aviso-suave: #2a2110;
+    --c-peligro: #f87171;
+    --c-peligro-suave: #2c1517;
+    --c-barra: #08090c;
+    --sombra-1: 0 1px 2px rgba(0, 0, 0, .4);
+    --sombra-2: 0 8px 24px rgba(0, 0, 0, .45);
+    color-scheme: dark;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+
+/* base */
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body.sd {
+  margin: 0; min-height: 100vh; background: var(--c-fondo); color: var(--c-texto);
+  font: 400 var(--t-m)/1.5 var(--f-texto); -webkit-font-smoothing: antialiased;
+}
+.sd h1 { font-size: var(--t-xxl); line-height: 1.2; font-weight: 700; letter-spacing: -.01em; margin: 0 0 var(--e-2); }
+.sd h2 { font-size: var(--t-l); line-height: 1.3; font-weight: 650; margin: 0 0 var(--e-3); }
+.sd h3 { font-size: var(--t-m); line-height: 1.4; font-weight: 650; margin: 0 0 var(--e-1); }
+.sd p { margin: 0 0 var(--e-3); }
+.sd .secundario { color: var(--c-texto-2); }
+.sd .pequeno { font-size: var(--t-s); }
+.sd .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.sd a { color: var(--c-acento); text-underline-offset: 2px; }
+.sd :focus-visible { outline: none; box-shadow: var(--foco); }
+
+/* barra superior */
+.sd-barra {
+  position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: var(--e-3);
+  min-height: 60px; padding: var(--e-2) var(--e-5); background: var(--c-barra); color: var(--c-barra-texto);
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+.sd .sd-marca, .sd-marca { color: inherit; } .sd-marca { display: flex; align-items: center; gap: var(--e-3); color: inherit; text-decoration: none; min-width: 0; }
+.sd-marca img { width: 32px; height: 32px; flex: none; }
+.sd-marca strong { display: block; font-size: var(--t-m); font-weight: 650; line-height: 1.2; }
+.sd-marca small { display: block; font-size: var(--t-xs); color: var(--c-barra-texto-2); }
+.sd-barra .sd-derecha { margin-left: auto; display: flex; align-items: center; gap: var(--e-2); flex-wrap: wrap; justify-content: flex-end; }
+
+/* botones */
+.sd-boton {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--e-2);
+  min-height: var(--alto-control); padding: 0 var(--e-4); border-radius: var(--r-control);
+  border: 1px solid var(--c-borde-fuerte); background: var(--c-superficie); color: var(--c-texto);
+  font: 600 var(--t-s)/1 var(--f-texto); text-decoration: none; cursor: pointer; white-space: nowrap;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.sd-boton:hover { background: var(--c-superficie-2); }
+.sd-boton:disabled { opacity: .5; cursor: not-allowed; }
+.sd-boton.primario { background: var(--c-acento); border-color: var(--c-acento); color: var(--c-acento-texto); }
+.sd-boton.primario:hover { background: var(--c-acento-hover); border-color: var(--c-acento-hover); }
+.sd-boton.fantasma { background: transparent; border-color: transparent; }
+.sd-boton.fantasma:hover { background: var(--c-superficie-2); }
+.sd-boton.peligro { color: var(--c-peligro); }
+.sd-boton.chico { min-height: 36px; padding: 0 var(--e-3); font-size: var(--t-xs); }
+.sd-boton svg { width: 18px; height: 18px; flex: none; }
+
+/* campos */
+.sd-campo { display: grid; gap: var(--e-1); font-size: var(--t-s); font-weight: 600; }
+.sd input, .sd select {
+  min-height: var(--alto-control); width: 100%; padding: 0 var(--e-3); border-radius: var(--r-control);
+  border: 1px solid var(--c-borde-fuerte); background: var(--c-superficie); color: var(--c-texto);
+  font: 400 var(--t-m) var(--f-texto);
+}
+.sd input:focus-visible, .sd select:focus-visible { border-color: var(--c-acento); }
+.sd input[type="checkbox"] { width: 20px; height: 20px; min-height: 0; accent-color: var(--c-acento); }
+
+/* tarjetas */
+.sd-tarjeta { background: var(--c-superficie); border: 1px solid var(--c-borde); border-radius: var(--r-tarjeta); box-shadow: var(--sombra-1); padding: var(--e-5); }
+.sd-titulo-seccion { font-size: var(--t-xs); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--c-texto-2); margin: 0 0 var(--e-4); }
+
+/* estados */
+.sd-pastilla {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 var(--e-3);
+  border-radius: var(--r-pastilla); font: 600 var(--t-xs)/1 var(--f-texto); border: 1px solid transparent;
+  background: var(--c-superficie-2); color: var(--c-texto-2); white-space: nowrap;
+}
+.sd-pastilla::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.sd-pastilla.ok { background: var(--c-exito-suave); color: var(--c-exito); }
+.sd-pastilla.aviso { background: var(--c-aviso-suave); color: var(--c-aviso); }
+.sd-pastilla.mal { background: var(--c-peligro-suave); color: var(--c-peligro); }
+.sd-barra .sd-pastilla { background: rgba(255, 255, 255, .08); color: var(--c-barra-texto); }
+.sd-barra .sd-pastilla.ok { color: #6ee7a0; }
+.sd-barra .sd-pastilla.mal { color: #fca5a5; }
+.sd-mensaje { min-height: 1.5em; font-size: var(--t-s); margin-top: var(--e-2); }
+.sd-mensaje.ok { color: var(--c-exito); }
+.sd-mensaje.mal { color: var(--c-peligro); }
