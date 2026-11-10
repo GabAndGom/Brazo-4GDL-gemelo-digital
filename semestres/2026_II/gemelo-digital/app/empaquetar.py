@@ -29,7 +29,9 @@ COPIAS = {
 }
 # Se conservan al volver a exportar (y nunca se copian desde el repositorio)
 DATOS_PLANTA = ['calibracion.json', 'registro_gemelo.log', 'usuarios.json', 'tls_certificado.pem', 'tls_clave.pem']
-EXCLUIR = {'__pycache__', '_prueba_calibracion.json'} | set(DATOS_PLANTA)
+EXCLUIR = {'__pycache__', '_prueba_calibracion.json', 'perfil_ventana'} | set(DATOS_PLANTA)
+# Documentos que acompañan a la app exportada (carpeta documentos/)
+DOCUMENTOS = ['manual_linux.pdf', 'manual_windows.pdf', 'guia_completa_brazo.pdf', 'arquitectura_gemelo_digital.pdf']
 
 
 def actualizar_ui():
@@ -69,6 +71,12 @@ def exportar(destino):
     for n, contenido in guardados.items():
         with open(os.path.join(destino, n), 'wb') as f:
             f.write(contenido)
+    docs = os.path.join(destino, 'documentos')
+    os.makedirs(docs, exist_ok=True)
+    for n in DOCUMENTOS:
+        origen = os.path.join(APP, '..', 'manual', n)
+        if os.path.exists(origen):
+            shutil.copy2(origen, docs)
     archivo = shutil.make_archive(destino, 'zip', os.path.dirname(destino), os.path.basename(destino))
     print('app exportada en', destino, 'y', archivo)
 

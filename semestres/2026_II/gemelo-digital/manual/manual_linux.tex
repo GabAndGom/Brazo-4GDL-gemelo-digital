@@ -1,0 +1,197 @@
+% Manual de instalación y uso de la app del gemelo digital en Linux
+% Compilar desde esta carpeta:  pdflatex manual_linux.tex (dos veces)
+\documentclass[a4paper,11pt]{article}
+\input{estilo_manual}
+\lhead{\small Gemelo digital del brazo XK-JS1-1}
+\rhead{\small Manual para Linux}
+\newcommand{\abrirapp}{menú de aplicaciones $\rightarrow$ \emph{Gemelo digital del brazo}, o \codigo{./iniciar\_gemelo.sh} en una terminal}
+
+\title{\textbf{Gemelo digital del brazo XK-JS1-1}\\[4pt]\large Manual de instalación y uso en Linux}
+\author{ETN-902 / ETN-1034 / ETN-1000 · UMSA · II-2026}
+\date{10 de noviembre de 2026}
+
+\begin{document}
+\maketitle
+\thispagestyle{fancy}
+
+La app del gemelo digital muestra el brazo XK-JS1-1 en 3D, lo sigue en vivo y permite mandarlo desde la PC del laboratorio o desde celulares de la misma red. Es \textbf{una sola app} con un menú de inicio que ofrece tres modos: \emph{Simulación}, \emph{Operación local} y \emph{Operación por red local}. La misma carpeta funciona en Linux y en Windows; este manual cubre Linux (probado en Ubuntu y Linux Mint).
+
+\tableofcontents
+\newpage
+
+% =====================================================================
+\section{Resumen}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=5mm]
+\node[paso] (p1) {copiar la carpeta\\\codigo{gemelo\_brazo\_app}};
+\node[paso, right=of p1] (p2) {una sola vez:\\\codigo{./instalar\_acceso.sh}};
+\node[paso, right=of p2] (p3) {cable al PLC;\\usuario en el\\grupo \codigo{dialout}};
+\node[paso, right=of p3] (p4) {abrir \emph{Gemelo digital del brazo}\\y elegir el modo};
+\foreach \i in {1,...,4} \node[num] at (p\i.north west) {\i};
+\draw[flecha] (p1) -- (p2); \draw[flecha] (p2) -- (p3); \draw[flecha] (p3) -- (p4);
+\end{tikzpicture}
+\caption{Pasos de la instalación en Linux.}
+\end{figure}
+
+% =====================================================================
+\section{Qué hay en la carpeta}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{5.4cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Archivo} & \textbf{Para qué}\\
+\midrule
+\archivo{iniciar\_gemelo.sh} & Abre la app (menú de modos).\\
+\archivo{instalar\_acceso.sh} & Crea el acceso \emph{Gemelo digital del brazo} en el menú de aplicaciones.\\
+\archivo{probar\_plc.py} & Prueba la conexión con el PLC, \textbf{solo lectura}.\\
+\codigo{usuarios.py} & Administra usuarios desde la terminal (también se hace desde el menú).\\
+\codigo{gemelo\_brazo.py}, \codigo{brazo.py}, \codigo{ppi.py}, \codigo{serie.py}, \dots & La app.\\
+\codigo{ui/}, \codigo{menu.html} & La interfaz (página del gemelo y menú).\\
+\codigo{*.bat}, \codigo{icono.ico} & Lanzadores de Windows (no se usan en Linux).\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Al usarla, la app crea: \codigo{usuarios.json}, \codigo{tls\_certificado.pem} y \codigo{tls\_clave.pem} (acceso por red), \codigo{calibracion.json} (calibración de la base) y \codigo{registro\_gemelo.log}. Son propios de esa PC: no los comparta.
+
+% =====================================================================
+\section{Requisitos}
+\begin{itemize}
+\item Linux con escritorio (probado en Ubuntu 22.04/24.04 y Linux Mint 21/22).
+\item \textbf{Python 3.8 o superior}: ya viene instalado. Compruébelo con \codigo{python3 -{}-version}.
+\item Para la ventana propia: GTK 3 y WebKitGTK (vienen en Ubuntu y Mint). Si faltan, la app abre el navegador en su lugar; para instalarlos:
+\begin{lstlisting}
+sudo apt install gir1.2-webkit2-4.1 python3-gi
+\end{lstlisting}
+\item El \textbf{cable USB-PPI} del laboratorio (chip CH340; Linux lo reconoce sin instalar nada).
+\item Para el acceso por red: la PC y los celulares en la misma red Wi-Fi o router.
+\end{itemize}
+
+% =====================================================================
+\section{Instalación}
+\begin{enumerate}
+\item Copie la carpeta \codigo{gemelo\_brazo\_app} (o descomprima \codigo{gemelo\_brazo\_app.zip}) en su carpeta personal.
+\item Cree el acceso en el menú de aplicaciones, una sola vez:
+\begin{lstlisting}
+cd ~/gemelo_brazo_app
+./instalar_acceso.sh
+\end{lstlisting}
+Aparece \emph{Gemelo digital del brazo} en el menú. (Si había accesos de versiones anteriores, uno por modo, el instalador los quita.)
+\item Permiso para el puerto serie: el usuario debe estar en el grupo \codigo{dialout}. Compruébelo con \codigo{groups}; si no aparece:
+\begin{lstlisting}
+sudo usermod -aG dialout $USER
+\end{lstlisting}
+y cierre la sesión de Linux y vuelva a entrar.
+\end{enumerate}
+
+\nota{\textbf{Prueba sin brazo.} Ya se puede abrir la app y elegir \emph{Simulación}: el brazo simulado debe moverse con \emph{Homing} y con los deslizadores.}
+
+% =====================================================================
+\section{Conectar el cable}
+\begin{enumerate}
+\item Con el tablero apagado, enchufe el cable USB-PPI al \textbf{puerto 0} del PLC y el USB a la PC. Encienda el tablero; el PLC debe quedar en \textbf{RUN}.
+\item Compruebe que Linux ve el cable:
+\begin{lstlisting}
+ls -l /dev/serial/by-id/
+# usb-1a86_USB2.0-Serial-if00-port0 -> ../../ttyUSB0
+\end{lstlisting}
+\item Pruebe la conexión (solo lee el PLC, no mueve nada):
+\begin{lstlisting}
+python3 probar_plc.py
+\end{lstlisting}
+Debe mostrar algo así:
+\begin{lstlisting}
+Puertos serie encontrados:
+  /dev/ttyUSB0 USB
+Buscando el PLC en /dev/ttyUSB0 (puede tardar hasta un minuto)...
+  PLC encontrado: dirección PPI 2, 9600 baudios
+  programa cargado: brazo_gemelo (programa del gemelo digital)
+  una lectura tarda 155 ms
+  entradas  I0.0=0 I0.1=1 I0.2=0 I0.3=1 I0.4=0 I0.5=1 I0.6=0 I0.7=0
+  ...
+  Conexión correcta. Ya puede abrir la app.
+\end{lstlisting}
+\end{enumerate}
+
+\aviso{\textbf{Máquina virtual de Windows XP.} Si está abierta, en su ventana, menú \emph{Dispositivos $\rightarrow$ USB}, el elemento \emph{USB2.0-Serial} debe estar \textbf{desmarcado}: el cable lo usa Linux o Micro/WIN, nunca los dos a la vez. Para cargar un programa con Micro/WIN, cierre antes la app y marque el USB en la VM (sección \ref{sec:cargar}).}
+
+% =====================================================================
+\section{Abrir la app}
+\begin{itemize}
+\item Menú de aplicaciones $\rightarrow$ \textbf{Gemelo digital del brazo}; o, en una terminal:
+\begin{lstlisting}
+~/gemelo_brazo_app/iniciar_gemelo.sh
+\end{lstlisting}
+\item Se abren una \textbf{terminal} con los mensajes de la app y la \textbf{ventana del gemelo} con el menú de inicio (sección \ref{sec:menu}).
+\item Para cerrar la app, cierre la ventana del gemelo o pulse \codigo{Ctrl+C} en la terminal. Si el brazo se estaba moviendo por orden de la PC, la app lo detiene antes de salir.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\ventana{12.5cm}{3.6cm}{Terminal}{%
+Gemelo digital en http://localhost:8050/  (cierre la ventana o Ctrl+C para salir)\\
+00:59:42 modo: Operación local\\
+00:59:42 buscando el PLC en /dev/ttyUSB0…\\
+00:59:44 conectado: /dev/ttyUSB0, PPI 2, 9600 baudios, perfil "gemelo"\\
+00:59:50 acceso por red local: https://192.168.1.37:8443/ (con usuario y contraseña)\\
+00:59:50 modo: Operación por red local}
+\caption{Mensajes de la app en la terminal.}
+\end{figure}
+
+\subsection*{Opciones de la línea de comandos}
+No hacen falta para el uso normal (todo se elige en el menú):
+\begin{center}\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\codigo{-{}-modo local} & entra directo a un modo: \codigo{simulacion}, \codigo{local} o \codigo{red}, sin pasar por el menú\\
+\codigo{-{}-modo red -{}-red-simulado} & acceso por red con el PLC simulado\\
+\codigo{-{}-puerto /dev/ttyUSB1} & fija el puerto del cable (por defecto lo busca)\\
+\codigo{-{}-direccion 2} & no busca la dirección del PLC (arranca más rápido)\\
+\codigo{-{}-navegador} & abre en el navegador en vez de la ventana propia\\
+\codigo{-{}-sin-ventana} & solo el servidor (por ejemplo, para que manden solo los celulares)\\
+\codigo{-{}-puerto-red 9443} & otro puerto para el acceso por red\\
+\codigo{-{}-clave-local} & pide contraseña también en la PC del laboratorio\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Cortafuegos}
+Ubuntu y Mint traen el cortafuegos \codigo{ufw} desactivado. Si está activo y los celulares no llegan a la página, permita el puerto una vez:
+\begin{lstlisting}
+sudo ufw allow 8443/tcp
+\end{lstlisting}
+
+% =====================================================================
+\input{uso_comun}
+
+% =====================================================================
+\section{Cargar el programa del gemelo en el PLC}\label{sec:cargar}
+\aviso{Cargar un programa reemplaza el que tiene el PLC. El programa anterior quedó respaldado en \codigo{ETN 1034/respaldo\_vm/programa\_plc\_cargado\_20261026.mwp}.}
+\begin{enumerate}
+\item Cierre la app. En la ventana de la VM, menú \emph{Dispositivos $\rightarrow$ USB}, \textbf{marque} \emph{USB2.0-Serial}.
+\item En Micro/WIN, \emph{Archivo $\rightarrow$ Abrir}, y escriba la ruta de la carpeta compartida:
+\begin{lstlisting}
+\\vboxsvr\MIS_COSAS\ETN\ETN 1034\GIT_BRAZO\Brazo-4GDL-gemelo-digital\
+  semestres\2026_II\gemelo-digital\plc\brazo_gemelo.mwp
+\end{lstlisting}
+\item \emph{CPU $\rightarrow$ Tipo $\rightarrow$ Leer CPU}; luego \emph{CPU $\rightarrow$ Compilar todo}: \emph{Total errores: 0}.
+\item \emph{Archivo $\rightarrow$ Cargar en CPU}. Con el bloque de sistema, el PLC queda en la dirección PPI 2 a 9,6~kbit/s; la app lo encuentra sola.
+\item PLC en RUN, desmarque el USB en la VM, abra la app y elija \emph{Operación local}: debe decir \codigo{perfil "gemelo"}.
+\end{enumerate}
+
+% =====================================================================
+\section{Problemas propios de Linux}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{5.4cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Síntoma} & \textbf{Qué hacer}\\
+\midrule
+\codigo{Permission denied: /dev/ttyUSB0} & El usuario no está en el grupo \codigo{dialout} (sección de instalación).\\
+\emph{no hay ningún puerto serie} con el cable enchufado & La máquina virtual tomó el USB: desmárquelo en \emph{Dispositivos $\rightarrow$ USB}.\\
+Micro/WIN no se comunica & El cable está en Linux: cierre la app y pase el USB a la VM.\\
+Se abre el navegador en vez de la ventana & Falta WebKitGTK: \codigo{sudo apt install gir1.2-webkit2-4.1 python3-gi}. Funciona igual en el navegador.\\
+El acceso del menú no abre nada & Ejecute \codigo{./iniciar\_gemelo.sh} en una terminal para ver el error.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\end{document}

@@ -1,44 +1,44 @@
 # App del gemelo digital del brazo XK-JS1-1
 
-Ventana con el visor 3D del brazo, conectada al PLC S7-200 por el cable USB-PPI.
-Funciona sin internet y sin instalar nada (Python 3 y WebKitGTK ya vienen en Linux Mint/Ubuntu).
+Una sola app, para **Linux y Windows**, con un menú de inicio de tres modos:
+
+| Modo | Para qué |
+|---|---|
+| **Simulación** | practicar sin brazo ni cable (PLC simulado dentro de la app) |
+| **Operación local** | ver y mandar el brazo real desde esta PC (cable USB-PPI al puerto 0 del PLC) |
+| **Operación por red local** | lo mismo, y además celulares y otras PC de la red entran con usuario y contraseña (`https://IP:8443/`) |
+
+Desde el menú también se crean los usuarios del acceso por red. El botón **Menú** de la barra del gemelo
+vuelve al menú para cambiar de modo sin cerrar la app.
 
 ## Abrir
 
-- Desde el menú de aplicaciones: **Gemelo digital del brazo** (o "(simulado)" para practicar sin PLC).
-  Los accesos se crean una vez con `./instalar_acceso.sh`.
-- Desde una terminal en esta carpeta: `./iniciar_gemelo.sh` (opciones: `--simulado`, `--direccion 6`,
-  `--puerto /dev/ttyUSB0`, `--navegador`).
+- **Linux**: menú de aplicaciones → *Gemelo digital del brazo* (se crea una vez con `./instalar_acceso.sh`),
+  o `./iniciar_gemelo.sh` en una terminal. Si la VM de Windows XP está abierta, el USB del cable debe estar
+  **desmarcado** en su menú Dispositivos → USB.
+- **Windows**: instale Python 3 (python.org, marcando *Add python.exe to PATH*) y haga doble clic en
+  `Gemelo digital.bat`. `Crear acceso directo.bat` lo pone en el escritorio.
 
-Antes de abrirla: cable USB-PPI enchufado al puerto 0 del PLC y, si la VM de Windows XP está abierta,
-el USB **desmarcado** en su menú Dispositivos → USB.
+Para comprobar el cable sin mover nada: `python3 probar_plc.py` (Windows: `Probar conexion PLC.bat`).
 
-## Desde celulares de la red local
+## Documentos (carpeta `documentos`)
 
-`python3 usuarios.py agregar NOMBRE --rol operador` (u `observador`) y luego el acceso
-**Gemelo digital del brazo (red local)**: la terminal muestra la dirección `https://IP:8443/` para los
-celulares. Observador: solo ve. Operador: manda (uno a la vez; los demás pueden dar paro).
-
-## Uso
-
-- La barra superior dice si hay PLC, qué programa tiene y si el mando está habilitado.
-- El modelo 3D sigue al brazo real; abajo están la posición, los pulsos y las entradas/salidas en vivo.
-- Pestaña **Conexión** → *Habilitar el mando* para mandar el brazo desde la ventana (con alguien junto a la
-  seta de emergencia y el selector del panel en automático).
-- Con el programa actual del PLC: *Iniciar* (homing o secuencia siguiente), *Detener*, *Paro de emergencia*,
-  *Rearmar*. Con el programa `brazo_gemelo` (carpeta `plc` del repositorio): homing, mover a cualquier
-  posición, secuencias, garra y velocidad.
-
-Cada orden queda en `registro_gemelo.log`. El manual completo es `manual_gemelo_digital.pdf`.
+- `manual_linux.pdf` y `manual_windows.pdf`: instalación y uso en cada sistema.
+- `guia_completa_brazo.pdf`: la planta, los programas del PLC en ladder, el modelado y el software.
+- `arquitectura_gemelo_digital.pdf`: páginas web, protocolo PPI y modos de mando en detalle.
 
 ## Contenido
 
 | Archivo | Para qué |
 |---|---|
-| `gemelo_brazo.py` | Programa principal: servidor local, ventana y API |
-| `brazo.py`, `ppi.py` | Comunicación con el PLC (PPI), perfiles de programa, estimador y PLC simulado |
-| `ventana.py` | Ventana GTK + WebKit |
-| `acceso.py`, `usuarios.py` | Usuarios, contraseñas y sesiones del acceso por red |
-| `ui/` | Interfaz: visor 3D (three.js 0.160.0 incluido), estilos y modelo `brazo_xk-js1-1.glb` |
-| `parametros.json` | Cotas y transmisión del brazo (copia de la cinemática del repositorio) |
-| `empaquetar.py` | Solo dentro del repositorio: vuelve a copiar la interfaz y exporta esta carpeta |
+| `gemelo_brazo.py` | Programa principal: menú de modos, servidor local y de red, API |
+| `brazo.py`, `ppi.py`, `serie.py` | Comunicación con el PLC (PPI sobre el puerto serie de Linux o Windows), perfiles, estimador y PLC simulado |
+| `acceso.py`, `usuarios.py`, `certificado_tls.py` | Usuarios, sesiones y certificado HTTPS del acceso por red |
+| `ventana.py` | Ventana propia: GTK + WebKit en Linux, Edge en modo aplicación en Windows |
+| `menu.html`, `ui/` | Interfaz: menú y página del gemelo |
+| `probar_plc.py` | Diagnóstico de solo lectura |
+| `*.sh` / `*.bat` | Lanzadores de Linux / Windows |
+| `empaquetar.py` | (Repositorio) actualiza `ui/` y exporta la app autónoma |
+
+Datos propios de cada PC (no se comparten ni se suben al repositorio): `usuarios.json`,
+`tls_certificado.pem`, `tls_clave.pem`, `calibracion.json`, `registro_gemelo.log`.

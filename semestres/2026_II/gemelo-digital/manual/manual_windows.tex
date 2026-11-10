@@ -1,0 +1,191 @@
+% Manual de instalación y uso de la app del gemelo digital en Windows
+% Compilar desde esta carpeta:  pdflatex manual_windows.tex (dos veces)
+\documentclass[a4paper,11pt]{article}
+\input{estilo_manual}
+\lhead{\small Gemelo digital del brazo XK-JS1-1}
+\rhead{\small Manual para Windows}
+\newcommand{\abrirapp}{doble clic en \archivo{Gemelo digital.bat} o en el acceso directo del escritorio}
+
+\title{\textbf{Gemelo digital del brazo XK-JS1-1}\\[4pt]\large Manual de instalación y uso en Windows}
+\author{ETN-902 / ETN-1034 / ETN-1000 · UMSA · II-2026}
+\date{10 de noviembre de 2026}
+
+\begin{document}
+\maketitle
+\thispagestyle{fancy}
+
+La app del gemelo digital muestra el brazo XK-JS1-1 en 3D, lo sigue en vivo y permite mandarlo desde la PC del laboratorio o desde celulares de la misma red. Es \textbf{una sola app} con un menú de inicio que ofrece tres modos: \emph{Simulación}, \emph{Operación local} y \emph{Operación por red local}. La misma carpeta funciona en Windows y en Linux; este manual cubre \textbf{Windows 10 y 11}.
+
+\tableofcontents
+\newpage
+
+% =====================================================================
+\section{Resumen}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=4mm]
+\node[paso] (p1) {copiar la carpeta\\\codigo{gemelo\_brazo\_}\\\codigo{app}};
+\node[paso, right=of p1] (p2) {instalar\\Python 3\\(gratuito)};
+\node[paso, right=of p2] (p3) {conectar el cable\\y comprobar su\\puerto COM};
+\node[paso, right=of p3] (p4) {doble clic en\\\archivo{Gemelo}\\\archivo{digital.bat}};
+\foreach \i in {1,...,4} \node[num] at (p\i.north west) {\i};
+\draw[flecha] (p1) -- (p2); \draw[flecha] (p2) -- (p3); \draw[flecha] (p3) -- (p4);
+\end{tikzpicture}
+\caption{Pasos de la instalación en Windows.}
+\end{figure}
+No hay que instalar nada más que Python: la app usa solo su biblioteca estándar. La ventana del gemelo se abre con Microsoft Edge, que ya viene con Windows.
+
+% =====================================================================
+\section{Qué hay en la carpeta}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{5.6cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Archivo} & \textbf{Para qué}\\
+\midrule
+\archivo{Gemelo digital.bat} & Abre la app (menú de modos).\\
+\archivo{Probar conexion PLC.bat} & Prueba la conexión con el PLC, \textbf{solo lectura}.\\
+\archivo{Crear acceso directo.bat} & Pone el acceso \emph{Gemelo digital del brazo} en el escritorio.\\
+\codigo{gemelo\_brazo.py}, \codigo{brazo.py}, \codigo{ppi.py}, \codigo{serie.py}, \dots & La app.\\
+\codigo{ui\textbackslash}, \codigo{menu.html} & La interfaz (página del gemelo y menú).\\
+\codigo{*.sh} & Lanzadores de Linux (no se usan en Windows).\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Al usarla, la app crea: \codigo{usuarios.json}, \codigo{tls\_certificado.pem} y \codigo{tls\_clave.pem} (acceso por red), \codigo{calibracion.json}, \codigo{registro\_gemelo.log} y \codigo{perfil\_ventana\textbackslash} (datos de la ventana de Edge). Son propios de esa PC: no los comparta.
+
+% =====================================================================
+\section{Requisitos}
+\begin{itemize}
+\item \textbf{Windows 10 u 11} (64 bits).
+\item \textbf{Python 3.8 o superior}, gratuito desde \url{https://www.python.org/downloads/}.
+\item \textbf{Microsoft Edge} (incluido en Windows) o Google Chrome, para la ventana del gemelo.
+\item El \textbf{cable USB-PPI} del laboratorio (chip CH340) o un convertidor USB--RS485 (sección \ref{sec:rs485}).
+\item Para el acceso por red: la PC y los celulares en la misma red Wi-Fi o router.
+\end{itemize}
+
+% =====================================================================
+\section{Paso 1: copiar la carpeta}
+Copie la carpeta \codigo{gemelo\_brazo\_app} (o descomprima \codigo{gemelo\_brazo\_app.zip}) en un lugar fijo, por ejemplo \codigo{C:\textbackslash GemeloBrazo\textbackslash}.
+\nota{Conviene una carpeta \textbf{fuera de OneDrive}: la app guarda ahí sus usuarios, su certificado y su registro. Si Windows muestra \emph{«Windows protegió su PC»} al abrir un \codigo{.bat} copiado de otro equipo, pulse \emph{Más información} $\rightarrow$ \emph{Ejecutar de todas formas}; o, antes de descomprimir, clic derecho sobre el \codigo{.zip} $\rightarrow$ \emph{Propiedades} $\rightarrow$ \emph{Desbloquear}.}
+
+% =====================================================================
+\section{Paso 2: instalar Python}
+\begin{enumerate}
+\item Descargue el instalador desde \url{https://www.python.org/downloads/} (\emph{Download Python 3.x}).
+\item Ábralo. En la primera pantalla \textbf{marque la casilla \emph{Add python.exe to PATH}} y pulse \emph{Install Now}.
+\end{enumerate}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\node[draw=black!50, fill=white, minimum width=11cm, minimum height=5.6cm, anchor=north west] (v) at (0,0) {};
+\fill[black!8] (v.north west) rectangle ($(v.north east)+(0,-6mm)$);
+\node[anchor=west, font=\scriptsize] at ($(v.north west)+(2mm,-3mm)$) {Python 3.x (64-bit) Setup};
+\node[anchor=north west, font=\large\bfseries] at ($(v.north west)+(4mm,-9mm)$) {Install Python 3.x (64-bit)};
+\node[anchor=north west, draw=azulw, thick, fill=azulw!6, text width=7cm, font=\small, inner sep=3mm] at ($(v.north west)+(4mm,-19mm)$) {$\rightarrow$ \textbf{Install Now}};
+\node[anchor=north west, font=\small] at ($(v.north west)+(4mm,-32mm)$) {$\rightarrow$ Customize installation};
+\node[anchor=north west, font=\small] at ($(v.north west)+(4mm,-40mm)$) {$\boxtimes$\; Use admin privileges when installing py.exe};
+\node[anchor=north west, font=\small, draw=rojo, very thick, inner sep=1.5mm] (c) at ($(v.north west)+(3mm,-47mm)$) {$\boxtimes$\; \textbf{Add python.exe to PATH}};
+\node[anchor=west, font=\small\bfseries, text=rojo] at ($(c.east)+(4mm,0)$) {$\leftarrow$ marcar};
+\end{tikzpicture}
+\caption{Primera pantalla del instalador de Python (esquema).}
+\end{figure}
+\begin{enumerate}[resume]
+\item Compruébelo: menú Inicio, \codigo{cmd}, y en el \emph{Símbolo del sistema}:
+\begin{lstlisting}
+py --version
+\end{lstlisting}
+Debe responder \codigo{Python 3.x.y}. Si \codigo{py} no se reconoce, ejecute otra vez el instalador, elija \emph{Modify} y marque \emph{py launcher}.
+\end{enumerate}
+\nota{\textbf{Prueba sin brazo.} Con Python instalado ya puede abrir \archivo{Gemelo digital.bat} y elegir \emph{Simulación} en el menú.}
+
+% =====================================================================
+\section{Paso 3: el cable y su puerto COM}
+En Windows el cable aparece como un \textbf{puerto COM} (por ejemplo \codigo{COM3}).
+\begin{enumerate}
+\item Enchufe el cable USB-PPI a la PC y el otro extremo al \textbf{puerto 0} del PLC.
+\item Clic derecho en el botón Inicio $\rightarrow$ \emph{Administrador de dispositivos} $\rightarrow$ \emph{Puertos (COM y LPT)}:
+\end{enumerate}
+\begin{figure}[H]
+\centering
+\ventana{10cm}{4.2cm}{Administrador de dispositivos}{%
+> Monitores\\
+> Mouse y otros dispositivos señaladores\\
+v Puertos (COM y LPT)\\
+\hspace*{5mm}\colorbox{naranja!20}{USB-SERIAL CH340 (COM3)}\\
+> Procesadores}
+\caption{El cable en el Administrador de dispositivos (el número de COM puede ser otro).}
+\end{figure}
+\begin{itemize}
+\item Si aparece con un \textbf{triángulo amarillo} o como \emph{Dispositivo desconocido}, falta el driver. Normalmente Windows Update lo instala solo. Si no, descargue el driver \textbf{CH341SER} desde la página del fabricante del chip (WCH, \url{https://www.wch-ic.com}).
+\item No hace falta anotar el número: la app busca sola en todos los puertos COM, los USB primero.
+\item Pruebe la conexión con \archivo{Probar conexion PLC.bat} (solo lee el PLC): debe decir \emph{PLC encontrado}, el programa cargado y mostrar las entradas y salidas.
+\end{itemize}
+\aviso{Un puerto COM solo lo puede usar un programa a la vez. Si en esta PC está instalado STEP 7-Micro/WIN, ciérrelo antes de abrir la app, y cierre la app antes de cargar un programa con Micro/WIN. En Windows no hace falta la máquina virtual.}
+
+% =====================================================================
+\section{Paso 4: abrir la app}
+\begin{itemize}
+\item Doble clic en \archivo{Gemelo digital.bat}. Para tener el acceso en el escritorio, ejecute una vez \archivo{Crear acceso directo.bat}.
+\item Se abren una \textbf{consola} con los mensajes de la app y la \textbf{ventana del gemelo} (Edge en modo aplicación) con el menú de inicio (sección \ref{sec:menu}).
+\item Para cerrar la app, cierre la ventana del gemelo o pulse \codigo{Ctrl+C} en la consola.
+\end{itemize}
+\nota{Si la ventana del gemelo no se abre, edite \archivo{Gemelo digital.bat} (clic derecho $\rightarrow$ \emph{Editar}) y agregue \codigo{-{}-navegador} al final de la línea \codigo{\%PY\% gemelo\_brazo.py \%*}: la app se abrirá en el navegador predeterminado, en \url{http://localhost:8050/}.}
+
+\subsection*{Permitir la app en el firewall (operación por red)}
+La primera vez que se elige \emph{Operación por red local}, Windows pregunta si Python puede usar la red:
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\node[draw=black!50, fill=white, minimum width=10.5cm, minimum height=4.6cm, anchor=north west] (v) at (0,0) {};
+\fill[black!8] (v.north west) rectangle ($(v.north east)+(0,-6mm)$);
+\node[anchor=west, font=\scriptsize] at ($(v.north west)+(2mm,-3mm)$) {Alerta de seguridad de Windows};
+\node[anchor=north west, font=\small, text width=9.5cm] at ($(v.north west)+(4mm,-9mm)$) {Firewall de Windows Defender bloqueó algunas características de \textbf{Python} en todas las redes públicas y privadas.};
+\node[anchor=north west, font=\small] at ($(v.north west)+(4mm,-22mm)$) {$\boxtimes$\; \textbf{Redes privadas}, como las domésticas o del trabajo};
+\node[anchor=north west, font=\small] at ($(v.north west)+(4mm,-29mm)$) {$\square$\; Redes públicas};
+\node[anchor=south east, draw=azulw, thick, fill=azulw!8, font=\small] at ($(v.south east)+(-30mm,3mm)$) {Permitir acceso};
+\node[anchor=south east, draw=black!40, font=\small] at ($(v.south east)+(-3mm,3mm)$) {Cancelar};
+\end{tikzpicture}
+\caption{Aviso del firewall (esquema): marque \emph{Redes privadas} y pulse \emph{Permitir acceso}.}
+\end{figure}
+\begin{itemize}
+\item Si se canceló por error, quien administra la PC puede permitirlo en un \emph{Símbolo del sistema} abierto \emph{como administrador}:
+\begin{lstlisting}
+netsh advfirewall firewall add rule name="Gemelo brazo" dir=in action=allow protocol=TCP localport=8443 profile=private
+\end{lstlisting}
+\item \textbf{La red debe ser «privada»}: \emph{Configuración $\rightarrow$ Red e Internet $\rightarrow$ Wi-Fi (o Ethernet) $\rightarrow$} la red $\rightarrow$ \emph{Tipo de perfil de red: Privada}. En una red «pública» Windows bloquea las conexiones entrantes.
+\end{itemize}
+
+\subsection*{Opciones de la línea de comandos}
+No hacen falta para el uso normal. Se agregan al final de la línea \codigo{\%PY\% gemelo\_brazo.py \%*} del \codigo{.bat}: \codigo{-{}-modo local} (entra directo a un modo: \codigo{simulacion}, \codigo{local} o \codigo{red}), \codigo{-{}-puerto COM4} (fija el puerto), \codigo{-{}-navegador}, \codigo{-{}-sin-ventana}, \codigo{-{}-puerto-red 9443}.
+
+% =====================================================================
+\input{uso_comun}
+
+% =====================================================================
+\section{Convertidor USB--RS485 en lugar del cable USB-PPI}\label{sec:rs485}
+El puerto del S7-200 es RS-485, así que un convertidor USB--RS485 \textbf{con cambio de dirección automático} debería servir (por comprobar en la planta): A(+) al pin 3 del DB9, B($-$) al pin 8 y GND al pin 5. Si el PLC no responde, invierta A y B. Windows lo mostrará como otro puerto COM y la app lo buscará igual. Conviene uno con aislamiento galvánico. Pruébelo primero con \archivo{Probar conexion PLC.bat}.
+
+% =====================================================================
+\section{Problemas propios de Windows}
+\begin{center}\small
+\begin{longtable}{>{\raggedright}p{5.4cm} >{\raggedright\arraybackslash}p{10.4cm}}
+\toprule
+\textbf{Síntoma} & \textbf{Qué hacer}\\
+\midrule
+\endhead
+\emph{No se encontró Python} & Instale Python (paso 2) marcando \emph{Add python.exe to PATH}.\\
+Se abre la Microsoft Store al escribir \codigo{python} & Es un acceso de Windows, no Python. Instale Python desde python.org; el \codigo{.bat} usa \codigo{py}.\\
+La consola se cierra enseguida & Ábrala desde un \emph{Símbolo del sistema} para leer el error: \codigo{cd C:\textbackslash GemeloBrazo} y luego \codigo{py gemelo\_brazo.py}.\\
+\emph{Acceso denegado} al abrir el COM & Otro programa usa el puerto (Micro/WIN, otra copia de la app). Ciérrelo.\\
+La ventana del gemelo no aparece & Agregue \codigo{-{}-navegador} en el \codigo{.bat} o instale Edge o Chrome.\\
+El celular no abre la página & Regla del firewall, red como \emph{Privada} (paso 4), \codigo{https://} y \codigo{:8443}.\\
+\emph{Windows protegió su PC} & \emph{Más información $\rightarrow$ Ejecutar de todas formas}, o desbloquee el \codigo{.zip} (paso 1).\\
+Letras raras en la consola & Solo afecta a tildes en los mensajes; no cambia el funcionamiento.\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{Desinstalar}
+Borre la carpeta. Python se desinstala desde \emph{Configuración $\rightarrow$ Aplicaciones}. Si se creó la regla del firewall: \codigo{netsh advfirewall firewall delete rule name="Gemelo brazo"}.
+
+\end{document}
