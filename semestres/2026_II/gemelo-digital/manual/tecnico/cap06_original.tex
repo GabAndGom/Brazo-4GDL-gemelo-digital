@@ -1,0 +1,246 @@
+% =====================================================================
+\chapter{Programa original de secuencias}\label{cap:original}
+
+\section{Origen y estructura}
+Es el programa que tenía cargado el PLC al empezar el proyecto: una versión del programa de Miguel («BRAZO MIGUEL ROBADO»), con un pequeño buzón en VB100/VB104 para recibir órdenes de la PC. Se subió desde el PLC el 26/10/2026 y está en el repositorio como \codigo{programas-plc/brazo\_secuencias\_original\_v1.awl} (y \codigo{.mwp}); el listado completo está en el apéndice \ref{ap:original}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=6mm and 8mm]
+\node[cajan, text width=3.8cm] (ob1) {\textbf{OB1} (10 segmentos)\\arranque, paro, emergencia, selección de modo, estado};
+\node[caja, text width=3cm, right=16mm of ob1, yshift=14mm] (man) {\textbf{SBR20 MANUAL}\\(9 segmentos)\\jog y garra};
+\node[caja, text width=3cm, right=16mm of ob1, yshift=-14mm] (aut) {\textbf{SBR21 AUTO}\\(37 segmentos)\\secuencias 1 y 2};
+\node[caja, text width=3cm, right=10mm of aut] (hom) {\textbf{SBR0 HOMING}\\(9 segmentos)\\X, base, Y};
+\draw[flecha] (ob1) -- node[above, etiq, sloped]{I0.5 = 0} (man);
+\draw[flecha] (ob1) -- node[below, etiq, sloped]{I0.5 = 1} (aut);
+\draw[flecha] (aut) -- node[above, etiq]{sin referencia} (hom);
+\end{tikzpicture}
+\caption{Estructura del programa original.}
+\end{figure}
+
+\section{Memoria que usa}
+\begin{center}\small
+\begin{longtable}{>{\ttfamily}p{2.4cm} >{\raggedright\arraybackslash}p{12.6cm}}
+\toprule
+\textbf{\rmfamily Dirección} & \textbf{Significado}\\
+\midrule
+\endhead
+\multicolumn{2}{@{}l}{\textbf{Órdenes de la PC} (las escribe la app con el perfil \emph{cargado})}\\
+V104.0 & iniciar (equivale a I0.7)\\
+V104.1 & paro en automático\\
+V104.2 & emergencia (queda enclavada)\\
+V104.3 / V104.4 & forzar modo (con VB104 = 0, el modo lo decide I0.5)\\
+V104.5 / V104.6 & paro / emergencia adicionales\\
+V104.7 & latido: la PC lo alterna; si no cambia en 5~s, el PLC borra VB104\\
+V100.0 / V100.2 / V100.3 & iniciar / paro / rearmar por flanco\\
+\multicolumn{2}{@{}l}{\textbf{Marcas internas}}\\
+M4.0 & inicio pedido (I0.7 o V104.0, sin emergencia)\\
+M5.0 & flanco del inicio: dura un ciclo\\
+M4.3 & modo automático (I0.5 = 1)\\
+M4.5 & paro (I0.6 o V104.5)\\
+M4.6 / M4.7 & emergencia / emergencia enclavada\\
+M5.1 & flanco de rearme (V100.3)\\
+M5.3 & flanco del latido\\
+M5.5 / M5.6 & flancos de I0.2 / I0.4 (final opuesto pisado durante el homing)\\
+M0.0 / M0.5 & homing permitido / homing pedido\\
+M0.3 & \textbf{referenciado}\\
+M5.2 & falla de homing\\
+M1.0 & inicio pedido desde la PC (V100.0) en automático\\
+M1.1 & final de carrera cortó el carro X en automático\\
+M10.0 & auxiliar para alternar la garra\\
+\multicolumn{2}{@{}l}{\textbf{Estado para la PC}}\\
+V200.0 / .1 / .3 / .7 & listo / ocupado / falla de homing / referenciado\\
+V301.0 -- V301.6 & homing en curso, listo, secuencia 1 en curso y terminada, secuencia 2 en curso y terminada, Y arriba en la secuencia 2\\
+V302.0 & la próxima secuencia es la 2\\
+VW320 / VW322 & paso de la secuencia automática / del homing\\
+VB201 -- VB203 & copia de los pasos y de IB0\\
+\multicolumn{2}{@{}l}{\textbf{Constantes} (se cargan en el primer ciclo)}\\
+VD330 / VD334 & avance de X en las secuencias: 20\,000 / 14\,000 pulsos\\
+VD340 / VD344 / VD348 & pulsos máximos de búsqueda del homing: X 30\,000, Y 25\,000, base 45\,000\\
+\bottomrule
+\end{longtable}
+\end{center}
+La app reconoce este programa por la firma VD340 = 30\,000 y VD344 = 25\,000.
+
+\section{Bloque principal OB1}
+\begin{center}\small
+\begin{longtable}{>{\raggedright}p{1.2cm} >{\raggedright\arraybackslash}p{13.8cm}}
+\toprule
+\textbf{Seg.} & \textbf{Qué hace}\\
+\midrule
+\endhead
+1 & Señales de mando: borra VB104 en el primer ciclo; vigila el latido V104.7 con T61 (5~s); calcula inicio (M4.0) y su flanco (M5.0), modo automático (M4.3), paro (M4.5), emergencia (M4.6) y la enclava (M4.7); flancos de rearme (M5.1) y de los finales opuestos (M5.5, M5.6).\\
+2 & Emergencia: corta los dos PTO (SMB67/77 = 0 y PLS), apaga Q0.0--Q0.6, borra los pasos y las banderas. Rearme: con la emergencia ya liberada, un inicio (M5.0) o V100.3 quitan el enclavamiento.\\
+3 & Primer ciclo (SM0.1): apaga las salidas, borra marcas y memoria de mando y estado, y carga las constantes VD330--VD348.\\
+4 & Paro en automático: flanco de I0.6, V300.2, \textbf{I1.0} o V104.1, con el selector en automático. Corta los trenes, apaga salidas y vuelve las secuencias al inicio.\\
+5 & Al pasar a manual: corta todo y reinicia; en manual y sin emergencia llama a SBR20.\\
+6 & Al pasar a automático: corta todo y permite el homing; en automático y sin emergencia llama a SBR21.\\
+7 & Flanco de V100.0 en automático: inicio desde la PC (M1.0). Flanco de V100.2: paro desde la PC (V300.2).\\
+8 & Publica el estado en VB200--VB203.\\
+9 & Protección en automático: si X avanza y pisa I0.2, o retrocede y pisa I0.1, corta el PTO1 (M1.1).\\
+10 & Copia VD210/VD220 en VD304/VD308 (posiciones; en este programa siempre son 0).\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\draw[barra] (0,0.6) -- (0,-2.4);
+\draw[ld] (0,0) -- (8,0); \draw[ld] (0.4,0) -- (0.4,-1) -- (2.2,-1) -- (2.2,0);
+\pic at (1.3,0) {na={I0.7}}; \pic at (1.3,-1) {na={V104.0}};
+\pic at (3.4,0) {nc={V104.2}}; \pic at (5,0) {nc={V104.6}}; \pic at (7.2,0) {bob={M4.0}{}{}};
+\node[etiq, text width=3cm, anchor=west] at (8.2,0) {inicio pedido\\(panel o PC)};
+\draw[ld] (0,-1.9) -- (5.6,-1.9);
+\pic at (1.3,-1.9) {na={M4.0}}; \pic at (3,-1.9) {pf={}}; \pic at (4.8,-1.9) {bob={M5.0}{}{}};
+\node[etiq, text width=3.6cm, anchor=west] at (5.8,-1.9) {un solo ciclo: arranca homing o secuencia};
+\end{tikzpicture}
+\caption{OB1, segmento 1 (parte): inicio por I0.7 \emph{o} V104.0, sin emergencia.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\draw[barra] (0,0.6) -- (0,-1.6);
+\draw[ld] (0,0) -- (9.4,0);
+\draw[ld] (0.3,0) -- (0.3,-1) -- (2.9,-1) -- (2.9,0);
+\pic at (0.9,0) {na={I0.2}}; \pic at (2.1,0) {nc={Q0.3}};
+\pic at (0.9,-1) {na={I0.1}}; \pic at (2.1,-1) {na={Q0.3}};
+\pic at (3.8,0) {na={M4.3}}; \pic at (5,0) {na={Q0.5}}; \pic at (6.2,0) {nc={SM76.7}};
+\node[fb] at (7,0) {SMB77 = 0, \textbf{PLS} 1};
+\pic at (10.3,0) {bob={M1.1}{S}{1}}; \draw[ld] (9.4,0) -- (10.8,0);
+\end{tikzpicture}
+\caption{OB1, segmento 9: en automático, el carro X se detiene si llega al final del lado hacia el que avanza.}
+\end{figure}
+
+\section{Modo manual (SBR20)}
+\begin{center}\small
+\begin{longtable}{>{\raggedright}p{1.2cm} >{\raggedright\arraybackslash}p{13.8cm}}
+\toprule
+\textbf{Seg.} & \textbf{Qué hace}\\
+\midrule
+\endhead
+1 & Con cada flanco de inicio (I0.7) alterna la garra Q0.7 (abre si estaba cerrada, cierra si estaba abierta).\\
+2, 3 & I1.0 (o I1.1), con el PTO0 libre: DIR base Q0.2 = 0 (o 1) y paquete de 100 pulsos a 4~kHz.\\
+4 & Al soltar los dos pulsadores de la base: corta el PTO0.\\
+5, 6 & I1.2 / I1.3 sin el pulsador contrario, sin el final del lado de avance y con K2 abierto: cierra K1, fija DIR X y, tras 30~ms (T35/T36), da paquetes de 100 pulsos a 4~kHz.\\
+7, 8 & Igual para Y con I1.4 / I1.5, K2 y T97/T98 (exige K1 abierto).\\
+9 & Sin ningún pulsador de X/Y: corta el PTO1 y, 30~ms después (T99), abre K1 y K2.\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\draw[barra] (0,0.6) -- (0,-4.4);
+\draw[ld] (0,0) -- (8.4,0);
+\pic at (0.9,0) {na={I1.2}}; \pic at (2.3,0) {nc={I1.3}}; \pic at (3.7,0) {nc={I0.2}}; \pic at (5.1,0) {nc={Q0.6}};
+\pic at (6.4,0) {bob={Q0.5}{S}{1}};
+\draw[ld] (5.7,0) -- (5.7,-1.2) -- (8.4,-1.2); \pic at (6.4,-1.2) {bob={Q0.3}{R}{1}};
+\draw[ld] (5.7,-1.2) -- (5.7,-2.3) -- (6.2,-2.3); \node[fb] at (6.2,-2.3) {\textbf{TON} T35, PT 3 (30 ms)};
+\node[etiq, text width=3.4cm, anchor=west] at (8.6,-0.5) {cierra K1 (driver X) y pone DIR X adelante};
+\draw[ld] (0,-3.7) -- (7.1,-3.7);
+\pic at (0.9,-3.7) {na={T35}}; \pic at (2.3,-3.7) {na={I1.2}}; \pic at (3.7,-3.7) {nc={I0.2}}; \pic at (5.1,-3.7) {na={SM76.7}};
+\node[fb] at (6.1,-3.7) {\textbf{PTO1}: SMB77 = 16\#85\\SMW78 = 250 µs\\SMD82 = 100\\\textbf{PLS} 1};
+\end{tikzpicture}
+\caption{SBR20, segmento 5: jog de X adelante.}
+\end{figure}
+
+\nota{Como el paquete se corta al soltar el pulsador (segmento 9), no se sabe cuántos de los 100 pulsos salieron: con este programa la posición no se puede contar con exactitud. El programa del gemelo corrige esto dejando terminar cada paquete.}
+
+\section{Homing (SBR0)}
+\begin{center}\small
+\begin{longtable}{>{\raggedright}p{1.2cm} >{\raggedright\arraybackslash}p{13.8cm}}
+\toprule
+\textbf{Seg.} & \textbf{Qué hace}\\
+\midrule
+\endhead
+1 & Homing permitido (M0.0), pedido (M0.5), sin falla y en reposo: marca «homing en curso» y va al paso 10.\\
+2 & Paso 10: abre K2, cierra K1, DIR X atrás (Q0.3 = 1); a los 50~ms (T34) pasa al 11.\\
+3 & Paso 11: arranca el PTO1 con VD340 = 30\,000 pulsos a 4~kHz; al llegar a I0.1 lo corta, abre K1 y pasa al 20.\\
+4 & Paso 20: DIR base hacia el inductivo (Q0.2 = 1) y PTO0 con VD348 = 45\,000 pulsos a 2,5~kHz; al llegar a I0.0 lo corta y pasa al 30.\\
+5 & Paso 30: abre K1, cierra K2, DIR Y abajo (Q0.4 = 1); a los 50~ms (T33) pasa al 31.\\
+6 & Paso 31: PTO1 con VD344 = 25\,000 pulsos; al llegar a I0.3 lo corta, abre K2 y pasa al 40.\\
+7 & Paso 40: abre la garra; a los 400~ms (T37) pasa al 50.\\
+8 & Paso 50: pone las posiciones en cero, marca \textbf{referenciado} (M0.3) y homing terminado.\\
+9 & Fallas: tiempo excedido (T58 = 12~s en X, T59 = 25~s en la base, T60 = 12~s en Y), tren terminado sin sensor, o final opuesto pisado (M5.5, M5.6). Corta todo y marca M5.2.\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=5mm and 7mm]
+\node[estado] (s10) {\textbf{10}\\K1, X atrás};
+\node[estado, right=of s10] (s11) {\textbf{11}\\PTO1 30000 p\\a 4 kHz};
+\node[estado, right=of s11] (s20) {\textbf{20}\\PTO0 45000 p\\a 2,5 kHz};
+\node[estado, right=of s20] (s30) {\textbf{30}\\K2, Y abajo};
+\node[estado, below=of s30] (s31) {\textbf{31}\\PTO1 25000 p};
+\node[estado, left=of s31] (s40) {\textbf{40}\\abre garra};
+\node[estadon, left=of s40] (s50) {\textbf{50}\\ceros,\\referenciado};
+\node[estado, left=of s50, fill=rojo!10, draw=rojo] (f) {\textbf{falla}\\M5.2};
+\draw[flecha] (s10) -- node[trans, above=1mm]{50 ms} (s11);
+\draw[flecha] (s11) -- node[trans, above=1mm]{I0.1} (s20);
+\draw[flecha] (s20) -- node[trans, above=1mm]{I0.0} (s30);
+\draw[flecha] (s30) -- node[trans, right]{50 ms} (s31);
+\draw[flecha] (s31) -- node[trans, above=1mm]{I0.3} (s40);
+\draw[flecha] (s40) -- node[trans, above=1mm]{400 ms} (s50);
+\draw[flecha, rojo, dashed] (s11.south) .. controls +(0,-1.6) and +(0.6,0.6) .. node[trans, pos=0.3, right]{12 s, sin sensor} (f.north east);
+\end{tikzpicture}
+\caption{Máquina de pasos del homing (VW322).}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\draw[barra] (0,0.6) -- (0,-2.6);
+\draw[ld] (0,0) -- (3,0); \pic at (1,0) {cmp={VW322}{==I}{11}}; \pic at (2.2,0) {pf={}};
+\node[fb] at (3,0) {\textbf{PTO1}: SMB77 = 16\#85, SMW78 = 250 µs\\SMD82 = VD340 (30000), \textbf{PLS} 1};
+\draw[ld] (0,-1.7) -- (7.5,-1.7); \pic at (1,-1.7) {cmp={VW322}{==I}{11}}; \pic at (2.5,-1.7) {na={I0.1}};
+\node[fb] at (3.2,-1.7) {SMB77 = 0, \textbf{PLS} 1\\(corta el tren)};
+\pic at (6.4,-1.7) {bob={Q0.5}{R}{1}};
+\draw[ld] (7.5,-1.7) -- (7.9,-1.7); \node[fb] at (7.9,-1.7) {\textbf{MOV\_W} +20 $\rightarrow$ VW322};
+\end{tikzpicture}
+\caption{SBR0, segmento 3: arranca el tren hacia atrás y lo corta al llegar a I0.1.}
+\end{figure}
+
+\section{Secuencias automáticas (SBR21)}
+Sin referencia, el primer inicio ejecuta el homing (segmento 1). Con referencia, el primer inicio ejecuta la \textbf{secuencia 1} y los siguientes la \textbf{secuencia 2} (V302.0 queda en 1).
+
+\begin{center}\small
+\begin{longtable}{>{\raggedright}p{1.6cm} >{\raggedright}p{1.2cm} >{\raggedright}p{6.2cm} >{\raggedright\arraybackslash}p{5.4cm}}
+\toprule
+\textbf{Pasos} & \textbf{Seg.} & \textbf{Movimiento} & \textbf{Pulsos / tiempo}\\
+\midrule
+\endhead
+\multicolumn{4}{@{}l}{\textbf{Secuencia 1}}\\
+10--12 & 3--5 & Y sube (K2, Q0.4 = 0) & 12\,000 (60~mm), relé 200~ms\\
+20--21 & 6--7 & base gira (Q0.2 = 0) & 17\,000 ($\approx$89°)\\
+30--32 & 8--10 & X avanza (K1, Q0.3 = 0) & VD330 = 20\,000 (100~mm)\\
+40 & 11 & abre la garra; fin & --\\
+\multicolumn{4}{@{}l}{\textbf{Secuencia 2}}\\
+100 & 13 & cierra la garra (toma la pieza) & 400~ms\\
+110--112 & 14--16 & Y sube & 5\,000 (25~mm)\\
+120--122 & 17--19 & X retrocede (Q0.3 = 1) & VD334 = 14\,000 (70~mm)\\
+130--131 & 20--21 & base gira (Q0.2 = 0) & 18\,000 ($\approx$95°)\\
+140--142 & 22--24 & Y baja (Q0.4 = 1) & 14\,000 (70~mm)\\
+150 & 25 & abre la garra (deja la pieza) & 400~ms\\
+160--162 & 26--28 & Y sube & 14\,000\\
+170--171 & 29--30 & base vuelve (Q0.2 = 1) & 18\,000\\
+180--182 & 31--33 & X avanza & 14\,000\\
+190--192 & 34--36 & Y baja & 5\,000\\
+200 & 37 & abre la garra; fin & --\\
+\bottomrule
+\end{longtable}
+\end{center}
+Patrón de cada movimiento: (1) cerrar el relé y fijar la dirección, esperar 200~ms (T38, T40\dots{}); (2) arrancar el tren de pulsos a 4~kHz; (3) esperar 100~ms y luego a que SM76.7 (o SM66.7) indique que terminó.
+
+\section{Limitaciones}
+\begin{itemize}
+\item No conoce la posición: solo sabe si hizo el homing.
+\item Solo hace dos rutinas fijas; para cambiarlas hay que reprogramar el PLC.
+\item El jog corta los paquetes al soltar: no se puede contar con exactitud.
+\item Los finales de carrera solo se vigilan en el homing, en el jog y (para X) en automático.
+\item Con este programa, la app \emph{estima} la posición (sección \ref{sec:estimador}).
+\end{itemize}

@@ -1,0 +1,81 @@
+% =====================================================================
+\chapter{Objetivos y cómo usar este manual}\label{cap:objetivos}
+
+Este manual reúne, en un solo documento, todo el conocimiento técnico del brazo robótico XK-JS1-1 del laboratorio y del gemelo digital desarrollado sobre él durante la gestión II/2026: el hardware y su cableado, la configuración de los drivers y las frecuencias de trabajo, los dos programas ladder del PLC explicados red por red, el modelo cinemático con su jacobiano, el protocolo de comunicación entre la computadora y el PLC, las aplicaciones de software, la base de datos y la estructura del repositorio.
+
+Está escrito para que un estudiante que llegue al laboratorio sin conocer el brazo pueda entenderlo por completo, reproducir los resultados y continuar el trabajo.
+
+\section{Marco: el laboratorio integrado}
+Las guías de laboratorio del semestre (carpeta \codigo{semestres/2026\_II/guias/} del repositorio) organizan el trabajo de tres asignaturas sobre las mismas plantas, siguiendo el Ciclo de Vida del Desarrollo de Sistemas (SDLC) y la mejora continua (Kaizen):
+
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{3.1cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Asignatura} & \textbf{Responsabilidad sobre el brazo}\\
+\midrule
+ETN-902 Control II & caracterización, modelado matemático, linealización, identificación de variables y lazos\\
+ETN-1034 Aplicación de Técnicas & programación del PLC (PTO), cableado de drivers y sensores, control avanzado, comunicaciones industriales\\
+ETN-1000 Bases de Datos & modelo de datos de telemetría, interfaces (HMI y web), conectividad entre la planta y el servidor\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=4mm and 4mm, fase/.style={draw, rounded corners=2pt, fill=gris, text width=4.6cm, align=left, font=\scriptsize, inner sep=5pt, minimum height=26mm}]
+\node[fase] (f1) {\textbf{Fase 1 · semanas 1--6}\\Ingeniería inversa y auditoría Kaizen\\[2pt] Lab 1: auditoría, variables PV/MV/DV, causalidad\\ Lab 2: planos ISA/IEC, mockups\\ Lab 3: Git/GitHub, modelo E-R en 3FN};
+\node[fase, right=of f1] (f2) {\textbf{Fase 2 · semanas 7--13}\\Modelado dinámico y backend\\[2pt] modelado, linealización de los brazos, redes de Petri, scripts SQL, triggers\\ \textbf{Hito}: gemelos digitales validados en simulación};
+\node[fase, right=of f2, fill=naranja!12] (f3) {\textbf{Fase 3 · semanas 14--20}\\Implementación y redes\\[2pt] lazos en el hardware real, comunicación PLC--PC, middleware Python, telemetría, dashboard};
+\draw[flecha] (f1) -- (f2); \draw[flecha] (f2) -- (f3);
+\end{tikzpicture}
+\caption{Fases del semestre según la guía 1.}
+\end{figure}
+
+\section{Qué objetivo cubre cada capítulo}
+\begin{center}\small
+\begin{longtable}{>{\raggedright}p{6.6cm} >{\raggedright\arraybackslash}p{8.6cm}}
+\toprule
+\textbf{Objetivo de las guías} & \textbf{Dónde se cubre}\\
+\midrule
+\endhead
+Identificar y clasificar variables PV, MV, DV; ruptura de causalidad (Lab 1) & Capítulo \ref{cap:planta}: variables, tags ISA, lazo abierto con supervisión discreta\\
+Ficha técnica del hardware, ingeniería inversa (Lab 1) & Capítulos \ref{cap:planta} y \ref{cap:drivers}\\
+Planos eléctricos, potencia y mando, bornes al PLC (Lab 2) & Capítulo \ref{cap:electrico}\\
+Programación del PLC: PTO, temporizadores, secuencias (ETN-1034) & Capítulos \ref{cap:s7200}, \ref{cap:original} y \ref{cap:gemeloplc}\\
+Redes de Petri para comportamiento secuencial (Fase 2) & Sección \ref{sec:petri}\\
+Modelado y linealización de los brazos (Fase 2) & Capítulo \ref{cap:cinematica}: cinemática, jacobiano, linealización\\
+Gemelo digital validado (hito de la Fase 2) & Capítulos \ref{cap:cinematica}, \ref{cap:aplicaciones} y \ref{cap:mediciones}\\
+Comunicación PLC--PC, tramas binarias (Fase 3) & Capítulo \ref{cap:ppi}: protocolo PPI byte a byte\\
+Middleware en Python, arquitectura de 3 capas (Lab 1, Fase 3) & Capítulo \ref{cap:aplicaciones}\\
+Modelo E-R normalizado en 3FN, scripts SQL, triggers (Lab 3, Fase 2) & Capítulo \ref{cap:datos}\\
+Control de acceso por roles (Fase 3) & Secciones \ref{sec:acceso} y \ref{sec:tablas}\\
+Estructura del repositorio, Git y GitHub (Lab 3) & Capítulo \ref{cap:proyecto}\\
+Variables medidas y resultados & Capítulo \ref{cap:mediciones}\\
+Balance de cumplimiento & Capítulo \ref{cap:cumplimiento}\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{Convenciones}
+\begin{itemize}
+\item \textbf{SUPUESTO}: dato que no se midió en la planta y se tomó de una estimación o del fabricante. Debe verificarse.
+\item \textbf{Ejes}: la \emph{base} gira un ángulo $\theta$ y su motor se llama \emph{eje Z} (así lo nombran el informe 1 y la app); los \emph{carros X e Y} son lineales. La garra es el cuarto grado de libertad (binario).
+\item Direcciones del PLC en notación Siemens: \codigo{I0.5} entrada, \codigo{Q0.1} salida, \codigo{M5.0} marca, \codigo{VB1100} byte de la memoria V, \codigo{VW} palabra (2 bytes), \codigo{VD} doble palabra (4 bytes), \codigo{SM} memoria especial, \codigo{T} temporizador.
+\item Los fragmentos de código están copiados de los archivos reales del repositorio; los programas del PLC completos están en los apéndices.
+\end{itemize}
+
+\section{Documentos relacionados}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{6.2cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Documento} & \textbf{Contenido}\\
+\midrule
+\codigo{manual\_linux.pdf}, \codigo{manual\_windows.pdf} & instalación y uso de la app del gemelo\\
+\codigo{arquitectura\_gemelo\_digital.pdf} & por qué se diseñó así: páginas, puertas de acceso\\
+\codigo{guia\_completa\_brazo.pdf} & versión resumida de este manual\\
+\codigo{informes/informe\_1\_auditoria\_y\_requerimientos.pdf} & auditoría inicial del equipo (Lab 1)\\
+\codigo{modelo-3d/informe/informe\_cinematica\_modelo\_3d.pdf} & desarrollo del modelo cinemático y 3D\\
+\codigo{global/datasheets/} & hojas de datos de PLC, drivers, sensores y relés\\
+\bottomrule
+\end{tabularx}
+\end{center}

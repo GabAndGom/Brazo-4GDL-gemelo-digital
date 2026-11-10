@@ -1,0 +1,176 @@
+% =====================================================================
+\chapter{Motores, drivers, transmisión y frecuencias}\label{cap:drivers}
+
+\section{Cómo se mueve un motor paso a paso}
+Un motor paso a paso híbrido de 1,8° tiene 200 posiciones estables por vuelta. El driver alimenta sus dos bobinas (A y B) con corrientes que van girando el campo magnético; con \emph{micropasos}, divide cada paso en partes más pequeñas haciendo las corrientes casi senoidales, lo que da un movimiento más suave.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\node[cajan, text width=2.4cm] (plc) {PLC\\PUL: un pulso\\DIR: sentido};
+\node[caja, text width=3cm, right=10mm of plc] (drv) {driver\\1 pulso = 1 micropaso\\corriente en A y B};
+\node[caja, text width=2.4cm, right=10mm of drv] (m) {motor 1,8°\\200 pasos/vuelta};
+\node[caja, text width=2.6cm, right=10mm of m] (h) {husillo o\\engranaje};
+\draw[flecha] (plc) -- (drv); \draw[flecha] (drv) -- node[above, etiq]{A±, B±} (m); \draw[flecha] (m) -- (h);
+\begin{scope}[shift={(1.2,-2.4)}]
+\draw[->] (0,0) -- (11.5,0) node[right, etiq]{t};
+\node[etiq, anchor=east] at (-0.1,0.9) {$i_A$}; \node[etiq, anchor=east] at (-0.1,-0.9) {$i_B$};
+\draw[naranja, thick, domain=0:11, samples=120] plot (\x, {0.8*cos(\x*65)}) ;
+\draw[azulg, thick, domain=0:11, samples=120] plot (\x, {0.8*sin(\x*65)});
+\node[etiq, text width=6cm] at (5.5,-1.4) {con micropasos, las corrientes de las dos bobinas son casi senoidales y desfasadas 90°};
+\end{scope}
+\end{tikzpicture}
+\caption{Cadena de mando de un eje.}
+\end{figure}
+
+\section{Configuración de los drivers}
+Los drivers JMC 2M542-N son compatibles con el Leadshine DM542, cuya tabla está en \codigo{global/datasheets/driver\_leadshine\_dm542.pdf}. Los tres drivers del tablero tienen los interruptores en la misma posición (foto del 26/10/2026):
+
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm]
+\foreach \i/\e in {1/0,2/0,3/1,4/0,5/1,6/1,7/1,8/0} {
+  \draw[fill=gris] (\i*0.9,0) rectangle ++(0.6,1.4);
+  \ifnum\e=1 \fill[naranja] (\i*0.9+0.08,0.08) rectangle ++(0.44,0.55); \node[font=\tiny\bfseries] at (\i*0.9+0.3,1.2) {ON};
+  \else \fill[black!60] (\i*0.9+0.08,0.77) rectangle ++(0.44,0.55); \node[font=\tiny] at (\i*0.9+0.3,0.25) {OFF}; \fi
+  \node[font=\scriptsize] at (\i*0.9+0.3,-0.3) {SW\i};
+}
+\draw[decorate, decoration={brace, mirror, amplitude=4pt}] (0.9,-0.55) -- (3.3,-0.55) node[midway, below=5pt, etiq]{corriente};
+\draw[decorate, decoration={brace, mirror, amplitude=4pt}] (3.6,-0.55) -- (4.2,-0.55) node[midway, below=5pt, etiq]{reposo};
+\draw[decorate, decoration={brace, mirror, amplitude=4pt}] (4.5,-0.55) -- (7.5,-0.55) node[midway, below=5pt, etiq]{micropasos};
+\end{tikzpicture}
+\end{center}
+
+\begin{table}[H]
+\centering\small
+\begin{minipage}[t]{0.47\linewidth}\centering
+\begin{tabular}{@{}cccrr@{}}
+\toprule
+\textbf{SW1} & \textbf{SW2} & \textbf{SW3} & \textbf{pico} & \textbf{RMS}\\
+\midrule
+ON & ON & ON & 1,00~A & 0,71~A\\
+OFF & ON & ON & 1,46~A & 1,04~A\\
+ON & OFF & ON & 1,91~A & 1,36~A\\
+\rowcolor{naranja!20} OFF & OFF & ON & \textbf{2,37~A} & \textbf{1,69~A}\\
+ON & ON & OFF & 2,84~A & 2,03~A\\
+OFF & ON & OFF & 3,31~A & 2,36~A\\
+ON & OFF & OFF & 3,76~A & 2,69~A\\
+OFF & OFF & OFF & 4,20~A & 3,00~A\\
+\bottomrule
+\end{tabular}
+\caption{Corriente de trabajo (SW1--SW3).}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.5\linewidth}\centering
+\begin{tabular}{@{}rcccc@{}}
+\toprule
+\textbf{pulsos/vuelta} & \textbf{SW5} & \textbf{SW6} & \textbf{SW7} & \textbf{SW8}\\
+\midrule
+400 & OFF & ON & ON & ON\\
+800 & ON & OFF & ON & ON\\
+1600 & OFF & OFF & ON & ON\\
+3200 & ON & ON & OFF & ON\\
+6400 & OFF & ON & OFF & ON\\
+12800 & ON & OFF & OFF & ON\\
+25600 & OFF & OFF & OFF & ON\\
+\rowcolor{naranja!20} \textbf{1000} & ON & ON & ON & OFF\\
+2000 & OFF & ON & ON & OFF\\
+4000 & ON & OFF & ON & OFF\\
+5000 & OFF & OFF & ON & OFF\\
+8000 & ON & ON & OFF & OFF\\
+10000 & OFF & ON & OFF & OFF\\
+20000 & ON & OFF & OFF & OFF\\
+25000 & OFF & OFF & OFF & OFF\\
+\bottomrule
+\end{tabular}
+\caption{Micropasos (SW5--SW8).}
+\end{minipage}
+\end{table}
+
+\begin{itemize}
+\item \textbf{SW4 = OFF}: un segundo después del último pulso, la corriente baja a la mitad (el calor baja al 25\,\%, porque $P = I^2R$). Con SW4 = ON se mantiene toda la corriente.
+\item \textbf{X e Y deben tener siempre los mismos micropasos}, porque reciben el mismo tren de pulsos: si no, avanzarían distinto con los mismos pulsos.
+\end{itemize}
+
+\subsection{Análisis por eje}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{2.2cm} >{\raggedright}p{2.6cm} >{\raggedright}p{3cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Eje} & \textbf{Motor} & \textbf{Corriente ajustada} & \textbf{Comentario}\\
+\midrule
+X, Y & NEMA 23, 2,8~A/fase & 1,69~A RMS (2,37~A pico) & 60\,\% de la nominal: el motor trabaja frío pero con menos par (el par es casi proporcional a la corriente)\\
+Base & NEMA 17, 1,2~A/fase & desconocida & el 2M530 tiene otra tabla (0,5--3,0~A). Si la posición OFF OFF ON diera más de 1,2~A RMS, el motor se calentaría: \textbf{leer la placa del driver y verificar}\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Transmisión y resolución}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=4mm]
+\node[cajan] (p) {1 pulso};
+\node[caja, right=of p] (m) {$\frac{1}{1000}$ de vuelta del motor};
+\node[caja, right=of m] (h) {husillo 5~mm/vuelta (SUPUESTO)};
+\node[cajan, right=of h] (r) {0,005~mm del carro};
+\draw[flecha] (p) -- (m); \draw[flecha] (m) -- (h); \draw[flecha] (h) -- (r);
+\end{tikzpicture}
+\caption{Carros X e Y: 200 pulsos por milímetro.}
+\end{figure}
+
+\begin{itemize}
+\item \textbf{Carros}: $k_{XY} = \dfrac{1000~\text{pulsos/vuelta}}{5~\text{mm/vuelta}} = 200~\text{pulsos/mm}$; resolución 5~µm; recorrido de 170~mm = 34\,000 pulsos.
+\item \textbf{Base}: calibrada en la planta midiendo un giro con transportador: $k_\theta = 190{,}3$ pulsos/grado, o sea 68\,508 pulsos por vuelta de la base. Si el driver de la base también da 1000 pulsos por vuelta (SUPUESTO), la reducción mecánica es de unas \textbf{68,5 vueltas del motor por vuelta de la base}. Resolución: 0,0053° por pulso.
+\end{itemize}
+
+\section{Frecuencias, velocidades y tiempos}
+La velocidad de cada eje sale directamente de la frecuencia del tren de pulsos $f$ (o de su ciclo $T = 1/f$, que es lo que se programa en el PLC):
+\[
+v_{carro} = \frac{f}{k_{XY}}~[\text{mm/s}], \qquad \omega_{base} = \frac{f}{k_\theta}~[\text{°/s}], \qquad n_{motor} = \frac{60\,f}{1000}~[\text{rpm}] .
+\]
+
+\begin{center}\small
+\begin{longtable}{>{\raggedright}p{4.6cm} >{\ttfamily}p{1.6cm} r r r}
+\toprule
+\textbf{Dónde se usa} & \textbf{\rmfamily ciclo} & \textbf{$f$} & \textbf{motor} & \textbf{eje}\\
+\midrule
+\endhead
+jog X/Y, homing X/Y, secuencias, movimientos del gemelo (por defecto) & 250 µs & 4~kHz & 240~rpm & 20~mm/s\\
+jog de la base (programa del gemelo), homing de la base, movimientos de la base (por defecto) & 400 µs & 2,5~kHz & 150~rpm & 13,1~°/s\\
+jog y secuencias de la base (programa original) & 250 µs & 4~kHz & 240~rpm & 21,0~°/s\\
+mínimo admitido por el programa del gemelo (X/Y) & 2000 µs & 500~Hz & 30~rpm & 2,5~mm/s\\
+máximo admitido por el programa del gemelo (X/Y) & 200 µs & 5~kHz & 300~rpm & 25~mm/s\\
+límite del hardware (PTO de la CPU 224) & 50 µs & 20~kHz & 1200~rpm & 100~mm/s\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\textbf{Tiempos típicos} a las frecuencias por defecto: recorrer los 170~mm de un carro toma $170/20 = 8{,}5$~s; girar la base 90° toma $90 \times 190{,}3 / 2500 = 6{,}9$~s.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=0.55cm,y=1cm]
+\foreach \i in {0,...,9} {\draw[thick, naranja] (2*\i,0) -- (2*\i,0.8) -- (2*\i+1,0.8) -- (2*\i+1,0) -- (2*\i+2,0);}
+\draw[<->] (0,1.05) -- (2,1.05) node[midway, above, etiq]{$T$ = ciclo (SMW68/SMW78, µs)};
+\draw[<->] (4,-0.25) -- (5,-0.25) node[midway, below, etiq]{$T/2$};
+\draw[decorate, decoration={brace, mirror, amplitude=4pt}] (0,-0.7) -- (20,-0.7) node[midway, below=5pt, etiq]{$N$ pulsos (SMD72/SMD82)};
+\node[etiq, anchor=east] at (-0.3,0.4) {Q0.x};
+\end{tikzpicture}
+\caption{Tren de pulsos del PTO: ancho al 50\,\%, ciclo $T$ y cantidad $N$.}
+\end{figure}
+
+\section{Arranque sin rampa y pérdida de pasos}
+Un motor paso a paso solo puede arrancar \emph{de golpe} hasta una frecuencia límite (de arranque o \emph{pull-in}), que baja con la carga y la inercia. Por encima de ella, el rotor no alcanza a seguir al campo y pierde pasos: el eje queda atrás de la cuenta del PLC.
+
+Los dos programas del brazo arrancan los trenes a frecuencia constante, sin rampa. Por eso:
+\begin{itemize}
+\item se trabaja a 2,5--4~kHz, frecuencias que se probaron sin pérdidas visibles;
+\item la base del programa del gemelo usa 2,5~kHz (en lugar de 4~kHz) porque arranca más suave;
+\item la app limita la velocidad a 500--5000~Hz y recomienda no pasar de 4000~Hz.
+\end{itemize}
+
+\section{Recomendaciones}
+\begin{enumerate}
+\item \textbf{Corriente de X e Y}: subir a 2,84~A pico (ON ON OFF) para aprovechar más el par del NEMA 23 de 2,8~A, vigilando la temperatura.
+\item \textbf{SW4 del carro Y}: el husillo de bolas es reversible y el peso del brazo empuja el carro Y. Si el brazo baja solo al quedar quieto, poner SW4 = ON (retención con toda la corriente).
+\item \textbf{Rampas}: implementar perfiles de varios segmentos en el PTO (arranque a 1--1,5~kHz, máximo 10--15~kHz, rampa de 0,5--1~s). Así se podría trabajar más rápido sin perder pasos.
+\item \textbf{Tensión}: los drivers admiten hasta 50~V; con 36--48~V el par a alta velocidad mejora mucho.
+\item \textbf{Base}: verificar el driver 2M530 y el motor de 1,2~A.
+\end{enumerate}

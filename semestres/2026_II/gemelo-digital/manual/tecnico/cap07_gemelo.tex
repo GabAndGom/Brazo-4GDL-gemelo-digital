@@ -1,0 +1,323 @@
+% =====================================================================
+\chapter{Programa del gemelo: \texttt{brazo\_gemelo}}\label{cap:gemeloplc}
+
+\section{Por qué un programa nuevo}
+El programa original no podía ser la «mitad física» de un gemelo digital: no guarda la posición y solo sabe hacer dos rutinas. El programa \codigo{gemelo-digital/plc/brazo\_gemelo.awl} (proyecto \codigo{.mwp} al lado; listado completo en el apéndice \ref{ap:gemelo}) se escribió conservando el modo manual y el homing del programa de Miguel, y agregando:
+\begin{enumerate}
+\item \textbf{cuenta de pulsos} de cada eje, con signo: la posición es exacta mientras no se pierdan pasos;
+\item \textbf{finales de carrera que cortan} cualquier tren de pulsos y fijan la posición;
+\item un \textbf{buzón de órdenes} en la memoria V para que la PC pida homing, movimientos libres, garra, paro y velocidad;
+\item un \textbf{watchdog}: si la PC deja de dar señales de vida durante un movimiento, el PLC se detiene.
+\end{enumerate}
+Compiló sin errores en STEP 7-Micro/WIN (CPU 224 CN) y está cargado en el PLC desde el 27/10/2026. Su bloque de sistema dejó el puerto en la dirección PPI 2 a 9,6~kbit/s.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=5mm and 8mm]
+\node[cajan, text width=4cm] (ob1) {\textbf{OB1} (13 segmentos)\\primer ciclo, firma, paro,\\finales de carrera, cuenta,\\selección de modo, estado};
+\node[caja, text width=3.2cm, right=14mm of ob1, yshift=13mm] (man) {\textbf{SBR3 MANUAL}\\(21 segmentos)\\jog con cuenta exacta};
+\node[caja, text width=3.2cm, right=14mm of ob1, yshift=-13mm] (rem) {\textbf{SBR4 REMOTO}\\(64 segmentos)\\buzón, movimientos,\\homing, watchdog};
+\node[caja, text width=2.5cm, right=8mm of man] (pb) {\textbf{SBR1}\\pulsos base};
+\node[caja, text width=2.5cm, right=8mm of rem] (pxy) {\textbf{SBR2}\\pulsos X/Y};
+\node[caja, text width=2.5cm, below=6mm of ob1] (paro) {\textbf{SBR0 PARO}};
+\draw[flecha] (ob1) -- node[above, etiq, sloped]{I0.5 = 0} (man);
+\draw[flecha] (ob1) -- node[below, etiq, sloped]{I0.5 = 1} (rem);
+\draw[flecha] (man) -- (pb); \draw[flecha] (rem) -- (pxy);
+\draw[flecha] (man.south east) -- (pxy.north west); \draw[flecha] (rem.north east) -- (pb.south west);
+\draw[flecha] (ob1) -- (paro);
+\end{tikzpicture}
+\caption{Estructura de \texttt{brazo\_gemelo}. SBR1 y SBR2 son los únicos lugares donde se arrancan trenes de pulsos: así toda la cuenta pasa por un solo sitio.}
+\end{figure}
+
+\section{Mapa de memoria}
+\begin{center}\small
+\begin{longtable}{>{\ttfamily}p{3cm} >{\raggedright}p{1.2cm} >{\raggedright\arraybackslash}p{10.8cm}}
+\toprule
+\textbf{\rmfamily Dirección} & \textbf{Quién} & \textbf{Contenido}\\
+\midrule
+\endhead
+\multicolumn{3}{@{}l}{\textbf{Buzón de órdenes} (lo escribe la PC en una sola escritura de 20 bytes)}\\
+VB1100 & PC & orden: 1 homing, 2 mover, 3 paro, 4 cerrar garra, 5 abrir garra\\
+VB1101 & PC & secuencia: el PLC ejecuta cuando cambia\\
+VW1102 & PC & latido (watchdog de 2~s)\\
+VD1104 / 1108 / 1112 & PC & pulsos relativos de base / X / Y, con signo\\
+VW1116 / VW1118 & PC & ciclo del tren X/Y (200--2000~µs) y de la base (250--4000~µs)\\
+\multicolumn{3}{@{}l}{\textbf{Estado} (lo lee la PC: 40 bytes desde VB1120)}\\
+VB1120 & PLC & estado: 0 reposo, 1 homing, 2 moviendo\\
+VB1121 & PLC & eco de la secuencia\\
+VB1122 & PLC & .0 referenciado, .1 remoto (I0.5), .2 PTO0 ocupado, .3 PTO1 ocupado, .4 posición incierta, .5 watchdog\\
+VB1123 & PLC & error: 1 ocupado, 2 fuera de recorrido, 3 watchdog, 4 sin homing, 5 orden desconocida, 6 paro\\
+VD1124 / 1128 / 1132 & PLC & posición de base / X / Y en pulsos\\
+VW1136 & PLC & paso de la máquina de estados\\
+VB1138 / 1139 / 1140 & PLC & copia de IB0, IB1 y QB0\\
+VB1141 & PLC & firma \codigo{16\#47}\\
+VD1144 / 1148 / 1152 & PLC & tramo en curso de base / X / Y\\
+VW1156 / VW1158 & PLC & ciclo en curso X/Y / base\\
+\multicolumn{3}{@{}l}{\textbf{Uso interno}}\\
+VW1160 & & último latido visto\\
+VB1162 & & orden que se está ejecutando\\
+VD1164 / 1168 / 1172 & & destino de X / Y / base\\
+VD1176 / 1180 / 1184 & & $|\Delta X|$, $|\Delta Y|$, $|\Delta\theta|$\\
+VD1188 / VD1192 & & tramo común / resto\\
+VW1196 / VW1198, VD1202 & & parámetros para SBR2 / SBR1: ciclo y pulsos\\
+V1200.0 / .1 & & tramo de la base / de X-Y pendiente de sumar\\
+V1200.2 / .3 & & posición incierta / referenciado\\
+V1200.5 / .6 / .7 & & watchdog / orden de la PC en curso / orden nueva por validar\\
+V1201.0 & & tramo de X-Y recién arrancado\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{Bloque principal OB1}
+\begin{center}\small
+\begin{longtable}{>{\raggedright}p{1.2cm} >{\raggedright\arraybackslash}p{13.8cm}}
+\toprule
+\textbf{Seg.} & \textbf{Qué hace}\\
+\midrule
+\endhead
+1 & Primer ciclo: apaga Q0.0--Q0.7 y los PTO, llena VB1100--VB1209 con ceros y carga ciclos por defecto (250~µs X/Y, 400~µs base).\\
+2 & Escribe la firma \codigo{16\#47} en VB1141 en cada ciclo.\\
+3 & Paro: flanco de I0.6 o cualquier cambio del selector I0.5; error 6 y llamada a PARO.\\
+4 & X yendo hacia atrás (K1, DIR = 1) con el tren en marcha y llega a I0.1: corta el PTO1, anula el tramo y fija X = 0. Si K2 también estaba cerrado, marca posición incierta (Y pudo quedar a medio tramo).\\
+5 & Igual con I0.2: X = 34\,000.\\
+6 & Igual con I0.3: Y = 0.\\
+7 & Igual con I0.4: Y = 34\,000.\\
+8 & Al terminar un tramo de la base (flanco de SM66.7): suma el tramo a VD1124.\\
+9 & Al terminar un tramo de Q0.1 (flanco de SM76.7): suma los tramos a X (VD1128) y a Y (VD1132).\\
+10 & Selector en manual: llama a MANUAL (SBR3).\\
+11 & Selector en automático: llama a REMOTO (SBR4).\\
+12 & Copia IB0, IB1 y QB0 en VB1138--VB1140 para la PC.\\
+13 & Banderas de estado en VB1122.\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\draw[barra] (0,0.6) -- (0,-1.6);
+\draw[ld] (0,0) -- (5.6,0);
+\pic at (0.9,0) {na={I0.1}}; \pic at (2.2,0) {na={Q0.5}}; \pic at (3.5,0) {na={Q0.3}}; \pic at (4.8,0) {nc={SM76.7}};
+\node[fb] at (5.6,0) {SMB77 = 0, \textbf{PLS} 1 (corta)\\R V1200.1 (tramo anulado)\\\textbf{MOV\_DW} 0 $\rightarrow$ VD1128 (X = 0)};
+\node[etiq, text width=4.8cm, anchor=west] at (0.4,-1.1) {X yendo hacia atrás (K1 cerrado, DIR = 1) con el tren en marcha y llega al final I0.1};
+\end{tikzpicture}
+\caption{OB1, segmento 4: el final de carrera corta el tren y fija la posición exacta.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\draw[barra] (0,0.6) -- (0,-1.8);
+\draw[ld] (0,0) -- (4.2,0);
+\pic at (1,0) {na={SM76.7}}; \pic at (2.2,0) {pf={}}; \pic at (3.4,0) {na={V1200.1}};
+\node[fb] at (4.2,0) {\textbf{ADD\_DI} VD1148 + VD1128 $\rightarrow$ VD1128 \ (X)\\\textbf{ADD\_DI} VD1152 + VD1132 $\rightarrow$ VD1132 \ (Y)};
+\draw[ld] (3.9,0) -- (3.9,-1.2) -- (5.2,-1.2); \pic at (4.6,-1.2) {bob={V1200.1}{R}{1}};
+\node[etiq, text width=3.4cm] at (1.9,-1.3) {fin del tren de Q0.1 con un tramo pendiente};
+\end{tikzpicture}
+\caption{OB1, segmento 9: suma del tramo terminado a la posición de X y/o de Y.}
+\end{figure}
+
+\section{Subrutinas de pulsos (SBR1 y SBR2)}
+\begin{center}\small
+\begin{longtable}{>{\raggedright}p{2.2cm} >{\raggedright\arraybackslash}p{12.8cm}}
+\toprule
+\textbf{Bloque} & \textbf{Qué hace}\\
+\midrule
+\endhead
+SBR1, seg. 1--2 & Arranca el PTO0 con VD1202 pulsos y ciclo VW1198; guarda el tramo en VD1144 con signo ($-$ si Q0.2 = 1) y marca V1200.0.\\
+SBR2, seg. 1 & Arranca el PTO1 con VD1202 pulsos y ciclo VW1196; borra los tramos de X e Y y marca V1200.1.\\
+SBR2, seg. 2--5 & El tramo va a X si K1 está cerrado (con signo $-$ si Q0.3 = 1) y a Y si K2 está cerrado ($-$ si Q0.4 = 1). Con los dos relés cerrados, el mismo tramo se suma a los dos.\\
+SBR0 PARO & Corta los dos trenes; si había un tramo en curso marca la posición como incierta y quita el «referenciado»; abre los relés y vuelve al reposo.\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{Modo manual (SBR3)}
+\begin{center}\small
+\begin{longtable}{>{\raggedright}p{1.4cm} >{\raggedright\arraybackslash}p{13.6cm}}
+\toprule
+\textbf{Seg.} & \textbf{Qué hace}\\
+\midrule
+\endhead
+1 & Flanco de I0.7: alterna la garra.\\
+2--4 & I1.0 con el PTO0 libre: Q0.2 = 0; a los 100~ms (T106), paquete de 100 pulsos a 2,5~kHz por SBR1.\\
+5--7 & I1.1: igual con Q0.2 = 1 (T107).\\
+8--10 & I1.2: cierra K1, Q0.3 = 0; a los 200~ms (T101), paquetes de 100 pulsos a 4~kHz por SBR2, mientras no se pise I0.2 y K2 esté abierto.\\
+11--13 & I1.3: igual hacia atrás, hasta I0.1 (T102).\\
+14--16 & I1.4: cierra K2, Q0.4 = 0, hasta I0.4 (T103).\\
+17--19 & I1.5: igual hacia abajo, hasta I0.3 (T104).\\
+20--21 & Sin pulsadores de X/Y y con Q0.1 quieto: a los 300~ms (T105) abre K1 y K2.\\
+\bottomrule
+\end{longtable}
+\end{center}
+Diferencias con el original: cada paquete de 100 pulsos se termina siempre (un nuevo paquete solo arranca con el PTO en reposo), así la cuenta es exacta; la dirección se fija antes de dar pulsos; la base va a 2,5~kHz.
+
+\section{Modo remoto (SBR4)}
+\subsection{Velocidad, watchdog y buzón (segmentos 1--19)}
+\begin{center}\small
+\begin{longtable}{>{\raggedright}p{1.4cm} >{\raggedright\arraybackslash}p{13.6cm}}
+\toprule
+\textbf{Seg.} & \textbf{Qué hace}\\
+\midrule
+\endhead
+1--4 & Limita los ciclos pedidos por la PC: X/Y entre 200 y 2000~µs; base entre 250 y 4000~µs.\\
+5--7 & Watchdog: con una orden de la PC en curso y una máquina de pasos activa, si el latido VW1102 no cambia en 2~s (T110), marca watchdog, error 3 y llama a PARO.\\
+8 & Orden nueva: si VB1101 $\neq$ VB1121, copia la secuencia como eco, toma la orden y marca V1200.7.\\
+9 & Orden 3 (paro): siempre se acepta; error 6 y PARO.\\
+10 & Cualquier otra orden con un movimiento en curso: error 1.\\
+11, 12 & Órdenes 4 y 5: cierra o abre la garra.\\
+13 & Orden 1: homing (paso 100).\\
+14 & Flanco de I0.7 en reposo: homing también desde el panel.\\
+15 & Orden 2 sin referencia: error 4.\\
+16 & Orden 2: destino = posición actual + pulsos relativos.\\
+17 & Destino fuera de 0--34\,000 (X, Y) o de $\pm$50\,000 (base): error 2.\\
+18 & Orden 2 aceptada: paso 10.\\
+19 & Orden desconocida: error 5.\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\draw[barra] (0,0.6) -- (0,-0.8);
+\draw[ld] (0,0) -- (2.2,0); \pic at (1.1,0) {cmp={VB1101}{<>B}{VB1121}};
+\node[fb] at (2.2,0) {\textbf{MOV\_B} VB1101 $\rightarrow$ VB1121 \ (eco)\\\textbf{MOV\_B} VB1100 $\rightarrow$ VB1162 \ (orden a ejecutar)\\\textbf{MOV\_B} 0 $\rightarrow$ VB1123 \ (sin error)\\S V1200.7 \ (orden nueva pendiente)};
+\end{tikzpicture}
+\caption{SBR4, segmento 8: una orden solo se toma cuando cambia el número de secuencia.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\draw[barra] (0,0.6) -- (0,-1.8);
+\draw[ld] (0,0) -- (4.8,0);
+\pic at (1,0) {cmp={VW1102}{==I}{VW1160}}; \pic at (2.5,0) {na={V1200.6}}; \pic at (3.8,0) {cmp={VW1136}{<>I}{0}};
+\node[fb] at (4.8,0) {\textbf{TON} T110, PT 20 (2 s)};
+\draw[ld] (0,-1.3) -- (2,-1.3); \pic at (1,-1.3) {na={T110}};
+\node[fb] at (2,-1.3) {S V1200.5 (watchdog), \textbf{MOV\_B} 3 $\rightarrow$ VB1123, \textbf{CALL} PARO};
+\end{tikzpicture}
+\caption{SBR4, segmentos 5 y 7: watchdog.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm, dec/.style={draw, diamond, aspect=2.6, fill=white, font=\scriptsize, inner sep=1pt, align=center, minimum width=3.4cm}]
+\node[cajan, font=\scriptsize] (o) at (0,0.9) {orden nueva (VB1162)};
+\foreach \i/\t in {1/{¿orden 3, paro?}, 2/{¿hay un movimiento\\en curso?}, 3/{¿orden 4 o 5,\\garra?}, 4/{¿orden 1,\\homing?}, 5/{¿orden 2 y\\referenciado?}, 6/{¿destino dentro\\del recorrido?}}
+  \node[dec] (d\i) at (0,-1.55*\i+0.6) {\t};
+\foreach \i/\t/\c in {1/{SBR0 PARO, error 6}/rojo!8, 2/{rechazo: error 1 (ocupado)}/rojo!8, 3/{cierra o abre Q0.7}/white, 4/{homing: paso 100}/white, 5/{rechazo: error 4 (sin homing) o 5 (desconocida)}/rojo!8, 6/{rechazo: error 2 (fuera de rango)}/rojo!8}
+  \node[estado, fill=\c, text width=4.6cm, anchor=west] (r\i) at (3.6,-1.55*\i+0.6) {\t};
+\node[estadon, text width=3.2cm] (ok) at (0,-10) {movimiento: paso 10};
+\draw[flecha] (o) -- (d1);
+\foreach \i in {1,2,3,4} \draw[flecha] (d\i) -- node[trans, above]{sí} (r\i);
+\draw[flecha] (d5) -- node[trans, above]{no} (r5);
+\draw[flecha] (d6) -- node[trans, above]{no} (r6);
+\foreach \i/\j in {1/2,2/3,3/4,4/5} \draw[flecha] (d\i) -- node[trans, right]{no} (d\j);
+\draw[flecha] (d5) -- node[trans, right]{sí} (d6);
+\draw[flecha] (d6) -- node[trans, right]{sí} (ok);
+\end{tikzpicture}
+\caption{Validación de una orden (segmentos 9--19).}
+\end{figure}
+
+\subsection{Ejecución de un movimiento (segmentos 20--51)}
+\begin{center}\small
+\begin{longtable}{>{\raggedright}p{1.4cm} >{\raggedright}p{1.2cm} >{\raggedright\arraybackslash}p{12.4cm}}
+\toprule
+\textbf{Seg.} & \textbf{Paso} & \textbf{Qué hace}\\
+\midrule
+\endhead
+20--23 & 10 & Valores absolutos de los tramos: $|\Delta X|$, $|\Delta Y|$, $|\Delta\theta|$.\\
+24--27 & 10 & Tramo común = el menor de $|\Delta X|$ y $|\Delta Y|$; resto = el mayor menos el común.\\
+28--35 & 10 & Cierra K1 si $\Delta X \neq 0$ y K2 si $\Delta Y \neq 0$; fija las tres direcciones según el signo.\\
+36--37 & 10 & Espera 300~ms (T111) a que cierren los relés; pasa al 11.\\
+38 & 11 & Arranca la base en paralelo (SBR1) si $\Delta\theta \neq 0$.\\
+39--41 & 11 & Arranca el tramo común con K1 y K2 cerrados (SBR2) y pasa al 12; sin tramo común, va al 13.\\
+42--43 & 12 & Al terminar el común, abre el relé del eje que ya llegó; pasa al 13.\\
+44--47 & 13 & A los 300~ms (T113), da el resto al eje que falta y pasa al 14; sin resto, al 15.\\
+48--49 & 14 & Espera el fin del resto.\\
+50--51 & 15 & Espera a la base, abre los relés, estado 0 (reposo).\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\node[estado, text width=3cm] (p10) at (0,0) {\textbf{10}\\$|\Delta X|$, $|\Delta Y|$, $|\Delta\theta|$;\\común = el menor;\\relés y DIR};
+\node[estado, text width=2.8cm] (p11) at (4.1,0) {\textbf{11}\\base en paralelo;\\tramo común\\(K1 + K2)};
+\node[estado, text width=2.8cm] (p12) at (8,0) {\textbf{12}\\fin del común: abre\\el relé del eje\\que llegó};
+\node[estado, text width=2.8cm] (p13) at (8,-2.6) {\textbf{13}\\300 ms; resto\\al otro eje};
+\node[estado, text width=2.8cm] (p14) at (4.1,-2.6) {\textbf{14}\\fin del resto};
+\node[estadon, text width=3cm] (p15) at (0,-2.6) {\textbf{15}\\espera la base,\\abre relés, reposo};
+\draw[flecha] (p10) -- node[trans, above=1mm]{300 ms} (p11);
+\draw[flecha] (p11) -- (p12); \draw[flecha] (p12) -- (p13); \draw[flecha] (p13) -- (p14); \draw[flecha] (p14) -- (p15);
+\end{tikzpicture}
+\caption{Máquina de pasos de un movimiento.}
+\end{figure}
+
+\textbf{Ejemplo numérico}: desde X = 10\,000, Y = 4\,000 se pide X = 30\,000, Y = 16\,000. Entonces $\Delta X = +20\,000$, $\Delta Y = +12\,000$; común = 12\,000 (X e Y avanzan juntos 60~mm en 3~s a 4~kHz); resto = 8\,000 para X (40~mm más, en 2~s). Total 5,6~s contando las esperas de los relés.
+
+\subsection{Homing (segmentos 52--64)}
+\begin{center}\small
+\begin{longtable}{>{\raggedright}p{1.4cm} >{\raggedright}p{1.2cm} >{\raggedright\arraybackslash}p{12.4cm}}
+\toprule
+\textbf{Seg.} & \textbf{Paso} & \textbf{Qué hace}\\
+\midrule
+\endhead
+52--54 & 100 & Abre K1, cierra K2, Y hacia abajo; a los 300~ms (T120), si ya está en I0.3 salta al 103; si no, tren de búsqueda de 500\,000 pulsos a 4~kHz (paso 102).\\
+55 & 102 & Llega a I0.3: corta y fija Y = 0.\\
+56--58 & 103 & Abre K2, cierra K1, X hacia atrás; T121; tren de búsqueda (paso 105).\\
+59 & 105 & Llega a I0.1: corta y fija X = 0.\\
+60--62 & 106 & Abre K1, abre la garra, base hacia el inductivo (Q0.2 = 1); a los 400~ms (T122), tren de búsqueda a 2,5~kHz (paso 108).\\
+63 & 108 & Llega a I0.0: corta el PTO0.\\
+64 & 109 & Pone las tres posiciones en cero, marca \textbf{referenciado}, reposo.\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{Red de Petri del homing}\label{sec:petri}
+La guía 1 pide modelar el comportamiento secuencial con redes de Petri. En una red de Petri, los \emph{lugares} (círculos) son estados o recursos, las \emph{transiciones} (barras) son eventos, y una \emph{marca} (punto) indica el estado actual; una transición se dispara cuando sus lugares de entrada tienen marca y se cumple su condición.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\node[lugar] (p0) at (0,0) {}; \fill (p0) circle (0.09);
+\node[lugar] (p1) at (3,0) {}; \node[lugar] (p2) at (6,0) {}; \node[lugar] (p3) at (9,0) {}; \node[lugar] (p4) at (12,0) {};
+\node[transicion] (t1) at (1.5,0) {}; \node[transicion] (t2) at (4.5,0) {}; \node[transicion] (t3) at (7.5,0) {}; \node[transicion] (t4) at (10.5,0) {};
+\node[transicion] (t5) at (6,-2) {};
+\foreach \a/\b in {p0/t1,t1/p1,p1/t2,t2/p2,p2/t3,t3/p3,p3/t4,t4/p4} \draw[flecha] (\a) -- (\b);
+\draw[flecha] (p4) |- (t5); \draw[flecha] (t5) -| (p0);
+\node[etiq, below=4mm of p0] {P0 reposo,\\sin referencia};
+\node[etiq, below=4mm of p1] {P1 Y baja\\(K2, Q0.4 = 1)};
+\node[etiq, below=4mm of p2] {P2 X retrocede\\(K1, Q0.3 = 1)};
+\node[etiq, below=4mm of p3] {P3 base gira\\(Q0.2 = 1)};
+\node[etiq, below=4mm of p4] {P4 referenciado};
+\node[etiq, above=4mm of t1] {T1: orden 1\\o flanco I0.7};
+\node[etiq, above=4mm of t2] {T2: I0.3};
+\node[etiq, above=4mm of t3] {T3: I0.1};
+\node[etiq, above=4mm of t4] {T4: I0.0};
+\node[etiq, below=2mm of t5] {T5: paro o posición incierta};
+\end{tikzpicture}
+\caption{Red de Petri del homing de \texttt{brazo\_gemelo}. Es una red de estado: un solo token recorre la secuencia, lo que garantiza que dos ejes nunca se buscan a la vez.}
+\end{figure}
+
+Lo mismo vale para la orden de movimiento: el lugar «máquina de pasos en reposo» (VW1136 = 0) es un recurso que la orden consume y devuelve al final. Por eso una orden que llega con el recurso ocupado se rechaza con error 1.
+
+\section{Comparación de los dos programas}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{4cm} >{\raggedright}X >{\raggedright\arraybackslash}X}
+\toprule
+& \textbf{Original} & \textbf{brazo\_gemelo}\\
+\midrule
+Posición & no la conoce & contada al pulso\\
+Movimientos & 2 rutinas fijas & a cualquier punto del recorrido\\
+Finales de carrera & homing, jog y X en automático & cortan cualquier movimiento y fijan la posición\\
+Mando desde la PC & iniciar, paro, emergencia, rearme & homing, mover, garra, paro, velocidad\\
+Seguridad ante la PC & borra órdenes a los 5~s & watchdog de 2~s durante el movimiento\\
+Velocidad & fija (4~kHz) & elegible (500--5000~Hz)\\
+Orden del homing & X, base, Y & Y, X, garra, base (como el de Miguel)\\
+Puerto PPI & dirección 6, 19,2~kbit/s & dirección 2, 9,6~kbit/s\\
+\bottomrule
+\end{tabularx}
+\end{center}

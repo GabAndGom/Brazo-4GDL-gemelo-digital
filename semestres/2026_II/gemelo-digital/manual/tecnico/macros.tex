@@ -1,0 +1,49 @@
+% Macros del manual técnico: ladder, estados, código y rutas de imágenes
+\usetikzlibrary{shapes.multipart}
+\graphicspath{{../img/}{../../../../../global/fotos-planta/}{../../../modelo-3d/informe/figuras/}{../../../modelo-3d/levantamiento/}{../../../base-de-datos/modelo/}{../../../diagramas/}{../../../planos/electrico/}{../../../base-de-datos/interfaz/}}
+
+\lstdefinestyle{py}{language=Python, keywordstyle=\color{azulg}\bfseries, commentstyle=\color{grisos}\itshape,
+  stringstyle=\color{verde}, basicstyle=\ttfamily\scriptsize, numbers=left, numberstyle=\tiny\color{grisos}}
+\lstdefinestyle{js}{language=Java, morekeywords={const,let,function,async,await,return,for,of,if,else}, keywordstyle=\color{azulg}\bfseries,
+  commentstyle=\color{grisos}\itshape, stringstyle=\color{verde}, basicstyle=\ttfamily\scriptsize, numbers=left, numberstyle=\tiny\color{grisos}}
+\lstdefinestyle{awl}{basicstyle=\ttfamily\tiny, commentstyle=\color{grisos}\itshape, morecomment=[l]{//},
+  keywordstyle=\color{azulg}\bfseries, morekeywords={LD,LDN,A,AN,O,ON,EU,ED,S,R,MOVB,MOVW,MOVD,PLS,TON,CALL,CRET,LPS,LRD,LPP,ALD,OLD,FILL,LDW,LDB,LDD,AW,AD,AB,OW,OD},
+  numbers=left, numberstyle=\tiny\color{grisos}, frame=single, backgroundcolor=\color{gris}}
+\lstdefinestyle{sql}{language=SQL, keywordstyle=\color{azulg}\bfseries, commentstyle=\color{grisos}\itshape,
+  stringstyle=\color{verde}, basicstyle=\ttfamily\tiny, numbers=left, numberstyle=\tiny\color{grisos},
+  morekeywords={REFERENCES,SERIAL,SMALLSERIAL,BIGSERIAL,TIMESTAMPTZ,BOOLEAN,INET,RETURNS,TRIGGER,LANGUAGE,DECLARE,RAISE,EXCEPTION,VIEW,INDEX}}
+
+\tikzset{
+  ld/.style={line width=0.7pt},
+  pics/na/.style={code={\fill[white](-0.12,-0.26) rectangle (0.12,0.26);
+     \draw[thick](-0.1,-0.24)--(-0.1,0.24)(0.1,-0.24)--(0.1,0.24);
+     \node[font=\scriptsize\ttfamily, above] at (0,0.22){#1};}},
+  pics/nc/.style={code={\fill[white](-0.12,-0.26) rectangle (0.12,0.26);
+     \draw[thick](-0.1,-0.24)--(-0.1,0.24)(0.1,-0.24)--(0.1,0.24);\draw(-0.17,-0.24)--(0.17,0.24);
+     \node[font=\scriptsize\ttfamily, above] at (0,0.22){#1};}},
+  pics/pf/.style={code={\fill[white](-0.12,-0.26) rectangle (0.12,0.26);
+     \draw[thick](-0.1,-0.24)--(-0.1,0.24)(0.1,-0.24)--(0.1,0.24);
+     \node[font=\tiny\bfseries] at (0,0){P};}},
+  pics/cmp/.style n args={3}{code={\fill[white](-0.12,-0.26) rectangle (0.12,0.26);
+     \draw[thick](-0.1,-0.24)--(-0.1,0.24)(0.1,-0.24)--(0.1,0.24);
+     \node[font=\tiny\ttfamily] at (0,0){#2};
+     \node[font=\scriptsize\ttfamily, above] at (0,0.22){#1};
+     \node[font=\scriptsize\ttfamily, below] at (0,-0.22){#3};}},
+  pics/bob/.style n args={3}{code={\fill[white](-0.2,-0.26) rectangle (0.2,0.26);
+     \draw[thick](-0.05,0.24) arc (110:250:0.255);\draw[thick](0.05,0.24) arc (70:-70:0.255);
+     \node[font=\tiny\bfseries] at (0,0){#2};
+     \node[font=\scriptsize\ttfamily, above] at (0,0.22){#1};
+     \node[font=\scriptsize\ttfamily, below] at (0,-0.22){#3};}},
+  fb/.style={draw, fill=white, font=\scriptsize\ttfamily, align=left, inner sep=3pt, anchor=west},
+  barra/.style={line width=2pt},
+  estado/.style={draw, rounded corners=3pt, fill=white, align=center, font=\scriptsize, minimum width=22mm, minimum height=10mm, inner sep=3pt},
+  estadon/.style={estado, fill=naranja!14, draw=naranja!70!black},
+  trans/.style={font=\scriptsize, align=center, fill=white, inner sep=1pt},
+  lugar/.style={circle, draw, thick, minimum size=7mm, fill=white},
+  transicion/.style={rectangle, fill=black, minimum width=1.6mm, minimum height=7mm, inner sep=0},
+  tabla/.style={rectangle split, rectangle split parts=2, draw, fill=white, font=\tiny\ttfamily, align=left, inner sep=2pt, rounded corners=1pt, text width=33mm},
+}
+\newcommand{\pendiente}[1]{\par\smallskip\noindent\colorbox{naranja!12}{\parbox{\dimexpr\linewidth-2\fboxsep}{\textbf{\color{naranja!80!black}Pendiente.} #1}}\par\smallskip}
+\newcommand{\cumple}{\textcolor{verde}{\textbf{cumplido}}}
+\newcommand{\parcial}{\textcolor{naranja}{\textbf{parcial}}}
+\newcommand{\falta}{\textcolor{rojo}{\textbf{pendiente}}}

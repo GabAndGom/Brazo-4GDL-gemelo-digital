@@ -1,0 +1,780 @@
+ORGANIZATION_BLOCK MAIN:OB1
+TITLE=COMENTARIOS DEL PROGRAMA
+BEGIN
+Network 1 // Título de segmento
+// Comentario de segmento
+LD     SM0.1
+MOVB   0, VB104
+LD     V104.7
+EU
+LD     V104.7
+ED
+OLD
+=      M5.3
+LDN    M5.3
+TON    T61, +50
+LD     T61
+MOVB   0, VB104
+LD     I0.7
+O      V104.0
+AN     V104.2
+AN     V104.6
+=      M4.0
+LD     M4.0
+EU
+=      M5.0
+LD     V104.3
+ON     V104.4
+A      I0.5
+=      M4.3
+LD     I0.6
+O      V104.5
+=      M4.5
+LD     V104.2
+O      V104.6
+=      M4.6
+LD     M4.6
+S      M4.7, 1
+LD     V100.3
+EU
+=      M5.1
+LD     I0.2
+EU
+=      M5.5
+LD     I0.4
+EU
+=      M5.6
+Network 2 
+LD     M4.6
+LPS
+MOVB   16#0, SMB67
+PLS    0
+MOVB   16#0, SMB77
+PLS    1
+R      Q0.0, 7
+MOVW   +0, VW320
+MOVW   +0, VW322
+LRD
+MOVB   16#0, VB301
+R      M1.0, 1
+R      M0.5, 1
+S      M0.0, 1
+LPP
+R      M0.3, 1
+R      V302.0, 1
+LD     M4.7
+AN     M4.6
+LD     M5.0
+O      M5.1
+ALD
+R      M4.7, 1
+R      M5.0, 1
+Network 3 
+LD     SM0.1
+R      Q0.0, 8
+R      M0.0, 32
+MOVB   16#0, VB100
+MOVB   16#0, VB104
+MOVB   16#0, VB200
+MOVB   16#0, VB300
+MOVB   16#0, VB301
+MOVD   +0, VD304
+MOVD   +0, VD308
+MOVW   +0, VW320
+MOVW   +0, VW322
+S      M0.0, 1
+R      M4.6, 2
+R      M5.0, 8
+MOVD   +30000, VD340
+MOVD   +25000, VD344
+MOVD   +45000, VD348
+MOVD   +20000, VD330
+MOVD   +14000, VD334
+Network 4 
+LD     M4.5
+EU
+O      V300.2
+O      I1.0
+O      V104.1
+A      M4.3
+R      Q0.0, 7
+MOVB   16#0, SMB67
+MOVB   16#0, SMB77
+PLS    0
+PLS    1
+MOVW   +0, VW320
+MOVW   +0, VW322
+MOVB   16#0, VB301
+R      V300.2, 1
+R      M1.0, 1
+S      M0.0, 1
+R      M0.3, 1
+R      M0.5, 1
+R      M5.0, 1
+R      M5.2, 1
+R      M0.4, 1
+Network 5 
+LDN    M4.3
+EU
+MOVB   16#0, SMB67
+PLS    0
+MOVB   16#0, SMB77
+PLS    1
+R      Q0.0, 7
+MOVW   +0, VW320
+MOVW   +0, VW322
+R      M0.3, 1
+R      M0.5, 1
+MOVB   16#0, VB301
+R      M1.0, 1
+LDN    M4.3
+AN     M4.6
+AN     M4.7
+CALL   SBR20
+Network 6 
+LD     M4.3
+EU
+MOVB   16#0, SMB67
+PLS    0
+MOVB   16#0, SMB77
+PLS    1
+R      Q0.0, 7
+MOVW   +0, VW320
+MOVW   +0, VW322
+S      M0.0, 1
+R      M0.5, 1
+LD     M4.3
+AN     M4.6
+AN     M4.7
+CALL   SBR21
+Network 7 
+LD     V100.0
+EU
+A      M4.3
+AN     M4.6
+AN     M4.7
+S      M1.0, 1
+LD     V100.2
+EU
+S      V300.2, 1
+Network 8 
+LD     M4.3
+AW=    VW320, +0
+AW=    VW322, +0
+AN     M4.6
+AN     M4.7
+AN     M5.2
+=      V200.0
+LDW>   VW320, +0
+OW>    VW322, +0
+=      V200.1
+LD     V301.5
+=      V200.2
+LD     M5.2
+=      V200.3
+LD     SM0.0
+R      V200.4, 2
+LD     V301.6
+=      V200.6
+LD     M0.3
+=      V200.7
+LD     SM0.0
+MOVB   VB321, VB201
+MOVB   IB0, VB202
+MOVB   VB323, VB203
+Network 9 
+LD     I0.2
+AN     Q0.3
+LD     I0.1
+A      Q0.3
+OLD
+A      M4.3
+A      Q0.5
+AN     SM76.7
+MOVB   16#0, SMB77
+PLS    1
+S      M1.1, 1
+Network 10 
+LD     SM0.0
+MOVD   VD210, VD304
+MOVD   VD220, VD308
+END_ORGANIZATION_BLOCK
+SUBROUTINE_BLOCK SBR_HOMING:SBR0
+TITLE=COMENTARIOS DE LA SUBRUTINA
+BEGIN
+Network 1 // Título de segmento
+// Comentario de segmento
+LD     M0.0
+A      M0.5
+AN     M5.2
+AW=    VW322, +0
+S      V301.0, 1
+R      V301.1, 1
+MOVW   +10, VW322
+Network 2 
+LDW=   VW322, +10
+R      Q0.6, 1
+S      Q0.5, 1
+S      Q0.3, 1
+TON    T34, +5
+LD     T34
+MOVW   +11, VW322
+Network 3 
+LDW=   VW322, +11
+LPS
+EU
+MOVB   16#85, SMB77
+MOVW   +250, SMW78
+MOVD   VD340, SMD82
+PLS    1
+LPP
+LDW=   VW322, +11
+A      I0.1
+LPS
+MOVB   16#0, SMB77
+PLS    1
+LRD
+R      Q0.5, 1
+LPP
+MOVW   +20, VW322
+Network 4 
+LDW=   VW322, +20
+LPS
+EU
+S      Q0.2, 1
+MOVB   16#85, SMB67
+MOVW   +400, SMW68
+MOVD   VD348, SMD72
+PLS    0
+LPP
+LDW=   VW322, +20
+A      I0.0
+LPS
+MOVB   16#0, SMB67
+PLS    0
+LPP
+MOVW   +30, VW322
+Network 5 
+LDW=   VW322, +30
+R      Q0.5, 1
+S      Q0.6, 1
+S      Q0.4, 1
+TON    T33, +5
+LD     T33
+MOVW   +31, VW322
+Network 6 
+LDW=   VW322, +31
+LPS
+EU
+MOVB   16#85, SMB77
+MOVW   +250, SMW78
+MOVD   VD344, SMD82
+PLS    1
+LPP
+LDW=   VW322, +31
+A      I0.3
+LPS
+MOVB   16#0, SMB77
+PLS    1
+LRD
+R      Q0.6, 1
+LPP
+MOVW   +40, VW322
+Network 7 
+LDW=   VW322, +40
+R      Q0.7, 1
+TON    T37, +4
+LD     T37
+MOVW   +50, VW322
+Network 8 
+LDW=   VW322, +50
+MOVD   +0, VD210
+MOVD   +0, VD220
+MOVD   +0, VD304
+MOVD   +0, VD308
+R      M0.0, 1
+S      M0.3, 1
+R      M0.4, 1
+R      M0.5, 1
+R      V301.0, 1
+S      V301.1, 1
+MOVW   +0, VW322
+Network 9 
+LDW=   VW322, +11
+TON    T58, +120
+LDW=   VW322, +20
+TON    T59, +250
+LDW=   VW322, +31
+TON    T60, +120
+LDW=   VW322, +11
+A      T58
+LDW=   VW322, +20
+A      T59
+OLD
+LDW=   VW322, +31
+A      T60
+OLD
+LDW=   VW322, +11
+A      SM76.7
+AN     I0.1
+LDW>   T58, +3
+ALD
+OLD
+LDW=   VW322, +20
+A      SM66.7
+AN     I0.0
+LDW>   T59, +3
+ALD
+OLD
+LDW=   VW322, +31
+A      SM76.7
+AN     I0.3
+LDW>   T60, +3
+ALD
+OLD
+LDW=   VW322, +11
+A      M5.5
+OLD
+LDW=   VW322, +31
+A      M5.6
+OLD
+LPS
+MOVB   16#0, SMB67
+PLS    0
+MOVB   16#0, SMB77
+PLS    1
+LRD
+R      Q0.5, 2
+MOVW   +0, VW322
+R      M0.5, 1
+LPP
+S      M5.2, 1
+R      V301.0, 1
+END_SUBROUTINE_BLOCK
+SUBROUTINE_BLOCK SBR_MANUAL:SBR20
+TITLE=
+BEGIN
+Network 1 
+LD     M5.0
+LPS
+AN     Q0.7
+S      M10.0, 1
+LRD
+A      Q0.7
+R      Q0.7, 1
+LPP
+A      M10.0
+S      Q0.7, 1
+R      M10.0, 1
+Network 2 
+LD     I1.0
+AN     I1.1
+A      SM66.7
+R      Q0.2, 1
+MOVB   16#85, SMB67
+MOVW   +250, SMW68
+MOVD   +100, SMD72
+PLS    0
+Network 3 
+LD     I1.1
+AN     I1.0
+A      SM66.7
+S      Q0.2, 1
+MOVB   16#85, SMB67
+MOVW   +250, SMW68
+MOVD   +100, SMD72
+PLS    0
+Network 4 
+LDN    I1.0
+AN     I1.1
+EU
+MOVB   16#0, SMB67
+PLS    0
+Network 5 
+LD     I1.2
+AN     I1.3
+AN     I0.2
+AN     Q0.6
+LPS
+S      Q0.5, 1
+R      Q0.3, 1
+TON    T35, +3
+LPP
+LD     T35
+A      I1.2
+AN     I0.2
+A      SM76.7
+MOVB   16#85, SMB77
+MOVW   +250, SMW78
+MOVD   +100, SMD82
+PLS    1
+Network 6 
+LD     I1.3
+AN     I1.2
+AN     I0.1
+AN     Q0.6
+LPS
+S      Q0.5, 1
+S      Q0.3, 1
+TON    T36, +3
+LPP
+LD     T36
+A      I1.3
+AN     I0.1
+A      SM76.7
+MOVB   16#85, SMB77
+MOVW   +250, SMW78
+MOVD   +100, SMD82
+PLS    1
+Network 7 
+LD     I1.4
+AN     I1.5
+AN     I0.4
+AN     Q0.5
+LPS
+S      Q0.6, 1
+R      Q0.4, 1
+TON    T97, +3
+LPP
+LD     T97
+A      I1.4
+AN     I0.4
+A      SM76.7
+MOVB   16#85, SMB77
+MOVW   +250, SMW78
+MOVD   +100, SMD82
+PLS    1
+Network 8 
+LD     I1.5
+AN     I1.4
+AN     I0.3
+AN     Q0.5
+LPS
+S      Q0.6, 1
+S      Q0.4, 1
+TON    T98, +3
+LPP
+LD     T98
+A      I1.5
+AN     I0.3
+A      SM76.7
+MOVB   16#85, SMB77
+MOVW   +250, SMW78
+MOVD   +100, SMD82
+PLS    1
+Network 9 
+LDN    I1.2
+AN     I1.3
+AN     I1.4
+AN     I1.5
+LPS
+EU
+MOVB   16#0, SMB77
+PLS    1
+LPP
+TON    T99, +3
+LD     T99
+R      Q0.5, 1
+R      Q0.6, 1
+END_SUBROUTINE_BLOCK
+SUBROUTINE_BLOCK SBR_AUTO:SBR21
+TITLE=
+BEGIN
+Network 1 
+LDN    M0.3
+R      V302.0, 1
+R      V301.6, 1
+MOVW   +0, VW320
+LD     M5.0
+O      M1.0
+AN     M0.3
+AN     M5.2
+S      M0.0, 1
+S      M0.5, 1
+R      M5.0, 1
+LDN    M0.3
+CALL   SBR0
+CRET
+Network 2 
+LD     M5.0
+O      M1.0
+A      M0.3
+AN     V302.0
+AW=    VW320, +0
+S      V301.2, 1
+R      V301.1, 1
+R      V301.5, 1
+R      V301.6, 1
+MOVW   +10, VW320
+Network 3 
+LDW=   VW320, +10
+S      Q0.6, 1
+R      Q0.5, 1
+R      Q0.4, 1
+TON    T38, +2
+LD     T38
+MOVW   +11, VW320
+Network 4 
+LDW=   VW320, +11
+MOVB   16#85, SMB77
+MOVW   +250, SMW78
+MOVD   +12000, SMD82
+PLS    1
+MOVW   +12, VW320
+Network 5 
+LDW=   VW320, +12
+TON    T39, +1
+LDW=   VW320, +12
+A      T39
+A      SM76.7
+R      Q0.6, 1
+MOVW   +20, VW320
+Network 6 
+LDW=   VW320, +20
+R      Q0.2, 1
+MOVB   16#85, SMB67
+MOVW   +250, SMW68
+MOVD   +17000, SMD72
+PLS    0
+MOVW   +21, VW320
+Network 7 
+LDW=   VW320, +21
+TON    T62, +1
+LDW=   VW320, +21
+A      T62
+A      SM66.7
+MOVW   +30, VW320
+Network 8 
+LDW=   VW320, +30
+S      Q0.5, 1
+R      Q0.6, 1
+R      Q0.3, 1
+TON    T40, +2
+LD     T40
+MOVW   +31, VW320
+Network 9 
+LDW=   VW320, +31
+MOVB   16#85, SMB77
+MOVW   +250, SMW78
+MOVD   VD330, SMD82
+PLS    1
+MOVW   +32, VW320
+Network 10 
+LDW=   VW320, +32
+TON    T41, +1
+LDW=   VW320, +32
+A      T41
+A      SM76.7
+R      Q0.5, 1
+MOVW   +40, VW320
+Network 11 
+LDW=   VW320, +40
+R      Q0.7, 1
+R      V301.2, 1
+R      V301.6, 1
+S      V301.3, 1
+S      V301.1, 1
+S      V302.0, 1
+MOVW   +0, VW320
+Network 12 
+LD     M5.0
+O      M1.0
+A      M0.3
+A      V302.0
+AW=    VW320, +0
+S      V301.4, 1
+R      V301.1, 1
+R      V301.6, 1
+R      M1.0, 1
+R      V301.5, 1
+MOVW   +100, VW320
+Network 13 
+LDW=   VW320, +100
+S      Q0.7, 1
+TON    T42, +4
+LD     T42
+MOVW   +110, VW320
+Network 14 
+LDW=   VW320, +110
+S      Q0.6, 1
+R      Q0.5, 1
+R      Q0.4, 1
+TON    T43, +2
+LD     T43
+MOVW   +111, VW320
+Network 15 
+LDW=   VW320, +111
+MOVB   16#85, SMB77
+MOVW   +250, SMW78
+MOVD   +5000, SMD82
+PLS    1
+MOVW   +112, VW320
+Network 16 
+LDW=   VW320, +112
+TON    T44, +1
+LDW=   VW320, +112
+A      T44
+A      SM76.7
+R      Q0.6, 1
+S      V301.6, 1
+MOVW   +120, VW320
+Network 17 
+LDW=   VW320, +120
+S      Q0.5, 1
+R      Q0.6, 1
+S      Q0.3, 1
+TON    T45, +2
+LD     T45
+MOVW   +121, VW320
+Network 18 
+LDW=   VW320, +121
+MOVB   16#85, SMB77
+MOVW   +250, SMW78
+MOVD   VD334, SMD82
+PLS    1
+MOVW   +122, VW320
+Network 19 
+LDW=   VW320, +122
+TON    T46, +1
+LDW=   VW320, +122
+A      T46
+A      SM76.7
+R      Q0.5, 1
+MOVW   +130, VW320
+Network 20 
+LDW=   VW320, +130
+R      Q0.2, 1
+MOVB   16#85, SMB67
+MOVW   +250, SMW68
+MOVD   +18000, SMD72
+PLS    0
+MOVW   +131, VW320
+Network 21 
+LDW=   VW320, +131
+TON    T47, +1
+LDW=   VW320, +131
+A      T47
+A      SM66.7
+MOVW   +140, VW320
+Network 22 
+LDW=   VW320, +140
+S      Q0.6, 1
+R      Q0.5, 1
+S      Q0.4, 1
+TON    T48, +2
+LD     T48
+MOVW   +141, VW320
+Network 23 
+LDW=   VW320, +141
+MOVB   16#85, SMB77
+MOVW   +250, SMW78
+MOVD   +14000, SMD82
+PLS    1
+MOVW   +142, VW320
+Network 24 
+LDW=   VW320, +142
+TON    T49, +1
+LDW=   VW320, +142
+A      T49
+A      SM76.7
+R      Q0.6, 1
+MOVW   +150, VW320
+Network 25 
+LDW=   VW320, +150
+R      Q0.7, 1
+TON    T50, +4
+LD     T50
+MOVW   +160, VW320
+Network 26 
+LDW=   VW320, +160
+S      Q0.6, 1
+R      Q0.5, 1
+R      Q0.4, 1
+TON    T51, +2
+LD     T51
+MOVW   +161, VW320
+Network 27 
+LDW=   VW320, +161
+MOVB   16#85, SMB77
+MOVW   +250, SMW78
+MOVD   +14000, SMD82
+PLS    1
+MOVW   +162, VW320
+Network 28 
+LDW=   VW320, +162
+TON    T52, +1
+LDW=   VW320, +162
+A      T52
+A      SM76.7
+R      Q0.6, 1
+MOVW   +170, VW320
+Network 29 
+LDW=   VW320, +170
+S      Q0.2, 1
+MOVB   16#85, SMB67
+MOVW   +250, SMW68
+MOVD   +18000, SMD72
+PLS    0
+MOVW   +171, VW320
+Network 30 
+LDW=   VW320, +171
+TON    T53, +1
+LDW=   VW320, +171
+A      T53
+A      SM66.7
+MOVW   +180, VW320
+Network 31 
+LDW=   VW320, +180
+S      Q0.5, 1
+R      Q0.6, 1
+R      Q0.3, 1
+TON    T54, +2
+LD     T54
+MOVW   +181, VW320
+Network 32 
+LDW=   VW320, +181
+MOVB   16#85, SMB77
+MOVW   +250, SMW78
+MOVD   VD334, SMD82
+PLS    1
+MOVW   +182, VW320
+Network 33 
+LDW=   VW320, +182
+TON    T55, +1
+LDW=   VW320, +182
+A      T55
+A      SM76.7
+R      Q0.5, 1
+MOVW   +190, VW320
+Network 34 
+LDW=   VW320, +190
+S      Q0.6, 1
+R      Q0.5, 1
+S      Q0.4, 1
+TON    T56, +2
+LD     T56
+MOVW   +191, VW320
+Network 35 
+LDW=   VW320, +191
+MOVB   16#85, SMB77
+MOVW   +250, SMW78
+MOVD   +5000, SMD82
+PLS    1
+MOVW   +192, VW320
+Network 36 
+LDW=   VW320, +192
+TON    T57, +1
+LDW=   VW320, +192
+A      T57
+A      SM76.7
+R      Q0.6, 1
+MOVW   +200, VW320
+Network 37 
+LDW=   VW320, +200
+R      Q0.7, 1
+R      V301.4, 1
+S      V301.5, 1
+S      V301.1, 1
+S      V302.0, 1
+MOVW   +0, VW320
+END_SUBROUTINE_BLOCK

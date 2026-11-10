@@ -1,0 +1,46 @@
+% =====================================================================
+\chapter{Cumplimiento de los objetivos de las guías}\label{cap:cumplimiento}
+
+\begin{center}\small
+\begin{longtable}{>{\raggedright}p{6.4cm} >{\raggedright}p{1.8cm} >{\raggedright\arraybackslash}p{6.8cm}}
+\toprule
+\textbf{Objetivo} & \textbf{Estado} & \textbf{Evidencia o lo que falta}\\
+\midrule
+\endhead
+\multicolumn{3}{@{}l}{\textbf{Laboratorio 1: auditoría}}\\
+Clasificar variables PV, MV, DV & \cumple & capítulo \ref{cap:planta}, corregido con la planta en marcha\\
+Ficha técnica del hardware & \cumple & capítulos \ref{cap:planta} y \ref{cap:drivers}\\
+Ruptura de causalidad, lazo abierto & \cumple & sección del capítulo \ref{cap:planta}\\
+Arquitectura de 3 capas & \cumple & capítulo \ref{cap:aplicaciones}\\
+\multicolumn{3}{@{}l}{\textbf{Laboratorio 2: planos e interfaces}}\\
+Plano eléctrico versión 2.0 en AutoCAD Electrical & \falta & discrepancias documentadas (sección \ref{sec:kaizen}) y esquema funcional (capítulo \ref{cap:electrico}); falta dibujar el \codigo{.dwg} v2.0\\
+P\&ID con tags ISA-5.1 & \parcial & tags propuestos (capítulo \ref{cap:planta}); falta el plano\\
+Mockups HMI y dashboard & \parcial & mockups del equipo en \codigo{base-de-datos/mockups/}; la app y la página son la interfaz real\\
+\multicolumn{3}{@{}l}{\textbf{Laboratorio 3: Git y modelo de datos}}\\
+Repositorio estructurado, ramas y pull requests & \cumple & capítulo \ref{cap:proyecto}\\
+Modelo E-R normalizado en 3FN & \cumple & capítulo \ref{cap:datos}\\
+Scripts en \codigo{/database/scripts/} & \parcial & \codigo{brazo\_4gdl.sql} escrito; falta ejecutarlo en PostgreSQL\\
+\multicolumn{3}{@{}l}{\textbf{Fase 2: modelado y backend}}\\
+Modelado y linealización del brazo & \cumple & capítulo \ref{cap:cinematica}: jacobiano y linealización con errores medidos\\
+Redes de Petri & \cumple & sección \ref{sec:petri}\\
+Triggers contra datos fuera de rango & \parcial & trigger escrito; falta probarlo\\
+Gemelo validado en simulación & \cumple & capítulo \ref{cap:mediciones}\\
+\multicolumn{3}{@{}l}{\textbf{Fase 3: implementación}}\\
+Programa del PLC con PTO y comunicación & \cumple & capítulo \ref{cap:gemeloplc}\\
+Comunicación PLC--PC por tramas binarias & \cumple & capítulo \ref{cap:ppi} (PPI en lugar de Modbus, justificado)\\
+Middleware en Python & \cumple & capítulo \ref{cap:aplicaciones}\\
+Control de acceso por roles & \cumple & sección \ref{sec:acceso}\\
+Lazo cerrado en el hardware & \falta & sin encoders: el brazo sigue en lazo abierto con supervisión discreta\\
+Telemetría en PostgreSQL y dashboard & \falta & diseño listo; falta conectar la app a la base\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{Siguientes pasos}
+\begin{enumerate}
+\item Dibujar los planos versión 2.0 con las discrepancias corregidas.
+\item Instalar PostgreSQL, ejecutar el script y agregar a la app el registro de telemetría.
+\item Implementar rampas en el PTO y subir la corriente de X e Y.
+\item Medir el error de posición de la garra y verificar los SUPUESTOS.
+\item Agregar encoders (o el contador rápido HSC del PLC) para cerrar el lazo de posición.
+\end{enumerate}

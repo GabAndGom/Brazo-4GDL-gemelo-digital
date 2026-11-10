@@ -1,0 +1,116 @@
+% =====================================================================
+\chapter{Estructura del proyecto y control de versiones}\label{cap:proyecto}
+
+\section{Repositorios}
+\begin{itemize}
+\item \textbf{Brazo-de-4-grados-de-libertad} (GitHub, \codigo{GabAndGom}): repositorio original del equipo, con el material de los semestres anteriores (2026\_I) y del actual.
+\item \textbf{Brazo-4GDL-gemelo-digital} (GitHub, \codigo{GabAndGom}): derivado del anterior con todo su historial, agrega el gemelo digital. Publica la página en \url{https://brazo-4gdl-gemelo-digital.pages.dev}.
+\end{itemize}
+Regla del equipo: en el repositorio original no se modifica el material de la gestión I/2026; el trabajo nuevo va en \codigo{semestres/2026\_II/}.
+
+\section{Árbol del repositorio}
+\begin{lstlisting}
+Brazo-4GDL-gemelo-digital/
+|-- index.html, web/            pagina publicada: estilos, JS, imagenes
+|   `-- js/  cinematica.js  modelo3d.js  conexion-plc.js  app.js
+|-- scripts/build-catalog.js    genera el catalogo de archivos de la pagina
+|-- config/                     titulos, semestres, videos (JSON)
+|-- .github/workflows/pages.yml publicacion en GitHub Pages
+|-- global/                     material que no depende del semestre
+|   |-- componentes/            imagenes de cada componente
+|   |-- datasheets/             PLC, drivers, sensores, reles
+|   |-- fotos-planta/           fotos del brazo y del tablero
+|   |-- manuales/               manual del fabricante, referencia ladder, MAP_SERV
+|   |-- modelo-3d/              brazo_xk-js1-1.glb y su generador
+|   |-- normativas/             ISA-5.1, IEC 60617
+|   |-- plantillas/             plantilla LaTeX de informes
+|   `-- programas-plc/          programa del fabricante, libreria MAP_SERV
+`-- semestres/
+    |-- 2026_I/                 gestion anterior (no se modifica)
+    `-- 2026_II/
+        |-- guias/              guias de laboratorio 1, 2 y 3
+        |-- informes/           informe 1 (auditoria y requerimientos)
+        |-- diagramas/          diagrama de bloques fenomenologico
+        |-- planos/electrico/, planos/pid/   planos .dwg (historico)
+        |-- base-de-datos/      mockups, modelo E-R, scripts SQL, interfaz
+        |-- modelo-3d/          levantamiento, cinematica, informe y figuras
+        |-- programas-plc/      programa original de secuencias (.awl, .mwp)
+        |-- gemelo-digital/
+        |   |-- app/            app unificada (Linux y Windows)
+        |   |-- plc/            brazo_gemelo.awl y .mwp
+        |   `-- manual/         manuales, arquitectura, guia y este manual
+        |-- hmi/, pruebas/, evidencias/   (README con lo que va en cada una)
+\end{lstlisting}
+
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{6.4cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Carpeta pedida en la guía 3} & \textbf{Equivalente en el repositorio}\\
+\midrule
+\codigo{/documentacion/planos\_isa/} & \codigo{semestres/2026\_II/planos/} (eléctrico y P\&ID)\\
+\codigo{/documentacion/manuales\_inversa/} & \codigo{semestres/2026\_II/informes/}, \codigo{modelo-3d/levantamiento/}, \codigo{global/datasheets/}\\
+\codigo{/database/scripts/} & \codigo{semestres/2026\_II/base-de-datos/scripts/}\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Archivos fuera del repositorio}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{5cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Carpeta (en \codigo{ETN 1034/})} & \textbf{Contenido}\\
+\midrule
+\codigo{gemelo\_brazo\_app/} y \codigo{.zip} & app exportada lista para usar, con los datos propios de la PC: usuarios, certificado, calibración, registro\\
+\codigo{respaldo\_vm/} & copias de los programas encontrados en la máquina virtual (programa cargado, «BRAZO MIGUEL ROBADO», programas de semestres anteriores)\\
+máquina virtual «WINDOWS XP» & STEP 7-Micro/WIN; carpeta compartida \codigo{\textbackslash\textbackslash vboxsvr\textbackslash MIS\_COSAS}\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Los datos propios de cada PC (\codigo{usuarios.json}, \codigo{tls\_*.pem}, \codigo{registro\_gemelo.log}) están en \codigo{.gitignore}: nunca se suben.
+
+\section{Flujo de trabajo con Git}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\draw[very thick, naranja] (0,0) -- (13,0) node[right, font=\scriptsize\ttfamily]{main};
+\foreach \x in {0.5,2,6.5,8,11.5} \fill[naranja] (\x,0) circle (0.12);
+\draw[thick, azulg] (2,0) .. controls (2.5,1) .. (3.2,1) -- (5.6,1) .. controls (6.2,1) .. (6.5,0);
+\foreach \x in {3.2,4.4,5.6} \fill[azulg] (\x,1) circle (0.1);
+\node[font=\scriptsize\ttfamily, above] at (4.4,1.1) {feature/ladder-s7200-homing};
+\draw[thick, verde] (8,0) .. controls (8.5,-1) .. (9.2,-1) -- (10.6,-1) .. controls (11.2,-1) .. (11.5,0);
+\foreach \x in {9.2,10.6} \fill[verde] (\x,-1) circle (0.1);
+\node[font=\scriptsize\ttfamily, below] at (9.9,-1.1) {feature/db-y-supervision};
+\node[etiq] at (6.5,0.45) {pull request\\revisado};
+\node[etiq] at (13,-0.6) {push $\Rightarrow$ página publicada};
+\end{tikzpicture}
+\caption{Ramas de trabajo que se integran a \texttt{main} con revisión.}
+\end{figure}
+
+\begin{lstlisting}
+git checkout -b feature/planos-v2-kaizen         # rama aislada para un componente
+git add semestres/2026_II/planos/electrico/brazo_electrico_v2.dwg
+git commit -m "Plano electrico v2.0: DIR+ de X e Y y garra corregidos"
+git push origin feature/planos-v2-kaizen           # luego: Pull Request en GitHub
+git log --oneline --graph                          # historial para el informe
+\end{lstlisting}
+
+\begin{center}\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Dato del historial} & \textbf{Valor (10/11/2026)}\\
+\midrule
+commits en \codigo{main} & 49 y los de este manual\\
+integrantes con commits & 5 (Gabriel Gómez, José Lenin Mamani, Román Machicado, Eduardo Chura, \dots)\\
+ramas de trabajo & \codigo{feature/ladder-s7200-homing}, \codigo{feature/db-y-supervision}, \codigo{feature/planos-v2-kaizen}, \codigo{feat/cinematica-modelo-3d}\\
+primer commit & 28/09/2026\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Convenciones}
+\begin{itemize}
+\item \textbf{Programas del PLC}: un archivo por versión con el número en el nombre (\codigo{brazo\_secuencias\_original\_v1.awl}); exportar siempre también el AWL para que el código se pueda leer y comparar.
+\item \textbf{Mensajes de commit}: en castellano, en presente, diciendo qué cambia y por qué.
+\item \textbf{Fuentes y compilados}: los documentos se guardan en LaTeX con su PDF; los archivos auxiliares de compilación están en \codigo{.gitignore}.
+\item \textbf{Medidas}: cada dato lleva su origen (leída, estimada, SUPUESTO).
+\end{itemize}

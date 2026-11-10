@@ -1,0 +1,60 @@
+% Manual técnico del brazo XK-JS1-1 y su gemelo digital (II-2026)
+% Compilar desde esta carpeta:  pdflatex manual_tecnico.tex  (tres veces)
+\documentclass[a4paper,11pt,openany]{report}
+\input{../estilo_manual}
+\input{macros}
+\lhead{\small Brazo XK-JS1-1 · Manual técnico}
+\rhead{\small \leftmark}
+\usepackage{titlesec}
+\titleformat{\chapter}[display]{\normalfont\bfseries\color{naranja!80!black}}{\large Capítulo \thechapter}{4pt}{\huge\color{black}}
+\titlespacing*{\chapter}{0pt}{-10pt}{18pt}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\fancypagestyle{plain}{\fancyhf{}\cfoot{\small\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{1.5cm}
+{\large Universidad Mayor de San Andrés · Facultad de Ingeniería · Ingeniería Electrónica\par}
+\vspace{1.2cm}
+{\color{naranja!80!black}\rule{\linewidth}{1.5pt}\par}
+\vspace{0.5cm}
+{\Huge\bfseries Brazo robótico XK-JS1-1\par}
+\vspace{0.3cm}
+{\LARGE Manual técnico del brazo y de su gemelo digital\par}
+\vspace{0.4cm}
+{\color{naranja!80!black}\rule{\linewidth}{1.5pt}\par}
+\vspace{0.8cm}
+\includegraphics[width=0.78\linewidth]{brazo_vista_general.jpg}\par
+\vspace{0.8cm}
+{\large Programas ladder · drivers y frecuencias · cinemática y jacobiano · protocolo PPI\\ aplicaciones · base de datos · estructura del proyecto\par}
+\vfill
+{\large ETN-902 Sistemas de Control II · ETN-1034 Aplicación de Técnicas de Control · ETN-1000 Bases de Datos\par}
+\vspace{0.2cm}
+{\large Gestión II/2026 · La Paz, 10 de noviembre de 2026\par}
+\end{titlepage}
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+\input{cap01_objetivos}
+\input{cap02_planta}
+\input{cap03_electrico}
+\input{cap04_drivers}
+\input{cap05_s7200}
+\input{cap06_original}
+\input{cap07_gemelo}
+\input{cap08_cinematica}
+\input{cap09_ppi}
+\input{cap10_aplicaciones}
+\input{cap11_datos}
+\input{cap12_proyecto}
+\input{cap13_mediciones}
+\input{cap14_cumplimiento}
+
+\appendix
+\input{apendices}
+
+\end{document}

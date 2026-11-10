@@ -1,0 +1,121 @@
+% =====================================================================
+\chapter{El PLC S7-200: lo necesario para leer los programas}\label{cap:s7200}
+
+\section{El ciclo del PLC}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=8mm]
+\node[caja] (a) {leer entradas\\(imagen I)};
+\node[cajan, right=of a] (b) {ejecutar OB1\\y subrutinas};
+\node[caja, right=of b] (c) {escribir salidas\\(imagen Q)};
+\node[caja, right=of c] (d) {comunicación PPI\\y autodiagnóstico};
+\draw[flecha] (a) -- (b); \draw[flecha] (b) -- (c); \draw[flecha] (c) -- (d);
+\draw[flecha] (d.south) -- ++(0,-5mm) -| (a.south);
+\end{tikzpicture}
+\caption{Ciclo de barrido. Las peticiones de la PC se atienden en la etapa de comunicación, entre ciclos.}
+\end{figure}
+El programa se ejecuta de arriba abajo en cada ciclo (unos milisegundos). Las salidas de pulsos (PTO) son la excepción: las genera un circuito de hardware que sigue funcionando aunque el ciclo siga adelante; el programa solo las configura, las arranca y consulta si terminaron.
+
+\section{Áreas de memoria}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\ttfamily}p{1.4cm} >{\raggedright}p{3.6cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{\rmfamily Área} & \textbf{Nombre} & \textbf{Uso en el brazo}\\
+\midrule
+I & imagen de entradas & sensores y botonera (I0.0--I1.5)\\
+Q & imagen de salidas & pulsos, direcciones, relés (Q0.0--Q0.7)\\
+M & marcas & banderas internas del programa original (M0.0--M10.0)\\
+V & memoria de variables & datos y buzón con la PC (VB100, VB104, VB1100--VB1205)\\
+SM & memoria especial & configuración y estado del PTO (SMB66--SMD82), SM0.0 (siempre 1), SM0.1 (primer ciclo)\\
+T & temporizadores & retardos y vigilancia de tiempos\\
+\bottomrule
+\end{tabularx}
+\end{center}
+Tamaños: \codigo{VB} = byte, \codigo{VW} = palabra de 2 bytes (\codigo{VW1102} ocupa VB1102 y VB1103), \codigo{VD} = doble palabra de 4 bytes. El S7-200 guarda los números con el byte más significativo primero (\emph{big-endian}): la app debe leerlos igual.
+
+\section{Temporizadores TON}
+La resolución depende del número del temporizador. Esto es clave para leer los programas: \codigo{TON T35, +3} son 30~ms, pero \codigo{TON T38, +2} son 200~ms.
+
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Temporizadores TON} & \textbf{Resolución} & \textbf{Ejemplo}\\
+\midrule
+T32, T96 & 1~ms & --\\
+T33--T36, T97--T100 & 10~ms & \codigo{TON T35, +3} = 30~ms\\
+T37--T63, T101--T255 & 100~ms & \codigo{TON T58, +120} = 12~s\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Salidas de pulsos (PTO)}\label{sec:pto}
+\begin{center}\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{PTO0 (Q0.0)} & \textbf{PTO1 (Q0.1)} & \textbf{Función}\\
+\midrule
+SMB66 & SMB76 & estado (SM66.7 / SM76.7 = 1: en reposo)\\
+SMB67 & SMB77 & byte de control\\
+SMW68 & SMW78 & ciclo en µs o ms\\
+SMD72 & SMD82 & cantidad de pulsos\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1.45cm,y=1cm]
+\foreach \b/\v/\t in {7/1/{habilitar\\PTO/PWM}, 6/0/{0 = PTO\\1 = PWM}, 5/0/{0 = un\\segmento}, 4/0/{(PWM)}, 3/0/{base de\\tiempo µs}, 2/1/{actualizar\\cantidad}, 1/0/{(PWM)}, 0/1/{actualizar\\ciclo}} {
+  \ifnum\v=1 \def\col{naranja!25}\else\def\col{gris}\fi \draw[fill=\col] (7-\b,0) rectangle ++(1,0.8);
+  \node[font=\small\bfseries] at (7.5-\b,0.4) {\v};
+  \node[font=\scriptsize\ttfamily] at (7.5-\b,1.05) {SM77.\b};
+  \node[font=\tiny, align=center] at (7.5-\b,-0.45) {\t};
+}
+\node[font=\small, anchor=west] at (8.2,0.4) {= \codigo{16\#85}};
+\end{tikzpicture}
+\caption{Byte de control \texttt{16\#85} que usan los dos programas: PTO de un solo segmento, base de tiempo en µs, con actualización de ciclo y cantidad.}
+\end{figure}
+
+Para arrancar un tren se escriben el control, el ciclo y la cantidad, y se ejecuta \codigo{PLS}. Para detenerlo antes de tiempo, \codigo{SMB77 = 0} y \codigo{PLS 1}. Con un solo segmento, el ciclo es constante durante todo el tren (sin rampa).
+
+\section{Instrucciones que aparecen en los programas}
+\begin{center}\small
+\begin{longtable}{>{\ttfamily}p{3.3cm} >{\raggedright\arraybackslash}p{11.8cm}}
+\toprule
+\textbf{\rmfamily Instrucción (AWL)} & \textbf{Qué hace}\\
+\midrule
+\endhead
+LD / LDN & empieza un camino con un contacto abierto / cerrado\\
+A / AN & contacto en serie (Y) abierto / cerrado\\
+O / ON & contacto en paralelo (O) abierto / cerrado\\
+EU / ED & detecta el flanco ascendente / descendente: deja pasar la corriente un solo ciclo\\
+= & bobina: copia el resultado lógico en un bit\\
+S bit, n / R bit, n & pone a 1 / a 0 \emph{n} bits a partir de \emph{bit}, y quedan así\\
+LPS / LRD / LPP & guardan, leen y sacan el resultado lógico de una pila: así AWL representa las ramificaciones de un segmento ladder\\
+ALD / OLD & combinan en serie / en paralelo dos bloques de contactos\\
+LDW= , AW<> , AD> \dots & contactos de comparación de palabras (W), dobles palabras (D) o bytes (B)\\
+MOVB / MOVW / MOVD & copian un byte, una palabra o una doble palabra\\
++D , -D & suma y resta de dobles palabras con signo\\
+FILL & llena un bloque de palabras con un valor\\
+TON T, PT & temporizador con retardo a la conexión: se activa cuando la entrada lleva PT unidades en 1\\
+PLS 0 / PLS 1 & aplica la configuración y arranca (o detiene) el PTO0 / PTO1\\
+CALL SBRn / CRET & llama a una subrutina / vuelve de ella\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{Cómo se lee un diagrama ladder}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm]
+\foreach \x/\p/\t in {0.8/na/contacto abierto: pasa si el bit es 1, 4.6/nc/contacto cerrado: pasa si el bit es 0, 8.4/pf/flanco positivo: pasa un solo ciclo}
+  {\draw[ld] (\x-0.5,0) -- (\x+0.5,0); \pic at (\x,0) {\p={bit}}; \node[etiq, text width=3.3cm] at (\x,-0.8) {\t};}
+\draw[ld] (11.6,0) -- (12.6,0); \pic at (12.1,0) {bob={bit}{}{}}; \node[etiq, text width=2.4cm] at (12.1,-0.8) {bobina: escribe el bit};
+\draw[ld] (0.3,-2.5) -- (1.3,-2.5); \pic at (0.8,-2.5) {bob={bit}{S}{1}}; \node[etiq, text width=3cm] at (0.8,-3.4) {pone a 1 (set) y queda};
+\draw[ld] (4.1,-2.5) -- (5.1,-2.5); \pic at (4.6,-2.5) {bob={bit}{R}{1}}; \node[etiq, text width=3cm] at (4.6,-3.4) {pone a 0 (reset)};
+\draw[ld] (7.4,-2.5) -- (7.9,-2.5); \pic at (8.4,-2.5) {cmp={VW320}{==I}{11}}; \draw[ld] (7.9,-2.5)--(8.9,-2.5); \node[etiq, text width=3.3cm] at (8.4,-3.4) {comparación: pasa si VW320 = 11};
+\draw[ld] (10.9,-2.5) -- (11.4,-2.5); \node[fb] at (11.4,-2.5) {\textbf{MOV\_W}\\IN \ +20\\OUT VW320}; \node[etiq, text width=3cm] at (12.3,-3.45) {cuadro: copia, suma, temporiza\dots};
+\end{tikzpicture}
+\end{center}
+
+\section{Máquinas de pasos}
+Las secuencias de los dos programas se escriben como \textbf{máquinas de pasos}: una palabra guarda el número de paso (VW320 o VW322 en el programa original, VW1136 en el del gemelo). Cada segmento pregunta «¿estoy en el paso N?», hace su tarea y, cuando se cumple la condición de salida, escribe el número del paso siguiente. Se dibujan como diagramas de estados, y su comportamiento puede modelarse con redes de Petri (sección \ref{sec:petri}).

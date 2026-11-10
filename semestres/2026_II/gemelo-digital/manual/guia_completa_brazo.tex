@@ -404,7 +404,7 @@ Con referencia, cada inicio alterna entre la secuencia 1 y la 2. Son movimientos
 \end{tabular}
 \end{center}
 
-Cada movimiento sigue el mismo patrón de tres pasos: cerrar el relé y fijar la dirección (esperar 20~ms), arrancar el tren de pulsos, y esperar a que SM76.7 (o SM66.7) indique que terminó.
+Cada movimiento sigue el mismo patrón de tres pasos: cerrar el relé y fijar la dirección (esperar 200~ms), arrancar el tren de pulsos, y esperar a que SM76.7 (o SM66.7) indique que terminó.
 
 \subsection{Estado para la PC y limitaciones}
 El segmento 8 del OB1 publica el estado en VB200 (listo, ocupado, falla de homing, referenciado) y los pasos en VW320/VW322. Las constantes VD340 = 30000 y VD344 = 25000 sirven a la app como \emph{firma} para reconocer este programa.

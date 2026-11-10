@@ -1,0 +1,214 @@
+% =====================================================================
+\chapter{Protocolo de comunicación PLC--PC: PPI}\label{cap:ppi}
+
+\section{Qué es PPI y por qué se usó}
+PPI (\emph{Point-to-Point Interface}) es el protocolo con el que STEP 7-Micro/WIN programa y monitorea los S7-200. Es un protocolo \textbf{maestro--esclavo} sobre RS-485, derivado de PROFIBUS-FDL: la PC es el maestro (dirección 0) y el PLC el esclavo (hoy, dirección 2). Dentro de las tramas PPI viajan mensajes \textbf{S7} que leen o escriben zonas de memoria.
+
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\raggedright}p{3.4cm} >{\raggedright}X >{\raggedright\arraybackslash}X}
+\toprule
+& \textbf{PPI} (elegido) & \textbf{Modbus RTU} (guía, Fase 3)\\
+\midrule
+Hardware & el cable USB-PPI que ya tenía el laboratorio & el mismo puerto RS-485\\
+Programa del PLC & no hay que programar la comunicación: el sistema operativo del PLC responde solo & hay que programarla en modo \emph{Freeport} o con la librería Modbus de Micro/WIN, y el puerto deja de servir para programar mientras está activa\\
+Acceso & cualquier zona de memoria (I, Q, M, V, SM) & solo los registros que el programa mapea\\
+Herramientas & poco documentado: se programó desde cero en Python & muy documentado, muchas herramientas\\
+\bottomrule
+\end{tabularx}
+\end{center}
+PPI permitió leer el programa original \emph{sin modificarlo} (las primeras pruebas fueron de solo lectura) y seguir usando Micro/WIN con el mismo cable. El cliente está en \codigo{app/ppi.py} y \codigo{app/serie.py}, sin bibliotecas externas.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\node[draw, fill=gris, minimum width=12cm, minimum height=26mm] (c1) {};
+\node[anchor=north west, font=\scriptsize\bfseries] at (c1.north west) {Capa física: RS-485 (par diferencial, semidúplex), 8 bits + paridad par + 1 parada};
+\node[draw, fill=white, minimum width=10.6cm, minimum height=17mm] (c2) at ($(c1.center)+(0,-2mm)$) {};
+\node[anchor=north west, font=\scriptsize\bfseries] at (c2.north west) {Enlace PPI: tramas SD1/SD2/SC, direcciones, control FC, suma FCS};
+\node[draw, fill=naranja!14, minimum width=9cm, minimum height=8mm] (c3) at ($(c2.center)+(0,-2.5mm)$) {\scriptsize \textbf{Aplicación S7}: «leer 40 bytes desde VB1120», «escribir VB1100--VB1119»};
+\end{tikzpicture}
+\caption{Capas del protocolo.}
+\end{figure}
+
+\section{Capa física}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\draw[thick, rounded corners=6pt, fill=gris] (0,0) -- (4.2,0) -- (3.8,-1.6) -- (0.4,-1.6) -- cycle;
+\foreach \i in {1,...,5} { \pgfmathsetmacro\xx{0.5+0.8*(\i-1)} \fill (\xx,-0.45) circle (0.13); \node[font=\tiny, above] at (\xx,-0.3) {\i}; }
+\foreach \i in {6,...,9} { \pgfmathsetmacro\xx{0.9+0.8*(\i-6)} \fill (\xx,-1.15) circle (0.13); \node[font=\tiny, below] at (\xx,-1.3) {\i}; }
+\node[font=\scriptsize\bfseries] at (2.1,0.45) {puerto 0 del PLC (DB9 hembra)};
+\node[etiq, align=left, anchor=west] at (4.6,-0.15) {pin 3: B (+), datos};
+\node[etiq, align=left, anchor=west] at (4.6,-0.55) {pin 8: A ($-$), datos};
+\node[etiq, align=left, anchor=west] at (4.6,-0.95) {pin 5: tierra (GND)};
+\node[etiq, align=left, anchor=west] at (4.6,-1.35) {pin 2: 24 V (alimenta el cable)};
+\node[caja, text width=2.8cm, font=\scriptsize] (conv) at (9.8,-0.6) {cable USB-PPI\\CH340 (USB$\leftrightarrow$serie)\\+ transceptor RS-485\\cambio de sentido automático};
+\node[cajab, font=\scriptsize] (pcn) at (12.9,-0.6) {PC\\\codigo{/dev/ttyUSB0}\\o \codigo{COM3}};
+\draw[dflecha] (7.0,-0.6) -- (conv.west); \draw[dflecha] (conv) -- node[above, etiq]{USB} (pcn);
+\begin{scope}[shift={(0,-3.4)}]
+\draw[->] (0,0) -- (8.8,0) node[right, etiq]{t};
+\node[etiq, left] at (0,0.7) {B}; \node[etiq, left] at (0,-0.7) {A};
+\draw[thick, naranja] (0,0.8) -- (1,0.8) -- (1,0.3) -- (2.6,0.3) -- (2.6,0.8) -- (4.2,0.8) -- (4.2,0.3) -- (5,0.3) -- (5,0.8) -- (8.5,0.8);
+\draw[thick, azulg] (0,-0.8) -- (1,-0.8) -- (1,-0.3) -- (2.6,-0.3) -- (2.6,-0.8) -- (4.2,-0.8) -- (4.2,-0.3) -- (5,-0.3) -- (5,-0.8) -- (8.5,-0.8);
+\node[etiq, text width=4.6cm, align=left, anchor=west] at (9.1,0) {el receptor mira $V_B - V_A$: positivo = 1, negativo = 0; el ruido común a los dos hilos se cancela};
+\end{scope}
+\end{tikzpicture}
+\caption{Conector, cable y señal diferencial RS-485 (esquemática).}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1.05cm,y=1cm]
+\foreach \i/\t/\c in {0/inicio/gris, 1/b0/white, 2/b1/white, 3/b2/white, 4/b3/white, 5/b4/white, 6/b5/white, 7/b6/white, 8/b7/white, 9/paridad/naranja!20, 10/parada/gris} {
+  \draw[fill=\c] (\i,0) rectangle ++(1,0.8); \node[font=\scriptsize] at (\i+0.5,0.4) {\t};}
+\draw[decorate, decoration={brace, amplitude=5pt}] (1,0.9) -- (9,0.9) node[midway, above=5pt, etiq]{8 bits de datos, el menos significativo primero};
+\draw[decorate, decoration={brace, amplitude=5pt, mirror}] (0,-0.1) -- (11,-0.1) node[midway, below=5pt, etiq]{11 bits: a 9600 bit/s un byte tarda 1,146 ms; a 19\,200 bit/s, 0,573 ms};
+\end{tikzpicture}
+\caption{Formato de cada carácter: 8 bits, paridad par, 1 bit de parada (8E1).}
+\end{figure}
+
+\section{Tramas}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm, byte/.style={draw, minimum width=8.5mm, minimum height=7mm, font=\ttfamily\scriptsize, inner sep=0pt, anchor=west}]
+\node[anchor=west, font=\small\bfseries] at (0,0.75) {SD2: longitud variable (con datos)};
+\foreach \i/\t/\c in {0/68/naranja!20, 1/LE/white, 2/LEr/white, 3/68/naranja!20, 4/DA/azulg!15, 5/SA/azulg!15, 6/FC/azulg!15} {\node[byte, fill=\c] at (\i*0.95,0) {\t};}
+\node[byte, fill=white, minimum width=36mm] at (6.65,0) {datos (mensaje S7)};
+\node[byte, fill=verde!15] at (10.5,0) {FCS}; \node[byte, fill=naranja!20] at (11.45,0) {16};
+\node[anchor=west, font=\small\bfseries] at (0,-0.95) {SD1: corta, sin datos (sondeo)};
+\foreach \i/\t/\c in {0/10/naranja!20, 1/DA/azulg!15, 2/SA/azulg!15, 3/FC/azulg!15, 4/FCS/verde!15, 5/16/naranja!20} {\node[byte, fill=\c] at (\i*0.95,-1.7) {\t};}
+\node[anchor=west, font=\small\bfseries] at (0,-2.65) {SC: acuse de un byte};
+\node[byte, fill=naranja!20] at (0,-3.4) {E5};
+\end{tikzpicture}
+\caption{Formatos de trama PPI.}
+\end{figure}
+
+\begin{center}\small
+\begin{tabularx}{\linewidth}{>{\ttfamily}p{1.8cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{\rmfamily Campo} & \textbf{Significado}\\
+\midrule
+68 / 10 & delimitador de inicio de SD2 / SD1\\
+LE, LEr & longitud de DA + SA + FC + datos, repetida\\
+DA, SA & dirección de destino y de origen (PC = 0, PLC = 2)\\
+FC & control: \codigo{6C}/\codigo{7C} petición (el bit FCB alterna para distinguir una trama nueva de una repetida); \codigo{5C}/\codigo{7C} sondeo; \codigo{08} respuesta con datos\\
+FCS & suma de DA, SA, FC y los datos, módulo 256\\
+16 & delimitador de fin\\
+E5 & acuse: «recibí tu trama» o «todavía no tengo la respuesta»\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Intercambio y tiempos medidos}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\node[caja, minimum width=2.6cm] at (0,0) {PC (maestro, 0)};
+\node[caja, minimum width=2.6cm] at (8,0) {PLC (esclavo, 2)};
+\draw[black!40, dashed] (0,-0.5) -- (0,-6.3); \draw[black!40, dashed] (8,-0.5) -- (8,-6.3);
+\draw[flecha] (0,-1.0) -- node[above, etiq]{1. SD2 petición S7 (33 bytes, $\approx$38 ms)} (8,-1.3);
+\draw[flecha] (8,-1.9) -- node[above, etiq]{2. \codigo{E5} acuse} (0,-2.1);
+\node[etiq, left, text width=2.6cm, align=right] at (-0.2,-2.6) {silencio $\geq$ 150 bits ($\approx$16 ms)};
+\draw[flecha] (0,-3.1) -- node[above, etiq]{3. SD1 sondeo (6 bytes)} (8,-3.3);
+\draw[flecha] (8,-3.9) -- node[above, etiq]{4. SD2 respuesta con datos (67 bytes, $\approx$77 ms)} (0,-4.6);
+\node[etiq, right, text width=3.2cm] at (8.2,-1.6) {el PLC atiende entre ciclos de su programa};
+\draw[decorate, decoration={brace, amplitude=5pt, mirror}] (-2.9,-0.9) -- (-2.9,-4.7) node[midway, left=6pt, etiq]{$\approx$155 ms\\en total};
+\node[etiq, text width=12cm, align=left, anchor=west] at (-2.9,-5.6) {Si en el paso 3 el PLC aún no tiene la respuesta, contesta \codigo{E5} y la PC repite el sondeo (hasta 8 veces).};
+\end{tikzpicture}
+\caption{Lectura de 40 bytes a 9,6~kbit/s con los tiempos medidos en la planta.}
+\end{figure}
+
+\section{Mensajes S7: ejemplos byte a byte}
+\subsection{Lectura del estado}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=0.93cm,y=1cm, byte/.style={draw, minimum width=8mm, minimum height=7mm, font=\ttfamily\scriptsize, inner sep=0pt, anchor=west}]
+\def\fila#1#2{\foreach \t [count=\i from 0] in {#2} {\node[byte] at (\i*0.93,#1) {\t};}}
+\fila{0}{68,1b,1b,68,02,00,6c}
+\fila{-1.4}{32,01,00,00,00,01,00,0e,00,00}
+\fila{-2.8}{04,01}
+\fila{-4.2}{12,0a,10,02,00,28,00,01,84,00,23,00}
+\fila{-5.6}{b3,16}
+\node[etiq, anchor=west, text width=8cm, align=left] at (7.0,0) {\textbf{PPI}: inicio, longitud 27, PLC 2, PC 0, petición (\codigo{6c})};
+\node[etiq, anchor=west, text width=6cm, align=left] at (9.6,-1.4) {\textbf{cabecera S7}: \codigo{32} protocolo, \codigo{01} petición, referencia 1, 14 bytes de parámetros, 0 de datos};
+\node[etiq, anchor=west, text width=8cm, align=left] at (2.2,-2.8) {\textbf{función}: \codigo{04} leer, \codigo{01} una zona};
+\node[etiq, anchor=west, text width=4.2cm, align=left] at (11.4,-4.2) {\textbf{zona}: bytes (\codigo{02}), 40 (\codigo{0028}), DB 1, área V (\codigo{84}), dirección en bits $1120 \times 8 = 8960$ = \codigo{002300}};
+\node[etiq, anchor=west, text width=8cm, align=left] at (2.2,-5.6) {\textbf{FCS} = (\codigo{02}+\codigo{00}+\codigo{6c}+\dots+\codigo{00}) mod 256 = 435 mod 256 = \codigo{b3}; fin};
+\end{tikzpicture}
+\caption{Petición «leer 40 bytes desde VB1120».}
+\end{figure}
+La respuesta (67 bytes) trae: cabecera PPI con las direcciones invertidas y FC \codigo{08}; cabecera S7 de tipo \codigo{03} (respuesta) con código de error 0; función \codigo{04 01}; \codigo{FF} (lectura correcta), \codigo{04} (bytes), longitud en bits \codigo{0140} (320 bits) y los 40 bytes de estado.
+
+\subsection{Escritura de una orden}
+Orden «mover X +4000 pulsos (20~mm) e Y $-$2000 pulsos ($-$10~mm)», secuencia 5, latido 7, ciclos 250 y 400~µs. La app empaqueta los 20 bytes del buzón con \codigo{struct.pack('>BBHiiiHH', ...)} (big-endian, como el PLC):
+
+\begin{center}\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Bytes} & \textbf{Campo} & \textbf{Hex} & \textbf{Valor}\\
+\midrule
+VB1100 & orden & \codigo{02} & mover\\
+VB1101 & secuencia & \codigo{05} & 5\\
+VW1102 & latido & \codigo{00 07} & 7\\
+VD1104 & pulsos base & \codigo{00 00 00 00} & 0\\
+VD1108 & pulsos X & \codigo{00 00 0f a0} & +4000\\
+VD1112 & pulsos Y & \codigo{ff ff f8 30} & $-$2000 (complemento a 2)\\
+VW1116 & ciclo X/Y & \codigo{00 fa} & 250~µs\\
+VW1118 & ciclo base & \codigo{01 90} & 400~µs\\
+\bottomrule
+\end{tabular}
+\end{center}
+Trama completa (57 bytes):
+\begin{lstlisting}
+68 33 33 68 02 00 7c                        PPI: longitud 51, PLC 2, PC 0, petición
+32 01 00 00 00 01 00 0e 00 18               S7: petición, 14 bytes de parámetros, 24 de datos
+05 01 12 0a 10 02 00 14 00 01 84 00 22 60   escribir 1 zona: 20 bytes en V, bit 8800 (VB1100)
+00 04 00 a0                                 datos: tipo bytes, 160 bits
+02 05 00 07 00 00 00 00 00 00 0f a0 ff ff f8 30 00 fa 01 90
+39 16                                       FCS = 2105 mod 256 = 0x39; fin
+\end{lstlisting}
+La app solo puede escribir en las zonas autorizadas para el programa reconocido (VB1100--VB1119 con \codigo{brazo\_gemelo}); cualquier otra dirección se rechaza en \codigo{ppi.py} antes de salir por el cable.
+
+\section{Lo aprendido en la planta}
+\begin{itemize}
+\item \textbf{Silencio entre tramas.} A 9,6~kbit/s el PLC ignoraba la trama que llegaba pegada a la anterior: el primer sondeo se perdía y se esperaban 0,4~s. Con un silencio de unos 150 bits antes de transmitir, las lecturas bajaron de 568~ms a 155~ms y dejaron de fallar.
+\item \textbf{Búsqueda automática.} Si cambia la dirección o la velocidad del PLC (al cargar un bloque de sistema), la app prueba primero 2, 6 y 7 a 9,6 y 19,2~kbit/s, y luego las 31 direcciones posibles.
+\item \textbf{Un solo maestro.} El cable lo usa la app o Micro/WIN, nunca los dos a la vez.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=0.018cm,y=1cm]
+\node[anchor=east, font=\scriptsize] at (-10,0.3) {antes};
+\fill[naranja!60] (0,0) rectangle (43,0.6);
+\fill[rojo!25] (44,0) rectangle (446,0.6); \node[font=\scriptsize] at (245,0.3) {sondeo ignorado: espera 0,4 s};
+\fill[azulg!40] (456,0) rectangle (479,0.6); \fill[verde!45] (479,0) rectangle (568,0.6);
+\node[anchor=west, font=\scriptsize] at (575,0.3) {568 ms};
+\node[anchor=east, font=\scriptsize] at (-10,-0.6) {después};
+\fill[naranja!60] (0,-0.9) rectangle (43,-0.3); \fill[gris] (43,-0.9) rectangle (60,-0.3);
+\fill[azulg!40] (60,-0.9) rectangle (67,-0.3); \fill[verde!45] (67,-0.9) rectangle (155,-0.3);
+\node[anchor=west, font=\scriptsize] at (162,-0.6) {155 ms};
+\draw[->] (0,-1.15) -- (620,-1.15) node[right, font=\scriptsize]{ms};
+\foreach \t in {0,100,...,600} {\draw (\t,-1.1) -- (\t,-1.2) node[below, font=\tiny]{\t};}
+\end{tikzpicture}
+\caption{Tiempo de una lectura antes y después del silencio entre tramas (naranja: petición; azul: sondeo; verde: respuesta).}
+\end{figure}
+
+\begin{lstlisting}[style=py, caption={Núcleo del intercambio (\texttt{app/ppi.py}).}]
+def _intercambio(self, pdu):
+    self.p.vaciar_entrada()
+    self._pausa()                              # silencio de ~150 bits: el PLC lo necesita
+    self.p.escribir(self._sd2(0x7C if self._fcb else 0x6C, pdu))
+    self._fcb = not self._fcb
+    if not self._leer(0.4).startswith(b'\xe5'):
+        raise ErrorPPI('el PLC no acusó la petición')
+    for intento in range(8):                   # sondeo hasta que llegue la respuesta
+        self._pausa()
+        self.p.escribir(self._sd1(0x5C if intento % 2 == 0 else 0x7C))
+        r = self._leer(0.4)
+        if r.startswith(b'\x68'):
+            return r[7:4 + r[1]]               # mensaje S7 (tras verificar la suma)
+\end{lstlisting}
+
+\section{Limitaciones}
+A 9,6~kbit/s caben unas 6 lecturas por segundo: suficiente para ver y mandar el brazo, no para un lazo de control rápido desde la PC. Por eso los movimientos los ejecuta el PLC y la PC solo envía destinos. Volver a 19,2~kbit/s en el bloque de sistema duplicaría la frecuencia de lectura.

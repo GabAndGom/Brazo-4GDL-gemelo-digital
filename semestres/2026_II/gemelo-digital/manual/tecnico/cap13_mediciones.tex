@@ -1,0 +1,62 @@
+% =====================================================================
+\chapter{Variables medidas y resultados}\label{cap:mediciones}
+
+\section{Datos medidos o verificados en la planta}
+\begin{center}\small
+\begin{longtable}{>{\raggedright}p{5.2cm} >{\raggedright}p{3.6cm} >{\raggedright\arraybackslash}p{6cm}}
+\toprule
+\textbf{Magnitud} & \textbf{Valor} & \textbf{Cómo y cuándo}\\
+\midrule
+\endhead
+\multicolumn{3}{@{}l}{\textbf{Eléctricas} (informe 1, agosto de 2026, multímetro)}\\
+entradas de la botonera & 21,6~V accionado / 23,1~V reposo & medición pasiva en bornes\\
+salida de la garra Q0.7 & 23,2~V / 0,2~V & ídem\\
+rieles del PLC & 5,1--23,7~V & ídem\\
+\multicolumn{3}{@{}l}{\textbf{Configuración} (26/10/2026)}\\
+DIP de los tres drivers & OFF OFF ON OFF ON ON ON OFF & foto del tablero\\
+corriente de X e Y & 2,37~A pico / 1,69~A RMS & tabla DM542\\
+resolución & 1000 pulsos/vuelta & tabla DM542/JMC\\
+recorrido de los carros & 170~mm (34\,000 pulsos) & dato del equipo, coincide con la geometría\\
+\multicolumn{3}{@{}l}{\textbf{Mapeo de señales} (26/10/2026, monitor PPI y accionamiento manual)}\\
+finales de carrera & I0.1--I0.4 & cada sensor accionado a mano\\
+inductivo de la base & I0.0 & ídem\\
+sentido de X & Q0.3 = 0 adelante & jog con I1.2\\
+\multicolumn{3}{@{}l}{\textbf{Comunicación}}\\
+programa original & PPI dirección 6, 19,2~kbit/s & búsqueda automática, 26/10/2026\\
+con \codigo{brazo\_gemelo} & PPI dirección 2, 9,6~kbit/s & 27/10/2026\\
+lectura E/S + VB1000--1011 a 19,2~kbit/s & 145~ms & cliente PPI, solo lectura\\
+lectura de 40 bytes a 9,6~kbit/s & 568~ms $\rightarrow$ 155~ms & antes y después del silencio entre tramas\\
+\multicolumn{3}{@{}l}{\textbf{Calibración}}\\
+base & 190,3 pulsos/grado & giro medido con transportador, 26/10/2026 (\codigo{calibracion.json})\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{Pruebas realizadas}
+\begin{center}\small
+\begin{longtable}{>{\raggedright}p{5.6cm} >{\raggedright\arraybackslash}p{9.4cm}}
+\toprule
+\textbf{Prueba} & \textbf{Resultado}\\
+\midrule
+\endhead
+Cinemática: directa seguida de inversa en toda la grilla de carreras (\codigo{pruebas\_cinematica.js}) & devuelve el mismo $q$\\
+Modelo frente a fotos del manual y de la planta & diferencia menor a 5~mm en los pivotes B y C\\
+Estimador con el programa original (\codigo{pruebas\_estimador.py}) & error máximo 1,35~mm en X/Y; autocalibración del jog\\
+Compilación de \codigo{brazo\_gemelo} en Micro/WIN & 0 errores; cargado en el PLC\\
+App con el brazo real (programa del gemelo) & conexión estable a 9,6~kbit/s, sin cortes\\
+Cliente PPI contra un PLC falso (pseudoterminal) & lecturas, escrituras y protección de zonas correctas\\
+Acceso por red: roles y filtros & observador rechazado al mover y al tomar el mando; operador sin mando rechazado; mover sin homing rechazado\\
+App unificada en modo simulado & menú, alta de usuarios, cambio entre los tres modos, acceso remoto; el menú no es accesible desde la red\\
+Certificado HTTPS generado en Python & validado con OpenSSL; conexión TLS correcta\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{Validación del gemelo}
+El hito de la Fase 2 pide gemelos validados en simulación. En el brazo:
+\begin{itemize}
+\item la geometría del modelo reproduce las fotos con menos de 5~mm de diferencia;
+\item el PLC simulado reproduce el comportamiento de \codigo{brazo\_gemelo} (mismos pasos, errores y tiempos) y permite probar toda la app sin hardware;
+\item con el programa del gemelo cargado, la posición del modelo es la contada por el PLC (exacta al pulso mientras no se pierdan pasos).
+\end{itemize}
+\pendiente{Medir con regla o calibre el error de posición de la garra en varios puntos del espacio de trabajo y verificar el paso del husillo (SUPUESTO de 5~mm), las cotas estimadas del mecanismo y el sentido de la base.}
