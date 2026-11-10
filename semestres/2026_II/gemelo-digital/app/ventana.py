@@ -1,11 +1,33 @@
-"""Ventana de escritorio de la app (GTK 3 + WebKitGTK, incluidos en Linux Mint/Ubuntu).
+"""Ventana de escritorio de la app.
 
-Muestra la interfaz servida por la app en una ventana propia, sin pestañas ni barra de
-direcciones. Si las bibliotecas no están, la app abre el navegador en su lugar.
+- Windows: Microsoft Edge (o Google Chrome) en modo aplicación: una ventana propia, sin pestañas
+  ni barra de direcciones, con un perfil aparte. Al cerrarla se cierra la app.
+- Linux: GTK 3 + WebKitGTK (incluidos en Linux Mint/Ubuntu).
+
+Si no hay ninguna de las dos, la app abre el navegador predeterminado en su lugar.
 """
+import os
+import shutil
+import subprocess
+import sys
+import time
+
+APP = os.path.dirname(os.path.abspath(__file__))
+
+
+def _navegador_windows():
+    rutas = []
+    for base in (os.environ.get('ProgramFiles(x86)'), os.environ.get('ProgramFiles'), os.environ.get('LOCALAPPDATA')):
+        if base:
+            rutas += [os.path.join(base, 'Microsoft', 'Edge', 'Application', 'msedge.exe'),
+                      os.path.join(base, 'Google', 'Chrome', 'Application', 'chrome.exe')]
+    rutas += [shutil.which('msedge') or '', shutil.which('chrome') or '']
+    return next((r for r in rutas if r and os.path.isfile(r)), None)
 
 
 def disponible():
+    if sys.platform == 'win32':
+        return _navegador_windows() is not None
     try:
         import gi
         gi.require_version('Gtk', '3.0')
@@ -18,6 +40,18 @@ def disponible():
 
 def abrir(url, al_cerrar=None):
     """Abre la ventana y bloquea hasta que se cierra."""
+    if sys.platform == 'win32':
+        perfil = os.path.join(APP, 'perfil_ventana')       # perfil propio: el proceso termina al cerrar
+        p = subprocess.Popen([_navegador_windows(), f'--app={url}', f'--user-data-dir={perfil}',
+                              '--no-first-run', '--no-default-browser-check', '--window-size=1440,900'])
+        try:
+            while p.poll() is None:                         # así Ctrl+C en la consola sigue funcionando
+                time.sleep(0.3)
+        finally:
+            if al_cerrar:
+                al_cerrar()
+        return
+
     import gi
     gi.require_version('Gtk', '3.0')
     gi.require_version('WebKit2', '4.1')

@@ -12,6 +12,12 @@
   border: 1px solid currentColor; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55vw;
 }
 .app-conexion.ok { color: #6fd39c; }
+.app-menu {
+  margin-left: auto; padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; white-space: nowrap;
+  color: #fff; background: var(--acento); text-decoration: none;
+}
+.app-menu:hover { filter: brightness(1.12); }
+.app-menu:not([hidden]) + .app-conexion { margin-left: 0; }
 .app-usuario { font-size: 12px; white-space: nowrap; }
 .app-usuario a { color: #fff; text-decoration: underline; margin-left: 4px; }
 @media (max-width: 640px) {

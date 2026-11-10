@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gemelo digital · Menú</title>
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<style>
+:root {
+  --fondo: #1b1916; --panel: #26231f; --panel2: #2f2b26; --borde: #3d3832; --texto: #ece8e2; --suave: #a9a299;
+  --acento: #c2620c; --acento2: #e07a1f; --ok: #6fd39c; --mal: #ff9a8f; --aviso: #f0c36a;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; min-height: 100vh; background: var(--fondo); color: var(--texto); font: 15px/1.45 system-ui, "Segoe UI", sans-serif; }
+header { display: flex; align-items: center; gap: 12px; padding: 12px 22px; background: #141210; border-bottom: 3px solid var(--acento); }
+header strong { display: block; font-size: 16px; }
+header small { color: var(--suave); font-size: 12px; }
+header .modo { margin-left: auto; font: 12px var(--mono); padding: 4px 10px; border: 1px solid var(--borde); border-radius: 999px; color: var(--suave); }
+header .modo.activo { color: var(--ok); border-color: currentColor; }
+main { max-width: 1240px; margin: 0 auto; padding: 24px 22px 40px; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); gap: 22px; }
+@media (max-width: 960px) { main { grid-template-columns: 1fr; } }
+h1 { font-size: 22px; margin: 0 0 4px; }
+h2 { font-size: 15px; margin: 0 0 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--suave); }
+p.lead { color: var(--suave); margin: 0 0 18px; }
+.modos { display: grid; gap: 14px; }
+.modo-tarjeta { display: grid; grid-template-columns: 56px 1fr auto; gap: 16px; align-items: center; padding: 18px; background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; }
+.modo-tarjeta.actual { border-color: var(--acento); box-shadow: inset 4px 0 0 var(--acento); }
+.modo-tarjeta svg { width: 56px; height: 56px; color: var(--acento2); }
+.modo-tarjeta h3 { margin: 0 0 4px; font-size: 18px; }
+.modo-tarjeta p { margin: 0; color: var(--suave); font-size: 14px; }
+.modo-tarjeta .req { margin-top: 6px; font-size: 12px; font-family: var(--mono); color: var(--suave); }
+.modo-tarjeta label.opcion { display: flex; gap: 8px; align-items: center; margin-top: 10px; font-size: 13px; color: var(--texto); }
+@media (max-width: 640px) { .modo-tarjeta { grid-template-columns: 40px 1fr; } .modo-tarjeta svg { width: 40px; height: 40px; } .modo-tarjeta .acciones { grid-column: 1 / -1; } }
+button, .boton { font: inherit; font-weight: 600; padding: 10px 18px; border-radius: 6px; border: 1px solid var(--borde); background: var(--panel2); color: var(--texto); cursor: pointer; text-decoration: none; display: inline-block; }
+button.primario, .boton.primario { background: var(--acento); border-color: var(--acento); color: #fff; }
+button:hover, .boton:hover { filter: brightness(1.12); }
+button:disabled { opacity: .5; cursor: default; filter: none; }
+button.chico { padding: 5px 10px; font-size: 13px; font-weight: 500; }
+button.peligro { color: var(--mal); }
+.panel { background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; padding: 18px; margin-bottom: 18px; }
+dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }
+dt { color: var(--suave); }
+dd { margin: 0; font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+.ok { color: var(--ok); } .mal { color: var(--mal); } .aviso { color: var(--aviso); }
+.url { display: flex; gap: 8px; align-items: center; margin-top: 12px; padding: 10px; border-radius: 6px; background: #141210; font-family: var(--mono); font-size: 14px; overflow-wrap: anywhere; }
+.url span { flex: 1; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 7px 4px; border-bottom: 1px solid var(--borde); vertical-align: middle; }
+th { color: var(--suave); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+td .fila-acc { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+select, input { font: inherit; padding: 7px 9px; border-radius: 5px; border: 1px solid var(--borde); background: #141210; color: var(--texto); min-width: 0; }
+form.alta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+form.alta .ancho { grid-column: 1 / -1; }
+.mensaje { min-height: 1.3em; font-size: 13px; margin-top: 8px; }
+.punto { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--suave); margin-right: 6px; }
+.punto.ok { background: var(--ok); } .punto.mal { background: var(--mal); }
+.abrir { display: flex; gap: 10px; align-items: center; margin-top: 18px; }
+dialog { background: var(--panel); color: var(--texto); border: 1px solid var(--borde); border-radius: 10px; padding: 20px; width: min(380px, 92vw); }
+dialog::backdrop { background: rgba(0,0,0,.6); }
+dialog form { display: grid; gap: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <img src="icono.svg" alt="" width="30" height="30">
+  <div><strong>Gemelo digital · Brazo XK-JS1-1</strong><small>PLC S7-200 · UMSA II-2026</small></div>
+  <span class="modo" id="modo-actual">Sin modo</span>
+</header>
+
+<main>
+  <section>
+    <h1>¿Cómo quiere trabajar?</h1>
+    <p class="lead">Elija un modo. Puede cambiarlo cuando quiera con el botón «Menú» de la barra del gemelo.</p>
+    <div class="modos">
+      <article class="modo-tarjeta" data-modo="simulacion">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="8" width="38" height="26" rx="3"/><path d="M17 40h14M24 34v6"/><path d="M14 27l7-9 6 6 7-9"/></svg>
+        <div>
+          <h3>Simulación</h3>
+          <p>El brazo se mueve en la pantalla con un PLC simulado dentro de la app. Para aprender y practicar sin riesgo.</p>
+          <div class="req">No necesita brazo ni cable</div>
+        </div>
+        <div class="acciones"><button class="primario" data-elegir="simulacion">Abrir</button></div>
+      </article>
+
+      <article class="modo-tarjeta" data-modo="local">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M8 40h32"/><path d="M14 40V30h8l6-12 8 4"/><circle cx="36" cy="22" r="3"/><path d="M38 24l4 4M38 20l4-3"/><rect x="10" y="30" width="16" height="4" rx="1"/></svg>
+        <div>
+          <h3>Operación local</h3>
+          <p>El gemelo sigue al brazo real y se lo puede mandar desde esta PC. Nadie más puede conectarse.</p>
+          <div class="req" id="req-local">Cable USB-PPI conectado al puerto 0 del PLC</div>
+        </div>
+        <div class="acciones"><button class="primario" data-elegir="local">Abrir</button></div>
+      </article>
+
+      <article class="modo-tarjeta" data-modo="red">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="6" y="10" width="22" height="16" rx="2"/><path d="M12 32h10M17 26v6"/><rect x="33" y="14" width="10" height="20" rx="2"/><path d="M37 30h2"/><path d="M29 18c2-2 2-6 0-8M31.5 20.5c3.5-3.5 3.5-10 0-13"/></svg>
+        <div>
+          <h3>Operación por red local</h3>
+          <p>Como la operación local, y además celulares y otras PC de la misma red entran con usuario y contraseña.</p>
+          <div class="req">Cable conectado · al menos un usuario · misma red Wi-Fi</div>
+          <label class="opcion"><input type="checkbox" id="red-simulado"> Sin brazo: usar el PLC simulado (para probar la red)</label>
+        </div>
+        <div class="acciones"><button class="primario" data-elegir="red">Abrir</button></div>
+      </article>
+    </div>
+    <div class="mensaje" id="msg-modo" role="status"></div>
+    <div class="abrir" id="fila-abrir" hidden>
+      <a class="boton primario" href="./">Ir al gemelo →</a>
+      <span id="txt-abrir" class="aviso"></span>
+    </div>
+  </section>
+
+  <aside>
+    <div class="panel">
+      <h2>Estado</h2>
+      <dl>
+        <dt>Modo</dt><dd id="e-modo">—</dd>
+        <dt>PLC</dt><dd id="e-plc">—</dd>
+        <dt>Programa</dt><dd id="e-perfil">—</dd>
+        <dt>Mando</dt><dd id="e-mando">—</dd>
+        <dt>Puertos serie</dt><dd id="e-puertos">—</dd>
+      </dl>
+      <div id="bloque-red" hidden>
+        <div class="url"><span id="e-url"></span><button class="chico" id="copiar">Copiar</button></div>
+        <p style="color:var(--suave);font-size:13px;margin:8px 0 0">Escriba esta dirección en el navegador del celular (con <b>https://</b>). La primera vez acepte el aviso del certificado. Conectados: <span id="e-conectados">nadie</span>.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Usuarios del acceso por red</h2>
+      <table>
+        <thead><tr><th>Usuario</th><th>Rol</th><th></th></tr></thead>
+        <tbody id="tabla-usuarios"><tr><td colspan="3" style="color:var(--suave)">Cargando…</td></tr></tbody>
+      </table>
+      <form class="alta" id="form-alta" autocomplete="off">
+        <input name="nombre" placeholder="Nuevo usuario" required pattern="[A-Za-z0-9_.\-]{1,32}" title="Letras, números, punto, guion o guion bajo">
+        <select name="rol"><option value="operador">operador (ve y manda)</option><option value="observador" selected>observador (solo ve)</option></select>
+        <input name="clave" type="password" placeholder="Contraseña (mín. 8)" minlength="8" required autocomplete="new-password">
+        <input name="clave2" type="password" placeholder="Repítala" minlength="8" required autocomplete="new-password">
+        <button class="ancho" type="submit">Agregar usuario</button>
+      </form>
+      <div class="mensaje" id="msg-usuarios" role="status"></div>
+    </div>
+  </aside>
+</main>
+
+<dialog id="dlg-clave">
+  <form method="dialog" id="form-clave">
+    <strong>Nueva contraseña de <span id="dlg-nombre"></span></strong>
+    <input name="clave" type="password" placeholder="Contraseña (mín. 8)" minlength="8" required autocomplete="new-password">
+    <input name="clave2" type="password" placeholder="Repítala" minlength="8" required autocomplete="new-password">
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button value="cancelar" formnovalidate>Cancelar</button>
+      <button class="primario" value="ok">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+let estado = null;
+
+async function api(ruta, datos) {
+  const r = await fetch(ruta, datos ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos) } : {});
+  const j = await r.json().catch(() => ({ ok: false, error: 'respuesta no válida' }));
+  if (!r.ok || j.ok === false) throw new Error(j.error || ('error ' + r.status));
+  return j;
+}
+
+function mensaje(el, texto, clase) { el.className = 'mensaje ' + (clase || ''); el.textContent = texto; }
+
+function pintar(e) {
+  estado = e;
+  $('#modo-actual').textContent = e.nombre_modo ? e.nombre_modo + (e.red_simulado ? ' (simulado)' : '') : 'Sin modo';
+  $('#modo-actual').classList.toggle('activo', !!e.modo);
+  document.querySelectorAll('.modo-tarjeta').forEach(t => {
+    const actual = t.dataset.modo === e.modo;
+    t.classList.toggle('actual', actual);
+    t.querySelector('[data-elegir]').textContent = actual ? 'Volver al gemelo' : 'Abrir';
+  });
+  if (!pintar.hecho) { $('#red-simulado').checked = e.modo === 'red' && e.red_simulado; pintar.hecho = true; }
+  $('#e-modo').textContent = e.nombre_modo || 'ninguno (elija uno)';
+  const p = e.plc;
+  if (!p) { $('#e-plc').textContent = '—'; $('#e-perfil').textContent = '—'; $('#e-mando').textContent = '—'; }
+  else {
+    $('#e-plc').innerHTML = p.simulado ? '<span class="punto ok"></span>simulado'
+      : p.conectado ? `<span class="punto ok"></span>${p.puerto} · PPI ${p.direccion} · ${p.baudios} baudios`
+      : `<span class="punto mal"></span><span class="mal">sin conexión</span>${p.error ? ': ' + p.error : ''}`;
+    $('#e-perfil').textContent = p.descripcion || p.perfil || '—';
+    $('#e-mando').textContent = p.mando ? ('habilitado · ' + (p.mando_de || 'local')) : 'deshabilitado';
+  }
+  $('#e-puertos').textContent = e.puertos.length ? e.puertos.map(x => x[0]).join(', ') : 'ninguno (¿cable conectado?)';
+  $('#req-local').textContent = e.puertos.length ? 'Cable detectado en ' + e.puertos[0][0] : 'Cable USB-PPI conectado al puerto 0 del PLC (ahora no se detecta)';
+  $('#bloque-red').hidden = !e.url_red;
+  $('#e-url').textContent = e.url_red || '';
+  $('#e-conectados').textContent = e.conectados.length ? e.conectados.join(', ') : 'nadie';
+  $('#fila-abrir').hidden = !e.modo;
+  $('#txt-abrir').textContent = p && !p.simulado && !p.conectado ? 'el PLC aún no responde: revise el cable' : '';
+  const tb = $('#tabla-usuarios');
+  if (!e.usuarios.length) tb.innerHTML = '<tr><td colspan="3" style="color:var(--suave)">No hay usuarios. Cree al menos uno para la operación por red.</td></tr>';
+  else if (!tb.dataset.firma || tb.dataset.firma !== JSON.stringify(e.usuarios)) {
+    tb.dataset.firma = JSON.stringify(e.usuarios);
+    tb.innerHTML = '';
+    for (const u of e.usuarios) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td></td><td><select><option value="operador">operador</option><option value="observador">observador</option></select></td>
+        <td><div class="fila-acc"><button class="chico" data-acc="clave">Contraseña</button><button class="chico peligro" data-acc="quitar">Quitar</button></div></td>`;
+      tr.cells[0].textContent = u.nombre;
+      const sel = tr.querySelector('select'); sel.value = u.rol;
+      sel.addEventListener('change', () => usuarios({ accion: 'rol', nombre: u.nombre, rol: sel.value }, `Rol de ${u.nombre}: ${sel.value}.`));
+      tr.querySelector('[data-acc="quitar"]').addEventListener('click', () => {
+        if (confirm(`¿Quitar el usuario ${u.nombre}?`)) usuarios({ accion: 'quitar', nombre: u.nombre }, `Usuario ${u.nombre} quitado.`);
+      });
+      tr.querySelector('[data-acc="clave"]').addEventListener('click', () => pedirClave(u.nombre));
+      tb.appendChild(tr);
+    }
+  }
+}
+
+async function actualizar() {
+  try { pintar(await api('api/app')); } catch (e) { mensaje($('#msg-modo'), e.message, 'mal'); }
+}
+
+async function usuarios(datos, ok) {
+  const m = $('#msg-usuarios');
+  try { pintar(await api('api/app/usuarios', datos)); mensaje(m, ok, 'ok'); }
+  catch (e) { mensaje(m, e.message, 'mal'); actualizar(); }
+}
+
+function pedirClave(nombre) {
+  const d = $('#dlg-clave'), f = $('#form-clave');
+  f.reset(); $('#dlg-nombre').textContent = nombre;
+  d.onclose = () => {
+    if (d.returnValue !== 'ok') return;
+    if (f.clave.value !== f.clave2.value) return mensaje($('#msg-usuarios'), 'Las contraseñas no coinciden.', 'mal');
+    usuarios({ accion: 'clave', nombre, clave: f.clave.value }, `Contraseña de ${nombre} cambiada.`);
+    f.reset();
+  };
+  d.showModal();
+}
+
+$('#form-alta').addEventListener('submit', e => {
+  e.preventDefault();
+  const f = e.target;
+  if (f.clave.value !== f.clave2.value) return mensaje($('#msg-usuarios'), 'Las contraseñas no coinciden.', 'mal');
+  usuarios({ accion: 'agregar', nombre: f.nombre.value.trim(), rol: f.rol.value, clave: f.clave.value },
+    `Usuario ${f.nombre.value.trim()} creado.`).then(() => f.reset());
+});
+
+document.querySelectorAll('[data-elegir]').forEach(b => b.addEventListener('click', async () => {
+  const modo = b.dataset.elegir, m = $('#msg-modo');
+  const redSim = $('#red-simulado').checked;
+  if (estado && estado.modo === modo && (modo !== 'red' || estado.red_simulado === redSim)) { location.href = './'; return; }
+  document.querySelectorAll('[data-elegir]').forEach(x => x.disabled = true);
+  mensaje(m, modo === 'simulacion' ? 'Abriendo la simulación…' : 'Conectando…');
+  try {
+    pintar(await api('api/app/modo', { modo, red_simulado: modo === 'red' && redSim }));
+    location.href = './';
+  } catch (e) { mensaje(m, e.message, 'mal'); }
+  finally { document.querySelectorAll('[data-elegir]').forEach(x => x.disabled = false); }
+}));
+
+$('#copiar').addEventListener('click', () => navigator.clipboard && navigator.clipboard.writeText($('#e-url').textContent));
+
+actualizar();
+setInterval(actualizar, 2000);
+</script>
+</body>
+</html>

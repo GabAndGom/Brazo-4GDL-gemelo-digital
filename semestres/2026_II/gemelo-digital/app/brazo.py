@@ -15,6 +15,7 @@ import struct
 import threading
 import time
 
+import serie
 from ppi import ClientePPI, ErrorPPI, buscar_plc
 
 APP = os.path.dirname(os.path.abspath(__file__))
@@ -589,8 +590,9 @@ class PLCSimulado:
 class Brazo:
     """Hilo que lee el PLC continuamente y atiende las órdenes de la interfaz."""
 
-    def __init__(self, puerto='/dev/ttyUSB0', direccion=None, simulado=False, registro=None):
+    def __init__(self, puerto='auto', direccion=None, simulado=False, registro=None):
         self.puerto, self.direccion, self.simulado = puerto, direccion, simulado
+        self.puerto_pedido = puerto                      # 'auto': se busca entre los puertos presentes
         self.direccion_fija = direccion is not None      # --direccion: no se vuelve a buscar
         self.baudios = 19200
         self.tr = Transmision()
@@ -618,12 +620,24 @@ class Brazo:
             self._log('conectado al PLC simulado (perfil gemelo)')
             return
         if self.direccion is None:
-            self._log(f'buscando el PLC en {self.puerto}…')
-            # primero las combinaciones habituales (proyecto anterior: 6 a 19,2; proyecto nuevo: 2 a 9,6)
-            r = buscar_plc(self.puerto, direcciones=[2, 6, 7], baudios=(9600, 19200)) or \
-                buscar_plc(self.puerto, direcciones=[d for d in range(1, 32) if d not in (2, 6, 7)])
+            # --puerto auto: se prueban los puertos serie presentes, los USB primero
+            candidatos = [self.puerto_pedido] if self.puerto_pedido != 'auto' else [p for p, _ in serie.puertos()]
+            if not candidatos:
+                raise ErrorPPI('no hay ningún puerto serie: ¿está conectado el cable USB-PPI y tiene su driver?')
+            r = None
+            for puerto in candidatos:
+                self._log(f'buscando el PLC en {puerto}…')
+                # primero las combinaciones habituales (proyecto anterior: 6 a 19,2; proyecto nuevo: 2 a 9,6)
+                try:
+                    r = buscar_plc(puerto, direcciones=[2, 6, 7], baudios=(9600, 19200)) or \
+                        buscar_plc(puerto, direcciones=[d for d in range(1, 32) if d not in (2, 6, 7)])
+                except OSError as ex:
+                    self._log(f'{puerto}: {ex}')
+                if r:
+                    self.puerto = puerto
+                    break
             if not r:
-                raise ErrorPPI(f'no responde ningún PLC en {self.puerto}')
+                raise ErrorPPI('no responde ningún PLC en ' + ', '.join(candidatos))
             self.direccion, self.baudios = r
         baudios = self.baudios
         cli = ClientePPI(self.puerto, plc=self.direccion, baudios=baudios)
@@ -656,6 +670,8 @@ class Brazo:
                     self.perfil.latido()
                 time.sleep(0.03 if self.simulado else 0.0)
             except (ErrorPPI, OSError) as ex:
+                if not self.vivo:
+                    break
                 self.error = str(ex)
                 if self.conectado:
                     self._log('comunicación perdida: ' + self.error)
@@ -667,6 +683,24 @@ class Brazo:
                 if not self.direccion_fija:
                     self.direccion = None        # el PLC pudo cambiar de dirección o velocidad: buscarlo de nuevo
                 time.sleep(2)
+
+    def cerrar(self):
+        """Detiene el brazo si se movía por orden de la PC y suelta el puerto (cambio de modo o salida)."""
+        if self.conectado and self.mando and (self.leer_estado().get('en_movimiento')):
+            try:
+                self.orden('detener', {}, self.mando_de or 'local')
+            except Exception:
+                pass
+        self.vivo = False
+        self.mando, self.mando_de = False, None
+        time.sleep(0.3)                       # que el bucle termine su lectura en curso
+        with self.lock:
+            if self.cli:
+                try:
+                    self.cli.cerrar()
+                except Exception:
+                    pass
+            self.conectado = False
 
     def _log(self, texto):
         linea = time.strftime('%H:%M:%S ') + texto

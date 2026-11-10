@@ -1,28 +1,32 @@
 #!/usr/bin/env python3
-"""Aplicación del gemelo digital del brazo XK-JS1-1.
+"""Aplicación del gemelo digital del brazo XK-JS1-1 (Linux y Windows).
 
-Conecta con el PLC S7-200 por el cable USB-PPI y abre una ventana con el visor 3D, que sigue
-al brazo real. Desde la ventana se puede además mandar el brazo, si el programa del PLC lo
-permite y el mando está habilitado.
+Una sola app con un menú de inicio que ofrece tres modos:
+
+  Simulación          PLC simulado en la propia app: para practicar sin brazo ni cable.
+  Operación local     brazo real por el cable USB-PPI, mandado desde esta PC.
+  Operación por red   lo mismo, y además celulares y otras PC de la red local entran con
+                      usuario y contraseña por https://IP-DE-ESTA-PC:8443/
+
+El menú también administra los usuarios del acceso por red. Se puede cambiar de modo en
+cualquier momento con el botón «Menú» de la barra superior.
 
 Uso:
-    python3 gemelo_brazo.py                    # busca el PLC en /dev/ttyUSB0 y abre la ventana
-    python3 gemelo_brazo.py --red              # además, acceso con usuario y contraseña desde la red local
-    python3 gemelo_brazo.py --direccion 6      # sin búsqueda
-    python3 gemelo_brazo.py --simulado         # sin PLC (para practicar)
-    python3 gemelo_brazo.py --navegador        # en el navegador en vez de la ventana
+    python3 gemelo_brazo.py                    # abre el menú (Windows: py gemelo_brazo.py)
+    python3 gemelo_brazo.py --modo local       # entra directo a un modo: simulacion, local o red
+    python3 gemelo_brazo.py --modo red --red-simulado   # acceso por red con el PLC simulado
+    python3 gemelo_brazo.py --puerto COM4      # fijar el puerto del cable (por defecto lo busca)
+    python3 gemelo_brazo.py --navegador        # en el navegador en vez de la ventana propia
 
 La ventana de esta PC usa http://localhost:8050/ (sin contraseña: quien está aquí está en la planta).
-Con --red, los demás dispositivos entran por https://IP-DE-ESTA-PC:8443/ con su usuario
-(los usuarios se crean con usuarios.py).
 """
 import argparse
 import html
 import json
 import os
+import re
 import socket
 import ssl
-import subprocess
 import sys
 import threading
 import time
@@ -30,17 +34,39 @@ import urllib.parse
 import webbrowser
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
+for _s in (sys.stdout, sys.stderr):            # la consola de Windows no siempre admite «…» o tildes
+    try:
+        _s.reconfigure(errors='replace')
+    except (AttributeError, ValueError):
+        pass
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from brazo import APP, UI, Brazo  # noqa: E402
 import acceso  # noqa: E402
+import certificado_tls  # noqa: E402
+import serie  # noqa: E402
 import ventana  # noqa: E402
 
-BRAZO = None
+BRAZO = None                        # conexión con el PLC (real o simulado) del modo elegido
 ACCESO = acceso.Acceso()
 CLAVE_LOCAL = False                 # --clave-local: pedir contraseña también en esta PC
 COOKIE = 'gemelo_sesion'
 SOLO_OPERADOR = ('/api/mando', '/api/calibrar_base')
 PUBLICOS = ('/login', '/icono.svg')
+MODOS = {'simulacion': 'Simulación', 'local': 'Operación local', 'red': 'Operación por red local'}
+REGISTRO = os.path.join(APP, 'registro_gemelo.log')
+NOMBRE_VALIDO = re.compile(r'^[A-Za-z0-9_.\-]{1,32}$')
+
+
+class Config:
+    puerto = 'auto'
+    direccion = None
+    puerto_red = 8443
+    cifrado = True
+
+
+APLICACION = {'modo': None, 'red_simulado': False, 'red': None, 'url_red': None}
+CAMBIO = threading.Lock()
 
 PAGINA_LOGIN = """<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>Gemelo digital · Ingreso</title>
@@ -63,6 +89,149 @@ button{font:inherit;padding:10px;border:0;border-radius:5px;background:var(--ace
 </form></body></html>"""
 
 
+def registrar(texto):
+    linea = time.strftime('%H:%M:%S ') + texto
+    print(linea, flush=True)
+    with open(REGISTRO, 'a', encoding='utf-8') as f:
+        f.write(linea + '\n')
+
+
+# ====================================================================== modos
+def certificado():
+    """Certificado TLS propio (autofirmado) para el acceso por red; se crea una sola vez, en Python."""
+    cert, clave = os.path.join(APP, 'tls_certificado.pem'), os.path.join(APP, 'tls_clave.pem')
+    if not (os.path.exists(cert) and os.path.exists(clave)):
+        print('Creando el certificado del laboratorio (solo la primera vez)...', flush=True)
+        certificado_tls.crear(cert, clave)
+        try:
+            os.chmod(clave, 0o600)
+        except OSError:
+            pass
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.load_cert_chain(cert, clave)
+    return ctx
+
+
+def ip_local():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('10.255.255.255', 1))       # no envía nada: solo elige la interfaz de salida
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except OSError:
+        return '127.0.0.1'
+
+
+def _activar_red():
+    if APLICACION['red']:
+        return
+    srv = ThreadingHTTPServer(('0.0.0.0', Config.puerto_red), Manejador)
+    srv.es_red = True
+    srv.tls = Config.cifrado
+    if srv.tls:
+        srv.socket = certificado().wrap_socket(srv.socket, server_side=True)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    APLICACION['red'] = srv
+    APLICACION['url_red'] = f"{'https' if srv.tls else 'http'}://{ip_local()}:{Config.puerto_red}/"
+    registrar(f'acceso por red local: {APLICACION["url_red"]} (con usuario y contraseña)')
+
+
+def _desactivar_red():
+    srv = APLICACION['red']
+    if not srv:
+        return
+    srv.shutdown()
+    srv.server_close()
+    APLICACION['red'] = APLICACION['url_red'] = None
+    registrar('acceso por red local cerrado')
+
+
+def _mando_simulacion(b):
+    """En la simulación no hay brazo real: el mando de esta PC viene habilitado."""
+    for _ in range(50):
+        if b.conectado:
+            try:
+                b.habilitar_mando(True, 'local')
+            except ValueError:
+                pass
+            return
+        time.sleep(0.1)
+
+
+def aplicar_modo(modo, red_simulado=False):
+    """Cambia de modo: crea la conexión que corresponde (real o simulada) y abre o cierra la red."""
+    global BRAZO
+    if modo not in MODOS:
+        raise ValueError('modo desconocido')
+    if modo == 'red' and not ACCESO.hay_usuarios():
+        raise ValueError('para la operación por red cree antes al menos un usuario (sección Usuarios)')
+    simulado = modo == 'simulacion' or (modo == 'red' and red_simulado)
+    with CAMBIO:
+        if BRAZO is None or BRAZO.simulado != simulado:
+            if BRAZO:
+                BRAZO.cerrar()
+            BRAZO = Brazo(Config.puerto, Config.direccion, simulado, REGISTRO)
+        elif BRAZO.mando_de not in (None, 'local'):
+            BRAZO.soltar_mando_de(BRAZO.mando_de)      # el mando remoto no sobrevive a un cambio de modo
+        if modo == 'red':
+            _activar_red()
+        else:
+            _desactivar_red()
+        APLICACION['modo'], APLICACION['red_simulado'] = modo, (modo == 'red' and red_simulado)
+        if modo == 'simulacion' and not BRAZO.mando:
+            threading.Thread(target=_mando_simulacion, args=(BRAZO,), daemon=True).start()
+    registrar(f'modo: {MODOS[modo]}' + (' (PLC simulado)' if modo == 'red' and red_simulado else ''))
+
+
+def estado_aplicacion():
+    b = BRAZO
+    plc = None
+    if b:
+        plc = {'conectado': b.conectado, 'simulado': b.simulado, 'puerto': b.puerto, 'direccion': b.direccion,
+               'baudios': getattr(b, 'baudios', None), 'perfil': b.perfil.nombre if b.perfil else None,
+               'descripcion': getattr(b.perfil, 'descripcion', '') if b.perfil else '', 'error': b.error,
+               'mando': b.mando, 'mando_de': b.mando_de}
+    usuarios = acceso.cargar()
+    return {'modo': APLICACION['modo'], 'nombre_modo': MODOS.get(APLICACION['modo']),
+            'red_simulado': APLICACION['red_simulado'], 'url_red': APLICACION['url_red'], 'ip': ip_local(),
+            'puerto_red': Config.puerto_red, 'plc': plc, 'puertos': serie.puertos(), 'sistema': sys.platform,
+            'usuarios': [{'nombre': n, 'rol': d['rol']} for n, d in sorted(usuarios.items())],
+            'conectados': sorted({u for u, _ in ACCESO.activas()})}
+
+
+def administrar_usuarios(d):
+    """Altas, cambios y bajas de usuarios desde el menú (solo en esta PC)."""
+    accion, nombre = d.get('accion'), (d.get('nombre') or '').strip()
+    if not NOMBRE_VALIDO.match(nombre):
+        raise ValueError('nombre de usuario no válido: use letras, números, punto, guion o guion bajo (máx. 32)')
+    u = acceso.cargar()
+    if accion == 'agregar':
+        if nombre in u:
+            raise ValueError(f'el usuario {nombre} ya existe')
+        acceso.poner_clave(u, nombre, d.get('clave') or '', d.get('rol'))
+    elif accion == 'clave':
+        if nombre not in u:
+            raise ValueError(f'no existe el usuario {nombre}')
+        acceso.poner_clave(u, nombre, d.get('clave') or '', u[nombre]['rol'])
+    elif accion == 'rol':
+        if nombre not in u:
+            raise ValueError(f'no existe el usuario {nombre}')
+        if d.get('rol') not in acceso.ROLES:
+            raise ValueError('rol desconocido')
+        u[nombre]['rol'] = d['rol']
+    elif accion == 'quitar':
+        if u.pop(nombre, None) is None:
+            raise ValueError(f'no existe el usuario {nombre}')
+        if BRAZO and BRAZO.mando_de == nombre:
+            BRAZO.soltar_mando_de(nombre)
+    else:
+        raise ValueError('acción desconocida')
+    acceso.guardar(u)
+    registrar(f'usuarios: {accion} {nombre}' + (f' ({d.get("rol")})' if accion in ('agregar', 'rol') else ''))
+
+
+# ====================================================================== servidor
 class Manejador(SimpleHTTPRequestHandler):
     def __init__(self, *a, **k):
         super().__init__(*a, directory=UI, **k)
@@ -74,9 +243,13 @@ class Manejador(SimpleHTTPRequestHandler):
 
     # -------------------------------------------------------------- sesión
     @property
+    def en_esta_pc(self):
+        """Conexión desde la propia PC por la puerta local (no por la de red)."""
+        return self.client_address[0] in ('127.0.0.1', '::1') and not getattr(self.server, 'es_red', False)
+
+    @property
     def local(self):
-        return self.client_address[0] in ('127.0.0.1', '::1') and not getattr(self.server, 'tls', False) \
-            and not CLAVE_LOCAL
+        return self.en_esta_pc and not CLAVE_LOCAL
 
     def _token(self):
         for parte in (self.headers.get('Cookie') or '').split(';'):
@@ -90,6 +263,12 @@ class Manejador(SimpleHTTPRequestHandler):
             return {'usuario': 'local', 'rol': 'operador'}
         return ACCESO.sesion(self._token())
 
+    def _puede_menu(self):
+        if not self.en_esta_pc:
+            return False
+        s = self.sesion()
+        return bool(s and s['rol'] == 'operador')
+
     def _mismo_origen(self):
         """Protección contra páginas ajenas: las órdenes deben venir de esta misma app."""
         origen = self.headers.get('Origin')
@@ -100,11 +279,11 @@ class Manejador(SimpleHTTPRequestHandler):
 
     # -------------------------------------------------------------- respuestas
     def end_headers(self):
-        # Otras páginas abiertas en esta PC (por ejemplo la publicada) pueden LEER el estado
-        if self.local and self.command in ('GET', 'OPTIONS'):
+        # Otras páginas abiertas en esta PC (por ejemplo la publicada) pueden LEER el estado del brazo
+        if self.local and self.command in ('GET', 'OPTIONS') and self.path.startswith(('/api/estado', '/api/info')):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Access-Control-Allow-Private-Network', 'true')
-        if self.path.startswith('/api/') or self.path in ('/', '/index.html', '/login'):
+        if self.path.startswith('/api/') or self.path in ('/', '/index.html', '/login', '/menu'):
             self.send_header('Cache-Control', 'no-store')
         elif self.path.startswith(('/js/', '/css/')):
             self.send_header('Cache-Control', 'no-cache')   # que una versión nueva de la app llegue sin limpiar el navegador
@@ -145,7 +324,9 @@ class Manejador(SimpleHTTPRequestHandler):
         with open(os.path.join(UI, 'index.html'), encoding='utf-8') as f:
             pagina = f.read()
         # El rol decide si la página puede mandar el brazo real (el servidor lo vuelve a comprobar)
-        datos = json.dumps({'usuario': s['usuario'], 'rol': s['rol'], 'local': self.local})
+        datos = json.dumps({'usuario': s['usuario'], 'rol': s['rol'], 'local': self.local,
+                            'menu': self.en_esta_pc and s['rol'] == 'operador',
+                            'modo': MODOS.get(APLICACION['modo'])})
         pagina = pagina.replace('window.GEMELO_CONTROL = true;',
                                 f'window.GEMELO_CONTROL = {json.dumps(s["rol"] == "operador")}; '
                                 f'window.GEMELO_USUARIO = {datos};')
@@ -163,13 +344,25 @@ class Manejador(SimpleHTTPRequestHandler):
             return self._html(200, PAGINA_LOGIN.replace('{error}', ''))
         if ruta == '/salir':
             s = ACCESO.salir(self._token())
-            if s:
+            if s and BRAZO:
                 BRAZO.soltar_mando_de(s['usuario'])
             return self._ir('login', [self._cookie('', 0)])
         s = self.sesion()
+        # menú de inicio: solo en esta PC
+        if ruta == '/menu':
+            if not self._puede_menu():
+                return self._ir('./' if s else 'login')
+            with open(os.path.join(APP, 'menu.html'), encoding='utf-8') as f:
+                return self._html(200, f.read())
+        if ruta == '/api/app':
+            if not self._puede_menu():
+                return self._json(403, {'ok': False, 'error': 'solo desde la PC del laboratorio'})
+            return self._json(200, estado_aplicacion())
         if ruta.startswith('/api/'):
             if not s:
                 return self._json(401, {'ok': False, 'error': 'sesión vencida: vuelva a ingresar'})
+            if BRAZO is None:
+                return self._json(503, {'ok': False, 'error': 'elija un modo en el menú de la app'})
             if ruta == '/api/info':
                 return self._json(200, BRAZO.info())
             if ruta == '/api/estado':
@@ -179,7 +372,11 @@ class Manejador(SimpleHTTPRequestHandler):
                                         'conectados': ACCESO.activas()})
             return self._json(404, {'ok': False, 'error': 'ruta desconocida'})
         if ruta in ('/', '/index.html'):
-            return self._index(s) if s else self._ir('login')
+            if not s:
+                return self._ir('login')
+            if BRAZO is None and self._puede_menu():
+                return self._ir('menu')
+            return self._index(s)
         if not s and ruta not in PUBLICOS and not ruta.startswith(('/css/', '/lib/', '/js/', '/modelo/')):
             return self._ir('login')
         return super().do_GET()
@@ -194,17 +391,36 @@ class Manejador(SimpleHTTPRequestHandler):
             try:
                 token, rol = ACCESO.entrar(usuario, (campos.get('clave') or [''])[0], self.client_address[0])
             except ValueError as ex:
-                BRAZO._log(f'ingreso fallido de "{usuario}" desde {self.client_address[0]}')
+                registrar(f'ingreso fallido de "{usuario}" desde {self.client_address[0]}')
                 return self._html(401, PAGINA_LOGIN.replace('{error}', html.escape(str(ex))))
-            BRAZO._log(f'ingreso de {usuario} ({rol}) desde {self.client_address[0]}')
+            registrar(f'ingreso de {usuario} ({rol}) desde {self.client_address[0]}')
             return self._ir('./', [self._cookie(token, acceso.DURACION)])
         s = self.sesion()
         if not s:
             return self._json(401, {'ok': False, 'error': 'sesión vencida: vuelva a ingresar'})
         if not self._mismo_origen():
             return self._json(403, {'ok': False, 'error': 'solo lectura: las órdenes se dan desde la app del gemelo'})
+        # menú: cambio de modo y usuarios (solo en esta PC)
+        if ruta.startswith('/api/app/'):
+            if not self._puede_menu():
+                return self._json(403, {'ok': False, 'error': 'solo desde la PC del laboratorio'})
+            try:
+                datos = json.loads(cuerpo or b'{}')
+                if ruta == '/api/app/modo':
+                    aplicar_modo(datos.get('modo'), bool(datos.get('red_simulado')))
+                elif ruta == '/api/app/usuarios':
+                    administrar_usuarios(datos)
+                else:
+                    return self._json(404, {'ok': False, 'error': 'ruta desconocida'})
+                return self._json(200, dict(estado_aplicacion(), ok=True))
+            except ValueError as ex:
+                return self._json(400, {'ok': False, 'error': str(ex)})
+            except OSError as ex:                     # p. ej. el puerto de red ya está en uso
+                return self._json(500, {'ok': False, 'error': f'no se pudo abrir el acceso por red: {ex}'})
+        if BRAZO is None:
+            return self._json(503, {'ok': False, 'error': 'elija un modo en el menú de la app'})
         if s['rol'] != 'operador' and (ruta in SOLO_OPERADOR or ruta.startswith('/api/orden/')):
-            BRAZO._log(f'RECHAZADO {ruta} de {s["usuario"]} ({s["rol"]}): solo puede ver')
+            registrar(f'RECHAZADO {ruta} de {s["usuario"]} ({s["rol"]}): solo puede ver')
             return self._json(403, {'ok': False, 'error': 'su usuario es observador: solo puede ver el brazo'})
         try:
             datos = json.loads(cuerpo or b'{}')
@@ -219,53 +435,36 @@ class Manejador(SimpleHTTPRequestHandler):
                 return self._json(200, r or {'ok': True})
             self._json(404, {'ok': False, 'error': 'ruta desconocida'})
         except (ValueError, KeyError) as ex:
-            BRAZO._log(f'RECHAZADO {ruta} de {s["usuario"]}: {ex}')
+            registrar(f'RECHAZADO {ruta} de {s["usuario"]}: {ex}')
             self._json(400, {'ok': False, 'error': str(ex)})
         except Exception as ex:                       # error de comunicación u otro
             self._json(500, {'ok': False, 'error': str(ex)})
-
-
-def certificado():
-    """Certificado TLS propio (autofirmado) para el acceso por red; se crea una sola vez."""
-    cert, clave = os.path.join(APP, 'tls_certificado.pem'), os.path.join(APP, 'tls_clave.pem')
-    if not (os.path.exists(cert) and os.path.exists(clave)):
-        subprocess.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '3650',
-                        '-subj', '/CN=gemelo-brazo-xk-js1-1', '-keyout', clave, '-out', cert],
-                       check=True, capture_output=True)
-        os.chmod(clave, 0o600)
-    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    ctx.load_cert_chain(cert, clave)
-    return ctx
-
-
-def ip_local():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(('10.255.255.255', 1))       # no envía nada: solo elige la interfaz de salida
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except OSError:
-        return '127.0.0.1'
 
 
 def vigilar_mando():
     """Si quien tiene el mando ya no tiene sesión (salió o venció), el mando se suelta."""
     while True:
         time.sleep(15)
-        quien = BRAZO.mando_de
-        if BRAZO.mando and quien not in (None, 'local') and quien not in {u for u, _ in ACCESO.activas()}:
-            BRAZO.soltar_mando_de(quien)
+        b = BRAZO
+        if not b:
+            continue
+        quien = b.mando_de
+        if b.mando and quien not in (None, 'local') and quien not in {u for u, _ in ACCESO.activas()}:
+            b.soltar_mando_de(quien)
 
 
 def main():
-    global BRAZO, CLAVE_LOCAL
+    global CLAVE_LOCAL
     ap = argparse.ArgumentParser(description='Gemelo digital del brazo XK-JS1-1 (PLC S7-200 por PPI)')
-    ap.add_argument('--puerto', default='/dev/ttyUSB0', help='puerto serie del cable USB-PPI')
+    ap.add_argument('--modo', choices=['menu', 'simulacion', 'local', 'red'], default='menu',
+                    help='modo al abrir (por defecto el menú)')
+    ap.add_argument('--red-simulado', action='store_true', help='con --modo red: usar el PLC simulado')
+    ap.add_argument('--simulado', action='store_true', help='(compatibilidad) igual que --modo simulacion')
+    ap.add_argument('--red', action='store_true', help='(compatibilidad) igual que --modo red')
+    ap.add_argument('--puerto', default='auto', help='puerto serie del cable, p. ej. COM3 o /dev/ttyUSB0 '
+                    '(por defecto lo busca entre los presentes)')
     ap.add_argument('--direccion', type=int, default=None, help='dirección PPI del PLC (por defecto la busca)')
-    ap.add_argument('--simulado', action='store_true', help='usar un PLC simulado (sin hardware)')
     ap.add_argument('--http', type=int, default=8050, help='puerto local de la ventana (por defecto 8050)')
-    ap.add_argument('--red', action='store_true', help='acceso con usuario y contraseña desde la red local')
     ap.add_argument('--puerto-red', type=int, default=8443, help='puerto del acceso por red (por defecto 8443)')
     ap.add_argument('--sin-cifrado', action='store_true', help='red local por http (las contraseñas viajan en claro)')
     ap.add_argument('--clave-local', action='store_true', help='pedir contraseña también en esta PC')
@@ -273,43 +472,32 @@ def main():
     ap.add_argument('--sin-ventana', action='store_true', help='solo el servidor (sin ventana ni navegador)')
     a = ap.parse_args()
     CLAVE_LOCAL = a.clave_local
-
-    if (a.red or a.clave_local) and not ACCESO.hay_usuarios():
-        raise SystemExit('No hay usuarios. Cree al menos uno antes:\n'
-                         '  python3 usuarios.py agregar NOMBRE --rol operador')
-
-    registro = os.path.join(APP, 'registro_gemelo.log')
-    BRAZO = Brazo(a.puerto, a.direccion, a.simulado, registro)
-    servidores = [ThreadingHTTPServer(('127.0.0.1', a.http), Manejador)]
-    url = f'http://localhost:{a.http}/'
-    print(f'Gemelo digital en {url}  (cierre la ventana o Ctrl+C para salir)', flush=True)
+    Config.puerto, Config.direccion, Config.puerto_red, Config.cifrado = \
+        a.puerto, a.direccion, a.puerto_red, not a.sin_cifrado
+    modo = a.modo
     if a.red:
-        red = ThreadingHTTPServer(('0.0.0.0', a.puerto_red), Manejador)
-        red.tls = not a.sin_cifrado
-        if red.tls:
-            red.socket = certificado().wrap_socket(red.socket, server_side=True)
-        esquema = 'https' if red.tls else 'http'
-        servidores.append(red)
-        BRAZO._log(f'acceso por red local: {esquema}://{ip_local()}:{a.puerto_red}/ (con usuario y contraseña)')
-        if red.tls:
-            print('  El certificado es propio del laboratorio: la primera vez el navegador avisa;'
-                  ' acepte continuar a ese sitio.', flush=True)
-        threading.Thread(target=vigilar_mando, daemon=True).start()
-    for srv in servidores[1:]:
-        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        modo, a.red_simulado = 'red', a.red_simulado or a.simulado
+    elif a.simulado:
+        modo = 'simulacion'
+    if a.clave_local and not ACCESO.hay_usuarios():
+        raise SystemExit('Con --clave-local hace falta al menos un usuario operador (usuarios.py agregar ...).')
 
-    def detener_brazo():
-        if BRAZO.conectado and BRAZO.mando and BRAZO.leer_estado().get('en_movimiento'):
-            try:
-                BRAZO.orden('detener', {}, BRAZO.mando_de or 'local')
-            except Exception:
-                pass
+    principal = ThreadingHTTPServer(('127.0.0.1', a.http), Manejador)
+    inicio = 'menu'
+    if modo != 'menu':
+        try:
+            aplicar_modo(modo, a.red_simulado)
+            inicio = ''
+        except ValueError as ex:
+            print(f'No se pudo abrir el modo «{MODOS[modo]}»: {ex}. Se abre el menú.', flush=True)
+    url = f'http://localhost:{a.http}/{inicio}'
+    print(f'Gemelo digital en http://localhost:{a.http}/  (cierre la ventana o Ctrl+C para salir)', flush=True)
+    threading.Thread(target=vigilar_mando, daemon=True).start()
 
-    principal = servidores[0]
     try:
         if not a.navegador and not a.sin_ventana and ventana.disponible():
             threading.Thread(target=principal.serve_forever, daemon=True).start()
-            ventana.abrir(url, detener_brazo)
+            ventana.abrir(url)
         else:
             if not a.sin_ventana:
                 threading.Timer(1.0, lambda: webbrowser.open(url)).start()
@@ -317,9 +505,10 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
-        detener_brazo()
-        for srv in servidores:
-            srv.server_close()
+        if BRAZO:
+            BRAZO.cerrar()                     # para el brazo si se movía por orden de la PC
+        _desactivar_red()
+        principal.server_close()
         print('\nApp cerrada.')
 
 

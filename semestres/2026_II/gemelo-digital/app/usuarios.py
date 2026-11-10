@@ -57,7 +57,7 @@ def main():
                 raise SystemExit(f'No existe el usuario {args.nombre}.')
         elif args.accion == 'listar':
             if not u:
-                print('No hay usuarios. Cree uno con: python3 usuarios.py agregar NOMBRE --rol operador')
+                print('No hay usuarios. Cree uno desde el menú de la app (Usuarios) o con: usuarios.py agregar NOMBRE --rol operador')
             for nombre, d in sorted(u.items()):
                 print(f'{nombre:20s} {d["rol"]}')
             return

@@ -1,4 +1,4 @@
-"""Cliente PPI para el S7-200 por el cable USB-PPI (sin dependencias, solo Linux/macOS).
+"""Cliente PPI para el S7-200 por el cable USB-PPI (sin dependencias; Windows, Linux y macOS).
 
 Implementa las peticiones S7 "Read Var" (0x04) y "Write Var" (0x05) sobre el protocolo
 PPI (FDL, 8 bits, paridad par, 1 bit de parada), como lo hace libnodave. La PC es el
@@ -7,14 +7,12 @@ maestro (dirección 0) y el PLC el esclavo.
 Las escrituras solo se aceptan dentro de las zonas que pasa quien crea el cliente
 (`zonas_escritura`): cualquier otra dirección levanta un error sin tocar el puerto.
 """
-import os
-import select
-import termios
 import threading
 import time
 
+import serie
+
 AREAS = {'I': 0x81, 'Q': 0x82, 'M': 0x83, 'V': 0x84, 'SM': 0x05}
-BAUDIOS = {9600: termios.B9600, 19200: termios.B19200}
 
 
 class ErrorPPI(IOError):
@@ -22,10 +20,10 @@ class ErrorPPI(IOError):
 
 
 class ClientePPI:
-    def __init__(self, puerto='/dev/ttyUSB0', plc=6, pc=0, baudios=19200, zonas_escritura=()):
+    def __init__(self, puerto='COM3', plc=6, pc=0, baudios=19200, zonas_escritura=()):
         self.puerto, self.plc, self.pc, self.baudios = puerto, plc, pc, baudios
         self.zonas = list(zonas_escritura)          # [(area, byte_inicio, byte_fin_inclusive)]
-        self.fd = None
+        self.p = None
         self.lock = threading.Lock()
         self._fcb = False
         self._t_ultimo = 0.0
@@ -33,32 +31,20 @@ class ClientePPI:
 
     # ------------------------------------------------------------------ puerto
     def abrir(self):
-        fd = os.open(self.puerto, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
-        a = termios.tcgetattr(fd)
-        a[0] = a[1] = a[3] = 0
-        a[2] = termios.CS8 | termios.PARENB | termios.CREAD | termios.CLOCAL
-        a[4] = a[5] = BAUDIOS[self.baudios]
-        termios.tcsetattr(fd, termios.TCSANOW, a)
-        termios.tcflush(fd, termios.TCIOFLUSH)
-        self.fd = fd
+        p = serie.Puerto(self.puerto, self.baudios)
+        p.abrir()
+        self.p = p
 
     def cerrar(self):
-        if self.fd is not None:
-            os.close(self.fd)
-            self.fd = None
+        if self.p is not None:
+            self.p.cerrar()
+            self.p = None
 
     def _leer(self, espera):
         datos = b''
         fin = time.time() + espera
         while time.time() < fin:
-            r, _, _ = select.select([self.fd], [], [], 0.02)
-            if not r:
-                continue
-            try:
-                d = os.read(self.fd, 512)
-            except BlockingIOError:
-                d = b''
-            datos += d
+            datos += self.p.leer()
             if datos[:1] == b'\xe5':
                 break
             if datos[:1] == b'\x68' and len(datos) >= 4 and len(datos) >= datos[1] + 6:
@@ -71,7 +57,7 @@ class ClientePPI:
         # por sondeo o la petición entera): se deja un silencio de ~150 bits antes de transmitir
         falta = self._t_ultimo + 150 / self.baudios - time.time()
         if falta > 0:
-            time.sleep(falta)
+            serie.espera(falta)
 
     def _sd2(self, fc, pdu):
         cuerpo = bytes([self.plc, self.pc, fc]) + pdu
@@ -83,18 +69,18 @@ class ClientePPI:
 
     def _intercambio(self, pdu):
         """Envía un PDU S7 y devuelve el PDU de la respuesta."""
-        if self.fd is None:
+        if self.p is None:
             self.abrir()
-        termios.tcflush(self.fd, termios.TCIFLUSH)
+        self.p.vaciar_entrada()
         self._pausa()
-        os.write(self.fd, self._sd2(0x7C if self._fcb else 0x6C, pdu))
+        self.p.escribir(self._sd2(0x7C if self._fcb else 0x6C, pdu))
         self._fcb = not self._fcb
         r = self._leer(0.4)
         if not r.startswith(b'\xe5'):
             raise ErrorPPI('el PLC no acusó la petición' + (f' ({r.hex(" ")})' if r else ''))
         for intento in range(8):
             self._pausa()
-            os.write(self.fd, self._sd1(0x5C if intento % 2 == 0 else 0x7C))
+            self.p.escribir(self._sd1(0x5C if intento % 2 == 0 else 0x7C))
             r = self._leer(0.4)
             if r.startswith(b'\x68') and len(r) >= 9:
                 le = r[1]
